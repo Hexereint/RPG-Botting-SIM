@@ -1042,6 +1042,7 @@ select.config-input { width:auto; cursor:pointer; }
             <div class="config-label">Import / Export Save<span class="config-sub">Copy this backup text, or paste one here and import.</span></div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <button onclick="exportSaveData()" style="background:#000;border:1px solid var(--green);color:var(--green);font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">EXPORT</button>
+              <button onclick="downloadSaveData()" style="background:#000;border:1px solid #55aaff;color:#55aaff;font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">DOWNLOAD</button>
               <button onclick="importSaveData()" style="background:#000;border:1px solid var(--yellow);color:var(--yellow);font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">IMPORT</button>
               <button onclick="clearSaveTransferBox()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">CLEAR</button>
             </div>
@@ -8114,34 +8115,89 @@ function clearSaveTransferBox() {
   setSaveTransferStatus('Cleared.', 'var(--muted)');
 }
 
+function buildSaveExportPayload() {
+  if (G.started) saveGame(false);
+
+  let saveObj = null;
+  try { saveObj = JSON.parse(localStorage.getItem(SAVE_KEY_V2) || 'null'); } catch(_) { saveObj = null; }
+  if (!saveObj || typeof saveObj !== 'object') saveObj = { slots:[null,null,null], activeSlot:G.activeSlot || 0 };
+  if (!Array.isArray(saveObj.slots)) saveObj.slots = [null,null,null];
+  while (saveObj.slots.length < 3) saveObj.slots.push(null);
+
+  // If the player is currently in a class, force the active slot into the export payload.
+  // This makes Export work even before the browser/localStorage write has completed.
+  if (G.started) {
+    saveObj.activeSlot = G.activeSlot || 0;
+    saveObj.slots[saveObj.activeSlot] = serializeClassState();
+  }
+
+  let stashObj = null;
+  try { stashObj = JSON.parse(localStorage.getItem('rpg_stash') || 'null'); } catch(_) { stashObj = null; }
+  if (!Array.isArray(stashObj)) stashObj = Array.isArray(G.stash) ? G.stash : [null,null,null,null,null];
+
+  return {
+    type: 'rpg-botting-sim-save-export',
+    version: 2,
+    exportedAt: Date.now(),
+    saveKey: SAVE_KEY_V2,
+    save: saveObj,
+    stash: stashObj
+  };
+}
+
+function getSaveExportText() {
+  const payload = buildSaveExportPayload();
+  const hasSlot = Array.isArray(payload.save?.slots) && payload.save.slots.some(Boolean);
+  if (!hasSlot && !G.started) throw new Error('No save data found to export. Start/load a class first.');
+  return JSON.stringify(payload);
+}
+
 async function exportSaveData() {
   try {
-    if (G.started) saveGame(false);
-    const rawSave = localStorage.getItem(SAVE_KEY_V2) || '';
-    if (!rawSave) { setSaveTransferStatus('No save data found to export.', 'var(--red)'); return; }
-    const payload = {
-      type: 'rpg-botting-sim-save-export',
-      version: 1,
-      exportedAt: Date.now(),
-      saveKey: SAVE_KEY_V2,
-      save: rawSave,
-      stash: localStorage.getItem('rpg_stash') || ''
-    };
-    const text = JSON.stringify(payload);
+    const text = getSaveExportText();
     const box = document.getElementById('save-transfer-box');
-    if (box) { box.value = text; box.focus(); box.select(); }
+    if (box) {
+      box.value = text;
+      box.focus();
+      box.select();
+      if (box.setSelectionRange) box.setSelectionRange(0, box.value.length);
+    }
+
+    let copied = false;
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
-        setSaveTransferStatus('Save exported and copied to clipboard.', 'var(--green)');
-      } else {
-        setSaveTransferStatus('Save exported. Copy the text box manually.', 'var(--green)');
+        copied = true;
+      } else if (document.execCommand) {
+        copied = document.execCommand('copy');
       }
-    } catch(_) {
-      setSaveTransferStatus('Save exported. Copy the text box manually.', 'var(--green)');
-    }
+    } catch(_) { copied = false; }
+
+    setSaveTransferStatus(copied ? 'Save exported to the box and copied to clipboard.' : 'Save exported to the box. Copy it manually, or use DOWNLOAD.', 'var(--green)');
   } catch(e) {
     setSaveTransferStatus('Export failed: ' + e.message, 'var(--red)');
+  }
+}
+
+function downloadSaveData() {
+  try {
+    const text = getSaveExportText();
+    const box = document.getElementById('save-transfer-box');
+    if (box) box.value = text;
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+    const blob = new Blob([text], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rpg_botting_sim_save_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    setSaveTransferStatus('Save download created. The text box also contains the backup.', 'var(--green)');
+  } catch(e) {
+    setSaveTransferStatus('Download failed: ' + e.message, 'var(--red)');
   }
 }
 
@@ -8155,8 +8211,8 @@ function importSaveData() {
     let stashText = '';
 
     if (payload?.type === 'rpg-botting-sim-save-export') {
-      saveText = payload.save || '';
-      stashText = payload.stash || '';
+      saveText = (typeof payload.save === 'string') ? payload.save : JSON.stringify(payload.save || {});
+      stashText = (payload.stash == null) ? '' : ((typeof payload.stash === 'string') ? payload.stash : JSON.stringify(payload.stash));
     } else if (payload?.slots) {
       saveText = JSON.stringify(payload);
     } else {
@@ -8165,8 +8221,9 @@ function importSaveData() {
 
     const saveObj = JSON.parse(saveText);
     if (!saveObj || !Array.isArray(saveObj.slots)) throw new Error('Save is missing class slots.');
+    let stashObj = null;
     if (stashText) {
-      const stashObj = JSON.parse(stashText);
+      stashObj = JSON.parse(stashText);
       if (!Array.isArray(stashObj)) throw new Error('Shared stash data is invalid.');
     }
 
@@ -8174,7 +8231,7 @@ function importSaveData() {
     if (!ok) { setSaveTransferStatus('Import cancelled.', 'var(--muted)'); return; }
 
     localStorage.setItem(SAVE_KEY_V2, JSON.stringify(saveObj));
-    if (stashText) localStorage.setItem('rpg_stash', JSON.stringify(JSON.parse(stashText)));
+    if (stashObj) localStorage.setItem('rpg_stash', JSON.stringify(stashObj));
     setSaveTransferStatus('Save imported. Reloading...', 'var(--green)');
     location.reload();
   } catch(e) {
