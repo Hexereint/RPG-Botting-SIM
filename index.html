@@ -7037,6 +7037,56 @@ function wireSkillControl(el, handler) {
     }
   });
 }
+function wireSkillHoldControl(el, handler) {
+  if (!el) return;
+  const HOLD_DELAY_MS = 420;
+  const HOLD_REPEAT_MS = 190;
+  let holdTimer = null;
+  let repeatTimer = null;
+  let didRepeat = false;
+  let pointerId = null;
+
+  const clearHold = () => {
+    if (holdTimer) clearTimeout(holdTimer);
+    if (repeatTimer) clearInterval(repeatTimer);
+    holdTimer = null;
+    repeatTimer = null;
+    pointerId = null;
+  };
+
+  el.addEventListener('pointerdown', e => {
+    if (e.button > 0 || el.disabled) return;
+    pointerId = e.pointerId;
+    didRepeat = false;
+    try { el.setPointerCapture(pointerId); } catch (_) {}
+    holdTimer = setTimeout(() => {
+      didRepeat = true;
+      handler();
+      repeatTimer = setInterval(() => {
+        if (el.disabled || G.skillPoints <= 0) { clearHold(); return; }
+        handler();
+      }, HOLD_REPEAT_MS);
+    }, HOLD_DELAY_MS);
+  });
+
+  ['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(evt => {
+    el.addEventListener(evt, clearHold);
+  });
+
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (didRepeat) { didRepeat = false; return; }
+    handler();
+  });
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      handler();
+    }
+  });
+}
 
 function updateSkillsRuntimeUI() {
   const panel = document.getElementById('skills-panel');
@@ -7164,7 +7214,7 @@ function renderSkills() {
     `;
     wireSkillControl(div.querySelector(`#stog-${k}`), () => toggleSkill(k));
     if (v.enabled) wireSkillControl(div.querySelector('[data-cast]'), () => requestManualSkillCast(k));
-    if (canUpgrade) wireSkillControl(div.querySelector('[data-upgrade]'), () => upgradeSkill(k));
+    if (canUpgrade) wireSkillHoldControl(div.querySelector('[data-upgrade]'), () => upgradeSkill(k));
     aList.appendChild(div);
   }
   G._skillRenderSig = skillPanelSignature();
@@ -8159,13 +8209,14 @@ const TUTORIAL_STEPS = [
   { tab:null, selector:'#header', title:'Top Bar', body:'This shows HP, MP, EXP, level or overlevel, class, gold, and save status.' },
   { tab:null, selector:'#combat-status', title:'Status Bar', body:'This line shows what the bot is doing. EXP/min and Gold/min appear after actual kills.' },
   { tab:'stats', selector:'#stats-panel', title:'Stats Tab', body:'Review equipment, character stats, achievements, stat allocation, and potions here.' },
-  { tab:'stats', selector:'.stat-allocation-card', title:'Stat Allocation', body:'Spend stat points here. Hover or tap stat names to see class-specific scaling.' },
+  { tab:'stats', selector:'.stat-allocation-card', title:'Stat Allocation', body:'Spend stat points here. Hover or tap stat names to see class-specific scaling. QoL: hold the + button to rapidly spend multiple stat points.' },
   { tab:'stats', selector:'#potion-grid', title:'Potions', body:'Click a potion to set it as your main auto-heal potion. Double-click the selected potion to use it manually.' },
   { tab:'inv', selector:'#inv-panel', title:'Inventory', body:'Gear drops appear here. Equipped items stay pinned at the top, and sorting/filtering helps compare upgrades.' },
   { tab:'inv', selector:'#inv-sub-stash', title:'Stash & Key Items', body:'Inventory includes shared stash and key items. Key items only appear after discovery.' },
-  { tab:'skills', selector:'#skills-panel', title:'Skills', body:'Toggle passives and active skills here. Enabled active skills can auto-cast; CAST buttons allow manual use.' },
+  { tab:'skills', selector:'#skills-panel', title:'Skills', body:'Toggle passives and active skills here. Enabled active skills can auto-cast; CAST buttons allow manual use. QoL: hold a +1 pt button to rapidly invest skill points.' },
   { tab:'map', selector:'#map-panel', title:'Map', body:'Choose farming zones and subzones here. Some zones have hidden boss flavour text or key-item conditions.' },
   { tab:'config', selector:'#config-panel', title:'Config', body:'Adjust bot behavior, auto-equip rules, log filters, display options, and save/import/export tools here.' },
+  { tab:null, selector:'#nav', title:'QoL Controls', body:'Hold-click stat + buttons or skill +1 pt buttons to spend points quickly. Double-click the selected potion to use it manually. Use CAST on enabled skills for manual casts.' },
   { tab:null, selector:'#nav', title:'Ready', body:'Pick a zone, let the bot farm, allocate stats, equip gear, and push deeper when ready.' }
 ];
 let tutorialStepIndex = 0;
