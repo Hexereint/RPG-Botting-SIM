@@ -557,7 +557,7 @@ select.config-input { width:auto; cursor:pointer; }
   #cvp-swarm { display:none; }
 }
 @media (max-width:430px) and (orientation:portrait) {
-  #log-container { height:210px; max-height:38vh; }
+  #log-container { height:210px; max-height:calc(100vh - 96px); }
   #stats-panel, #config-panel, #map-panel, #inv-panel { padding:6px; }
   .town-section, .config-section, .stats-section { padding:8px; }
   .merchant-grid { grid-template-columns:1fr; }
@@ -585,10 +585,23 @@ select.config-input { width:auto; cursor:pointer; }
 }
 
 
+/* Mobile log resize: allow the event log to expand to the top of the usable play area.
+   JS updates --log-max-height from the actual layout so mobile browser chrome/GitHub Pages
+   sizing cannot cap the drag early. */
+:root { --log-max-height: calc(100dvh - 88px); }
+#log-container { max-height: var(--log-max-height); }
+@media (max-width:700px) {
+  #log-container { max-height: var(--log-max-height); }
+}
+@media (max-width:430px) and (orientation:portrait) {
+  #log-container { max-height: var(--log-max-height); }
+}
+
 /* FIRST PLAY TUTORIAL --------------------------------------------------- */
 .tutorial-highlight { position:relative; z-index:120 !important; outline:2px solid var(--yellow); box-shadow:0 0 0 4px rgba(187,170,119,0.18),0 0 24px rgba(187,170,119,0.35); }
 #tutorial-overlay { display:none; position:fixed; right:12px; bottom:12px; z-index:650; width:min(420px, calc(100vw - 24px)); max-height:min(54vh, 430px); background:transparent; padding:0; pointer-events:none; align-items:flex-end; justify-content:flex-end; }
-#tutorial-box { width:100%; max-height:inherit; overflow:auto; background:#070707; border:1px solid var(--border2); box-shadow:0 12px 38px rgba(0,0,0,0.88), inset 0 0 0 1px rgba(255,255,255,0.025); padding:12px; color:var(--white); pointer-events:auto; }
+#tutorial-box { width:100%; max-height:inherit; overflow:auto; background:#070707; border:1px solid var(--border2); box-shadow:0 12px 38px rgba(0,0,0,0.88), inset 0 0 0 1px rgba(255,255,255,0.025); padding:12px; color:var(--white); pointer-events:none; }
+#tutorial-box .tutorial-actions, #tutorial-box .tutorial-btn { pointer-events:auto; }
 #tutorial-step-label { font-size:9px; color:var(--yellow); letter-spacing:2px; text-transform:uppercase; margin-bottom:7px; }
 #tutorial-title { font-size:13px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; }
 #tutorial-body { font-size:11px; color:#cfcfcf; line-height:1.55; margin-bottom:12px; }
@@ -1664,6 +1677,7 @@ function calcCDR() {
   return +totalEquipSubStat('cdr').toFixed(2);
 }
 function effectiveCooldown(baseCd, skillKey) {
+  // Skill points no longer reduce cooldowns. Only equipment CDR and mythic effects can alter cooldowns.
   let cd = baseCd - calcCDR()*1000;
   // Freezing Orb: Frost Nova cooldown -40%
   if (skillKey==='frostnova' && hasMythicMod('ethereal')) cd *= 0.6;
@@ -4130,6 +4144,15 @@ function manualUseSelectedPotion() {
   if (!hasDiscoveredPotion(type)) return;
   usePotion();
 }
+function manualUsePotionType(type='healing') {
+  normalizePotions();
+  if (!POTION_TYPES[type] || !hasDiscoveredPotion(type)) return;
+  if (G.selectedPotion !== type) {
+    selectPotion(type);
+    return;
+  }
+  manualUseSelectedPotion();
+}
 function applyPotionShieldDamage(mdmg) {
   G.potionShield = Math.max(0, G.potionShield || 0);
   if (mdmg <= 0 || G.potionShield <= 0) return mdmg;
@@ -4629,8 +4652,9 @@ function gameTick(ts) {
     // Global skill throttle: even 0-cooldown skills may only cast once every 0.2s.
     const globalSkillThrottleMs = 200;
     const canGlobalSkillCast = ts - (G.combat.lastGlobalSkillCastAt || 0) >= globalSkillThrottleMs;
-    if(G.monsters.length>0 && canGlobalSkillCast && (G.combat.aislongFrozenUntil || 0) <= ts && !isFlamestealerCasting(ts)){
-      const manualSkillKey = G.combat.manualSkillCast;
+    const manualSkillKey = G.combat.manualSkillCast;
+    const manualTargetlessCast = manualSkillKey && isTargetlessSkill(manualSkillKey);
+    if((G.monsters.length>0 || manualTargetlessCast) && canGlobalSkillCast && (G.combat.aislongFrozenUntil || 0) <= ts && !isFlamestealerCasting(ts)){
       const skillOrder = (manualSkillKey && G.skills?.[manualSkillKey]) ? [manualSkillKey] : getSkillCastOrder();
       for(const k of skillOrder){
         const v = G.skills?.[k];
@@ -4641,8 +4665,8 @@ function gameTick(ts) {
         // Check effective MP cost for mythic overrides
         let effectiveMpCost = currentSkillMpCost(k);
         if(G.mp < effectiveMpCost) { if (isManualCast) G.combat.manualSkillCast = null; continue; }
-        const target = G.monsters[0];
-        if(!target) continue;
+        const target = G.monsters[0] || null;
+        if(skillNeedsTarget(k) && !target) { if (isManualCast) G.combat.manualSkillCast = null; continue; }
 
         // Check skill condition; manual casts bypass configured auto-cast condition.
         if(!isManualCast && !checkSkillCondition(k)) continue;
@@ -4661,10 +4685,10 @@ function gameTick(ts) {
         // Consume MP and set cooldown
         if (isManualCast) G.combat.manualSkillCast = null;
         G.combat.lastGlobalSkillCastAt = ts;
-        if (!overloadActive) G.mp = Math.max(0, G.mp - v.mpCost);
+        if (!overloadActive) G.mp = Math.max(0, G.mp - effectiveMpCost);
         G.skillCooldowns[k] = effectiveCooldown(v.cooldown, k);
         // Log MP cost
-        const mpSpent = overloadActive ? 0 : v.mpCost;
+        const mpSpent = overloadActive ? 0 : effectiveMpCost;
         if (mpSpent > 0) log(`-${fmtNum(mpSpent)} MP [${v.name}] (${fmtNum(G.mp)}/${G.maxMp})`, 'mpcost');
         else if (overloadActive) log(`[OVERLOAD] ${v.name} — free cast`, 'mpcost');
         if (applyWitchCurseSkillBacklash(v.name, ts)) {
@@ -4685,7 +4709,7 @@ function gameTick(ts) {
         }
 
         if(k==='shieldbash'){
-          skillDmg = Math.round(calcDamage()*(1+str/180) + sp);
+          skillDmg = Math.round(calcDamage()*(1+str/180) * (1 + sp*0.012));
           if (hasMythicMod('the_wall')) {
             const wallHpBefore = Math.max(0, G.hp);
             const wallBonus = Math.round(wallHpBefore * 0.30);
@@ -4707,7 +4731,7 @@ function gameTick(ts) {
           let mult = 1.0;
           const targets = [...G.monsters];
           for (let i=0; i<targets.length; i++) {
-            const d = Math.round((calcDamage()*(0.25+str*0.003)*3 + sp) * mult);
+            const d = Math.round((calcDamage()*(0.25+str*0.003)*3) * (1 + sp*0.010) * mult);
             const res = dealSkillDamageToMonster(targets[i], d, ts);
             total += res.dealt;
             if(targets[i].hp<=0) killMonster(targets[i],ts);
@@ -4716,19 +4740,22 @@ function gameTick(ts) {
           skillDmg = 0; // handled above
           skillNote = `${total} dmg to ${targets.length} target${targets.length>1?'s':''}`;
         } else if(k==='warcry'){
-          const pct = Math.min(50, (10 + str * 0.3 + sp * 0.5));
+          const pct = Math.min(80, (10 + str * 0.3 + sp * 0.35));
+          const dur = 10 + sp * 0.08;
           G.combat.warCryPct = pct;
-          G.combat.warCryUntil = ts + 10000;
-          skillNote = `+${pct.toFixed(0)}% dmg buff for 10s`;
+          G.combat.warCryUntil = ts + dur * 1000;
+          skillNote = `+${pct.toFixed(0)}% dmg buff for ${dur.toFixed(1)}s`;
         } else if(k==='fortify'){
-          const dur = (6+effStat('vit')*0.05+sp*0.2);
+          const dur = (6+effStat('vit')*0.05+sp*0.10);
+          const fortifyPct = Math.min(75, 50 + sp * 0.08);
+          G.combat.fortifyPct = fortifyPct;
           G.combat.fortifyUntil = ts + dur * 1000;
-          skillNote = `dmg -50% for ${dur.toFixed(1)}s`;
+          skillNote = `dmg -${fortifyPct.toFixed(0)}% for ${dur.toFixed(1)}s`;
         } else if(k==='execute'){
-          skillDmg = Math.round(calcDamage()*(2+str*0.012) + sp);
+          skillDmg = Math.round(calcDamage()*(2+str*0.012) * (1 + sp*0.012));
           skillNote = `${skillDmg} dmg`;
         } else if(k==='cheapshot'){
-          skillDmg = Math.round(calcDamage()*(calcCritDamage()/100+agi*0.005) + sp);
+          skillDmg = Math.round(calcDamage()*(calcCritDamage()/100+agi*0.005) * (1 + sp*0.010));
           skillNote = `${skillDmg} dmg [CRIT]`;
           // Trickster's Dagger: no cooldown, costs base MP + 10% max MP
           if (hasMythicMod('mirror_edge')) {
@@ -4742,14 +4769,14 @@ function gameTick(ts) {
             for (const m of G.monsters) m.smokeBombLocked = true;
             skillNote = `All ${G.monsters.length} monsters smoke-locked for this fight`;
           } else {
-            const charges = 3;
+            const charges = Math.min(7, 2 + Math.floor(sp/19));
             G.combat.smokeBombCharges = Math.max(G.combat.smokeBombCharges || 0, charges);
             G.combat.smokeBombDelayCount = charges;
             skillNote = `next ${charges} enemy attacks delayed`;
           }
         } else if(k==='flurry'){
           const flurryHits = hasMythicMod('phantom_wraps') ? 8 : 5;
-          let hitBase = Math.max(1, Math.round(calcDamage()*(0.35+agi*0.003) + sp/flurryHits));
+          let hitBase = Math.max(1, Math.round(calcDamage()*(0.35+agi*0.003) * (1 + sp*0.010)));
           let overloadText = '';
           if (overloadActive) {
             const overloadBonus = 1 + (Math.floor(G.level/2) / 100);
@@ -4785,13 +4812,14 @@ function gameTick(ts) {
           skillDmg = 0;
           skillLogHandled = true;
         } else if(k==='marktarget'){
-          const pct = Math.min(60,(20+agi*0.2+sp*0.5));
+          const pct = Math.min(90,(20+agi*0.2+sp*0.35));
+          const dur = 8 + sp * 0.06;
           target.markTargetPct = pct;
-          target.markTargetUntil = ts + 8000;
-          skillNote = `<span class="log-monster">${target.baseName||target.name}</span> takes +${pct.toFixed(0)}% dmg for 8s`;
+          target.markTargetUntil = ts + dur * 1000;
+          skillNote = `<span class="log-monster">${target.baseName||target.name}</span> takes +${pct.toFixed(0)}% dmg for ${dur.toFixed(1)}s`;
         } else if(k==='assassinate'){
           let assassinateMult = 2+Math.max(0,agi-str)*0.05;
-          skillDmg = Math.round(calcDamage()*assassinateMult + sp);
+          skillDmg = Math.round(calcDamage()*assassinateMult * (1 + sp*0.012));
           if (hasMythicMod('altairs_shiv')) {
             const critMult = (calcCritDamage() * 2) / 100;
             skillDmg = Math.round(skillDmg * critMult);
@@ -4800,7 +4828,7 @@ function gameTick(ts) {
             skillNote = `${skillDmg} dmg`;
           }
         } else if(k==='fireball'){
-          let fbDmg = applyIntSkillPotionBuff(Math.round(int_*4.5 + sp), ts);
+          let fbDmg = applyIntSkillPotionBuff(Math.round(int_*9 * (1 + sp*0.010)), ts);
           let overloadText = '';
           if (overloadActive) {
             const overloadBonus = 1 + (Math.floor(G.level/2) / 100);
@@ -4821,7 +4849,7 @@ function gameTick(ts) {
           }
           skillLogHandled = true;
         } else if(k==='chainlightning'){
-          let boltDmg = applyIntSkillPotionBuff(Math.round(int_*2 + sp), ts);
+          let boltDmg = applyIntSkillPotionBuff(Math.round(int_*2 * (1 + sp*0.008)), ts);
           if (overloadActive) {
             const overloadBonus = 1 + (Math.floor(G.level/2) / 100);
             boltDmg = Math.round(boltDmg * overloadBonus);
@@ -4829,7 +4857,7 @@ function gameTick(ts) {
 
           // Chain Lightning: 1 target = single hit. 2+ targets = 7 sequential bounces.
           const startingTargets = [...G.monsters];
-          const maxHits = startingTargets.length >= 2 ? 7 : 1;
+          const maxHits = startingTargets.length >= 2 ? Math.min(12, 7 + Math.floor(sp/15)) : 1;
           let previousTarget = null;
           let total = 0;
           const hitTotals = {};
@@ -4881,9 +4909,11 @@ function gameTick(ts) {
             log(`-${fmtNum(Math.round(G.maxMp*0.20))} MP [Lightning Staff] (${fmtNum(G.mp)}/${G.maxMp})`, 'mpcost');
           }
         } else if(k==='frostnova'){
-          // Frosted Codex: delay duration x2
-          const novaDelay = applyIntSkillPotionBuff(hasMythicMod('frosted_codex') ? (2000 + int_*30)*2 : 2000 + int_*30, ts);
-          let fnDmg = applyIntSkillPotionBuff(Math.round(int_*0.7 + sp), ts);
+          const frostSp = Math.min(99, Math.max(0, sp || 0));
+          const novaSlowMs = Math.round((2 + frostSp * (8/99)) * 1000); // 2s at 0 pts, 10s at Lv99
+          const novaDurationMsBase = Math.round((4 + frostSp * (26/99)) * 1000); // 4s at 0 pts, 30s at Lv99
+          const novaDurationMs = hasMythicMod('frosted_codex') ? novaDurationMsBase * 2 : novaDurationMsBase;
+          let fnDmg = applyIntSkillPotionBuff(Math.round(int_*1.4 * (1 + sp*0.010)), ts);
           let overloadText = '';
           if (overloadActive) {
             const overloadBonus = 1 + (Math.floor(G.level/2) / 100);
@@ -4891,22 +4921,23 @@ function gameTick(ts) {
             overloadText = ` <span style="color:#aa44ff">[OVERLOAD +${Math.floor(G.level/2)}%]</span>`;
           }
           let total = 0;
-          let delayed = 0;
+          let slowed = 0;
           for (const t of [...G.monsters]) {
-            t.lastAttack = performance.now() + novaDelay;
-            delayed++;
+            t.frostNovaSlowAdd = Math.max(t.frostNovaSlowAdd || 0, novaSlowMs);
+            t.frostNovaSlowUntil = Math.max(t.frostNovaSlowUntil || 0, ts + novaDurationMs);
+            slowed++;
             const res = dealSkillDamageToMonster(t, fnDmg, ts);
             total += res.dealt;
             if (t.hp<=0) killMonster(t,ts);
           }
           skillDmg = 0;
-          skillNote = `${fnDmg} dmg AOE (${fmtNum(total)} total) + ${delayed} target${delayed!==1?'s':''} delayed ${(novaDelay/1000).toFixed(1)}s${overloadText}`;
+          skillNote = `${fnDmg} dmg AOE (${fmtNum(total)} total) + ${slowed} target${slowed!==1?'s':''} slowed by ${(novaSlowMs/1000).toFixed(1)}s for ${(novaDurationMs/1000).toFixed(1)}s${overloadText}`;
         } else if(k==='manasurge'){
-          const restored = applyIntSkillPotionBuff(Math.round(G.maxMp*0.15 + int_*0.1 + sp), ts);
+          const restored = applyIntSkillPotionBuff(Math.round((G.maxMp*0.15 + int_*0.1) * (1 + sp*0.010)), ts);
           G.mp = Math.min(G.maxMp, G.mp + restored);
           skillNote = `+${restored} MP`;
         } else if(k==='chronosphere'){
-          const delay = applyIntSkillPotionBuff((2 + Math.floor(int_/40) + sp * 0.2) * 1000, ts);
+          const delay = applyIntSkillPotionBuff(Math.min(15, 3 + Math.min(99, sp) * (12/99)) * 1000, ts);
           let count = 0;
           for (const m of G.monsters) {
             m.chronosphereDelayNext = true;
@@ -4956,7 +4987,8 @@ function gameTick(ts) {
     // Monsters attack
     for (const m of [...G.monsters]) {
       if (isSandwormUnderground(m, ts)) continue;
-      const interval = randi(m.atkMin||2000, m.atkMax||5000) + (hasMythicMod('pale_furisode') ? 700 : 0);
+      const frostNovaSlow = (m.frostNovaSlowUntil || 0) > ts ? Math.max(0, m.frostNovaSlowAdd || 0) : 0;
+      const interval = randi(m.atkMin||2000, m.atkMax||5000) + (hasMythicMod('pale_furisode') ? 700 : 0) + frostNovaSlow;
       if (ts - m.lastAttack >= interval) {
         m.lastAttack = ts;
         let mdmg = randi(m.dmgMin||0, m.dmgMax||1);
@@ -5054,8 +5086,9 @@ function gameTick(ts) {
             log(`⚡ Thunderlord supercharge adds 25 damage (${m.thunderlordCharges} attacks left)`, 'dmgtaken');
           }
           if (isFortifyActive(ts)) {
-            mdmg = Math.ceil(mdmg * 0.5);
-            log(`Fortify reduces incoming damage to ${fmtNum(mdmg)}`, 'dmgtaken');
+            const fortifyReduction = Math.min(0.75, (G.combat.fortifyPct || 50) / 100);
+            mdmg = Math.ceil(mdmg * (1 - fortifyReduction));
+            log(`Fortify reduces incoming damage by ${Math.round(fortifyReduction*100)}% to ${fmtNum(mdmg)}`, 'dmgtaken');
           }
           mdmg = applyBattleHardenedReduction(mdmg);
           mdmg = applyGeneralIncomingDamageReduction(mdmg);
@@ -6662,12 +6695,16 @@ function renderPotions() {
         const typeCls = ' potion-' + type;
         const selectHint = selected === type ? 'Selected main potion · double-click to use manually' : 'Click to set as main potion';
         const cellStyle = `color:${p.color || '#77dd77'};border-color:${p.color || '#183818'};`;
-        html += `<button type="button" class="potion-cell${typeCls}${selectedCls}${depletedCls}" data-potion-type="${type}" style="${cellStyle}" title="${selectHint}: ${p.name} — ${p.desc} · ${count}/${POTION_MAX}" aria-label="${selectHint}: ${p.name}, ${count} of ${POTION_MAX}"><span class="potion-icon">${p.icon}</span><span class="pot-qty">${count}</span></button>`;
+        html += `<button type="button" class="potion-cell${typeCls}${selectedCls}${depletedCls}" data-potion-type="${type}" style="${cellStyle}" onclick="selectPotion('${type}')" ondblclick="event.preventDefault(); manualUsePotionType('${type}')" title="${selectHint}: ${p.name} — ${p.desc} · ${count}/${POTION_MAX}" aria-label="${selectHint}: ${p.name}, ${count} of ${POTION_MAX}"><span class="potion-icon">${p.icon}</span><span class="pot-qty">${count}</span></button>`;
       }
       grid.innerHTML = html;
       grid.querySelectorAll('[data-potion-type]').forEach(cell => {
-        cell.addEventListener('click', () => selectPotion(cell.dataset.potionType || 'healing'));
-        cell.addEventListener('dblclick', e => { e.preventDefault(); if ((cell.dataset.potionType || 'healing') === G.selectedPotion) manualUseSelectedPotion(); });
+        cell.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectPotion(cell.dataset.potionType || 'healing');
+          }
+        });
       });
     }
   }
@@ -6907,77 +6944,85 @@ function skillDamagePreview(k) {
   const base=calcDamage();
   const sp = G.skills[k]?.skillPts || 0;
   const cond = G.config.skillConditions?.[k];
-  const condStr = cond ? (cond.type==='enemy_hp_lte' ? ` below ${cond.val}% HP` : cond.type==='enemy_hp_gte' ? ` above ${cond.val}% HP` : cond.type==='player_hp_lte' ? ` when player ≤${cond.val}% HP` : cond.type==='enemy_count_gte' ? ` ≥${cond.val} enemy` : '') : '';
+  const condStr = cond ? (cond.type==='enemy_hp_lte' ? ` below ${cond.val}% HP` : cond.type==='enemy_hp_gte' ? ` above ${cond.val}% HP` : cond.type==='player_hp_lte' ? ` when player <=${cond.val}% HP` : cond.type==='player_mp_lte' ? ` when MP <=${cond.val}%` : cond.type==='enemy_count_gte' ? ` with ${cond.val}+ enemy` : '') : '';
 
   if(k==='shieldbash') {
-    const baseDmg=Math.round(base*(1+str/180)+sp);
+    const baseDmg=Math.round(base*(1+str/180)*(1+sp*0.012));
     const wallBonus = hasMythicMod('the_wall') ? Math.round(G.hp * 0.30) : 0;
     const wallText = hasMythicMod('the_wall') ? ` · The Wall: +${fmtNum(wallBonus)} dmg, costs 25% current HP` : '';
-    return `~${fmtNum(baseDmg + wallBonus)} dmg + stun/reset enemy attack timer${condStr} · +1/pt${wallText}`;
+    return `~${fmtNum(baseDmg + wallBonus)} dmg + stun/reset enemy attack timer${condStr} · skill pts: +1.2% dmg each${wallText}`;
   }
   if(k==='whirlwind') {
-    const dmg=Math.round(base*(0.25+str*0.003)*3+sp);
-    return `~${dmg} dmg all targets${condStr} · +1/pt`;
+    const dmg=Math.round(base*(0.25+str*0.003)*3*(1+sp*0.010));
+    return `~${fmtNum(dmg)} dmg all targets${condStr} · skill pts: +1% dmg each`;
   }
   if(k==='warcry') {
-    const pct=Math.min(50,(10+str*0.3+sp*0.5)).toFixed(0);
-    return `+${pct}% dmg 10s${condStr} · +0.5%/pt · max 50%`;
+    const pct=Math.min(80,(10+str*0.3+sp*0.35)).toFixed(0);
+    const dur=(10+sp*0.08).toFixed(1);
+    return `+${pct}% dmg for ${dur}s · can be cast without a target · skill pts improve buff and duration`;
   }
   if(k==='fortify') {
-    const dur=(6+effStat('vit')*0.05+sp*0.2).toFixed(1);
-    return `50% dmg reduction for ${dur}s${condStr} · +0.2s/pt`;
+    const dur=(6+effStat('vit')*0.05+sp*0.10).toFixed(1);
+    const red=Math.min(75,50+sp*0.08).toFixed(0);
+    return `${red}% dmg reduction for ${dur}s · can be cast without a target · skill pts improve reduction and duration`;
   }
   if(k==='execute') {
-    const dmg=Math.round(base*(2+str*0.012)+sp);
+    const dmg=Math.round(base*(2+str*0.012)*(1+sp*0.012));
     const thresh = cond?.type==='enemy_hp_lte' ? cond.val : 30;
-    return `~${dmg} dmg on enemies ≤${thresh}% HP · scales with STR · +1/pt`;
+    return `~${fmtNum(dmg)} dmg on enemies <=${thresh}% HP · scales with STR · skill pts: +1.2% dmg each`;
   }
   if(k==='cheapshot') {
-    const dmg=Math.round(base*(calcCritDamage()/100+agi*0.005)+sp);
-    return `~${dmg} guaranteed crit${condStr} · +1/pt`;
+    const dmg=Math.round(base*(calcCritDamage()/100+agi*0.005)*(1+sp*0.010));
+    return `~${fmtNum(dmg)} guaranteed crit${condStr} · skill pts: +1% dmg each`;
   }
   if(k==='smokebomb') {
-    return `Delays the next 3 enemy attacks${condStr} · does not use a timed duration`;
+    const charges=Math.min(7, 2+Math.floor(sp/19));
+    return `Delays the next ${charges} enemy attacks${condStr} · skill pts increase delayed attacks`;
   }
   if(k==='flurry') {
     const h=hasMythicMod('phantom_wraps')?8:5;
-    const perHit=Math.max(1, Math.round(base*(0.35+agi*0.003)+sp/h));
-    return `~${perHit} dmg × ${h} separate hits${condStr} · each can crit at reduced crit dmg`;
+    const perHit=Math.max(1, Math.round(base*(0.35+agi*0.003)*(1+sp*0.010)));
+    return `~${fmtNum(perHit)} dmg x ${h} separate hits${condStr} · skill pts: +1% hit dmg each · each hit can crit`;
   }
   if(k==='marktarget') {
-    const pct=Math.min(60,(20+agi*0.2+sp*0.5)).toFixed(0);
-    return `+${pct}% dmg taken by target 8s${condStr} · +0.5%/pt · max 60%`;
+    const pct=Math.min(90,(20+agi*0.2+sp*0.35)).toFixed(0);
+    const dur=(8+sp*0.06).toFixed(1);
+    return `+${pct}% dmg taken by target for ${dur}s${condStr} · skill pts improve amp and duration`;
   }
   if(k==='assassinate') {
-    let dmg=Math.round(base*(2+Math.max(0,agi-str)*0.05)+sp);
+    let dmg=Math.round(base*(2+Math.max(0,agi-str)*0.05)*(1+sp*0.012));
     let mythicText='';
     if (hasMythicMod('altairs_shiv')) {
       dmg=Math.round(dmg * ((calcCritDamage()*2)/100));
       mythicText=` · Altair's Shiv: 2x Crit DMG (${calcCritDamage()*2}%)`;
     }
-    return `~${dmg} dmg${condStr} · bonus if AGI > STR · +1/pt${mythicText}`;
+    return `~${fmtNum(dmg)} dmg${condStr} · bonus if AGI > STR · skill pts: +1.2% dmg each${mythicText}`;
   }
   if(k==='fireball') {
-    const dmg=Math.round(int_*4.5+sp);
+    const dmg=Math.round(int_*9*(1+sp*0.010));
     const hellfireText = hasMythicMod('hellfire_torch') ? ' · Hellfire Torch: +15% enemy max HP' : '';
-    return `~${dmg} base dmg all targets · scales with INT · +1/pt${hellfireText}`;
+    return `~${fmtNum(dmg)} base dmg all targets · scales with INT · skill pts: +1% dmg each${hellfireText}`;
   }
   if(k==='chainlightning') {
-    const dmg=Math.round(int_*2+sp);
-    return `~${dmg}/bounce · 7 bounces · scales with INT · +1/pt`;
+    const dmg=Math.round(int_*2*(1+sp*0.008));
+    const bounces=Math.min(12,7+Math.floor(sp/15));
+    return `~${fmtNum(dmg)}/bounce · ${bounces} bounces · skill pts improve damage and bounce count`;
   }
   if(k==='frostnova') {
-    const dmg=Math.round(int_*0.7+sp);
-    const delay=hasMythicMod('frosted_codex') ? (2000+int_*30)*2 : 2000+int_*30;
-    return `~${dmg} dmg + delays all target attack timers ${(delay/1000).toFixed(1)}s`;
+    const frostSp = Math.min(99, Math.max(0, sp || 0));
+    const dmg=Math.round(int_*1.4*(1+sp*0.010));
+    const slow=(2 + frostSp*(8/99));
+    const durBase=(4 + frostSp*(26/99));
+    const dur=hasMythicMod('frosted_codex') ? durBase*2 : durBase;
+    return `~${fmtNum(dmg)} dmg AOE + enemy attack interval +${slow.toFixed(1)}s for ${dur.toFixed(1)}s · skill pts improve damage, slow, and duration`;
   }
   if(k==='manasurge') {
-    const mp=Math.round(G.maxMp*0.15+int_*0.1+sp);
-    return `+${mp} MP restored${condStr} · scales with INT · +1/pt`;
+    const mp=Math.round((G.maxMp*0.15+int_*0.1)*(1+sp*0.010));
+    return `+${fmtNum(mp)} MP restored · can be cast without a target · skill pts improve restore amount`;
   }
   if(k==='chronosphere') {
-    const d=(2+Math.floor(int_/40)+sp*0.2).toFixed(1);
-    return `Delays damage received from each enemy's next attack by ${d}s · enemy attack timers keep running`;
+    const d=Math.min(15, 3+Math.min(99, sp)*(12/99)).toFixed(1);
+    return `Delays damage from each enemy's next attack by ${d}s · skill pts improve delay duration`;
   }
   return '';
 }
@@ -7126,6 +7171,12 @@ function updateSkillsRuntimeUI() {
     if (pts) pts.textContent = `Pts: ${v.skillPts || 0}`;
   }
 }
+function isTargetlessSkill(k) {
+  return ['warcry','fortify','manasurge'].includes(k);
+}
+function skillNeedsTarget(k) {
+  return !isTargetlessSkill(k);
+}
 function currentSkillMpCost(k) {
   const v = G.skills?.[k];
   if (!v) return Infinity;
@@ -7143,7 +7194,7 @@ function requestManualSkillCast(k) {
     return;
   }
   const now = performance.now();
-  if (!G.monsters || G.monsters.length <= 0) { log(`No target for manual ${v.name}.`, 'system'); return; }
+  if (skillNeedsTarget(k) && (!G.monsters || G.monsters.length <= 0)) { log(`No target for manual ${v.name}.`, 'system'); return; }
   if ((G.combat.aislongFrozenUntil || 0) > now || isFlamestealerCasting(now)) { log(`Cannot manually cast ${v.name} right now.`, 'system'); return; }
   if ((G.skillCooldowns[k] || 0) > 0) { log(`${v.name} is on cooldown (${(G.skillCooldowns[k]/1000).toFixed(1)}s).`, 'system'); return; }
   const cost = currentSkillMpCost(k);
@@ -7261,7 +7312,8 @@ function switchTab(tab) {
 
 // ZONE
 function setZoneBase(zone) {
-  // Clicking a zone header: expand sub-zone dropdown and switch to base
+  // Clicking a zone header: expand sub-zone dropdown and switch to base.
+  G.uiTownCollapsed = false;
   ['fields','caves','swamp','hoarspire'].forEach(z => {
     const row = document.getElementById(`subzone-${z}`);
     if (row) row.style.display = z===zone ? 'block' : 'none';
@@ -7297,6 +7349,12 @@ function getZoneBossFlavor(zone, subZone) {
   return flavors[key] || '';
 }
 function setZone(zone, silent=false, subZone=undefined) {
+  if (zone === 'town' && G.zone === 'town' && subZone === undefined && !silent) {
+    G.uiTownCollapsed = !G.uiTownCollapsed;
+    updateZoneUI();
+    return;
+  }
+  if (zone !== 'town') G.uiTownCollapsed = false;
   if (zone !== 'town' && G.townRunReturnTimer && !G.townRunReturning) {
     clearTimeout(G.townRunReturnTimer);
     G.townRunReturnTimer = null;
@@ -7367,7 +7425,7 @@ function updateZoneUI() {
     b.classList.toggle('active', isActive);
   });
   const tc=document.getElementById('town-content');
-  tc.classList.toggle('visible',G.zone==='town');
+  tc.classList.toggle('visible', G.zone==='town' && !G.uiTownCollapsed);
   updateAbyssFloor();
 }
 
@@ -7510,7 +7568,7 @@ function selectClass(cls) {
     };
     G.skills = {
       cheapshot: {name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0},
-      smokebomb: {name:'Smoke Bomb',desc:'Delay next 3 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0},
+      smokebomb: {name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0},
       flurry: {name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0},
       marktarget: {name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0},
       assassinate: {name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0}
@@ -7523,7 +7581,7 @@ function selectClass(cls) {
     G.skills = {
       fireball: {name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0},
       chainlightning: {name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0},
-      frostnova: {name:'Frost Nova',desc:'Delay all monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0},
+      frostnova: {name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0},
       manasurge: {name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
       chronosphere: {name:'Chronosphere',desc:'Distort time — delay all enemies\' next attack',mpCost:60,cooldown:30000,enabled:false,skillPts:0}
     };
@@ -7548,10 +7606,10 @@ function initClassSetup(cls) {
     G.skills = { shieldbash:{name:'Shield Bash',desc:'Hit + stun',mpCost:8,cooldown:10000,enabled:false,skillPts:0}, whirlwind:{name:'Whirlwind',desc:'AOE — 40% falloff per extra target',mpCost:14,cooldown:18000,enabled:false,skillPts:0}, warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0}, fortify:{name:'Fortify',desc:'Reduce dmg 50%',mpCost:24,cooldown:35000,enabled:false,skillPts:0}, execute:{name:'Execute',desc:'Massive hit below threshold',mpCost:30,cooldown:40000,enabled:false,skillPts:0} };
   } else if (cls==='rogue') {
     G.passives = { shadowstep:{name:'Shadowstep',desc:'Chance to strike twice on basic attacks. Scales with level.',enabled:true}, evasion:{name:'Evasion',desc:'Chance to dodge incoming attacks. Scales with level.',enabled:true} };
-    G.skills = { cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 3 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} };
+    G.skills = { cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} };
   } else {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 3rd skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
-    G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Delay all monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
+    G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
   const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
@@ -8209,15 +8267,14 @@ const TUTORIAL_STEPS = [
   { tab:null, selector:'#header', title:'Top Bar', body:'This shows HP, MP, EXP, level or overlevel, class, gold, and save status.' },
   { tab:null, selector:'#combat-status', title:'Status Bar', body:'This line shows what the bot is doing. EXP/min and Gold/min appear after actual kills.' },
   { tab:'stats', selector:'#stats-panel', title:'Stats Tab', body:'Review equipment, character stats, achievements, stat allocation, and potions here.' },
-  { tab:'stats', selector:'.stat-allocation-card', title:'Stat Allocation', body:'Spend stat points here. Hover or tap stat names to see class-specific scaling. QoL: hold the + button to rapidly spend multiple stat points.' },
+  { tab:'stats', selector:'.stat-allocation-card', title:'Stat Allocation', body:'Spend stat points here. Hover or tap stat names to see class-specific scaling. Hold the + button to rapidly spend multiple stat points.' },
   { tab:'stats', selector:'#potion-grid', title:'Potions', body:'Click a potion to set it as your main auto-heal potion. Double-click the selected potion to use it manually.' },
   { tab:'inv', selector:'#inv-panel', title:'Inventory', body:'Gear drops appear here. Equipped items stay pinned at the top, and sorting/filtering helps compare upgrades.' },
   { tab:'inv', selector:'#inv-sub-stash', title:'Stash & Key Items', body:'Inventory includes shared stash and key items. Key items only appear after discovery.' },
-  { tab:'skills', selector:'#skills-panel', title:'Skills', body:'Toggle passives and active skills here. Enabled active skills can auto-cast; CAST buttons allow manual use. QoL: hold a +1 pt button to rapidly invest skill points.' },
+  { tab:'skills', selector:'#skills-panel', title:'Skills', body:'Toggle passives and active skills here. Enabled active skills can auto-cast; CAST buttons allow manual use. Hold a +1 pt button to rapidly invest skill points.' },
   { tab:'map', selector:'#map-panel', title:'Map', body:'Choose farming zones and subzones here. Some zones have hidden boss flavour text or key-item conditions.' },
-  { tab:'config', selector:'#config-panel', title:'Config', body:'Adjust bot behavior, auto-equip rules, log filters, display options, and save/import/export tools here.' },
-  { tab:null, selector:'#nav', title:'QoL Controls', body:'Hold-click stat + buttons or skill +1 pt buttons to spend points quickly. Double-click the selected potion to use it manually. Use CAST on enabled skills for manual casts.' },
-  { tab:null, selector:'#nav', title:'Ready', body:'Pick a zone, let the bot farm, allocate stats, equip gear, and push deeper when ready.' }
+  { tab:null, selector:'#log-container', title:'Event Log', body:'Combat messages, drops, deaths, boss warnings, and system notes appear here. Drag the EVENT LOG bar to resize it; on mobile you can pull it much higher when you want to read more.' },
+  { tab:'config', selector:'#config-panel', title:'Config', body:'Adjust bot behavior, auto-equip rules, log filters, display options, and save/import/export tools here.' }
 ];
 let tutorialStepIndex = 0;
 function clearTutorialHighlights() { document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight')); }
@@ -9056,17 +9113,35 @@ window.addEventListener('beforeunload', () => { if (G.started) saveGame(false); 
   const container = document.getElementById('log-container');
   let dragging = false, startY = 0, startH = 0;
 
+  function getLogResizeBounds() {
+    const viewportH = window.visualViewport?.height || window.innerHeight;
+    const mainRect = document.getElementById('main')?.getBoundingClientRect();
+    const navRect = document.getElementById('nav')?.getBoundingClientRect();
+    // The log lives inside #main, so the true maximum visible height is from the top
+    // of #main to the bottom of the visual viewport. This lets mobile drag reach
+    // the same top boundary as desktop instead of using a hard-coded portrait cap.
+    const topBoundary = mainRect?.top ?? navRect?.bottom ?? 0;
+    const maxH = Math.max(140, Math.floor(viewportH - topBoundary));
+    const minH = Math.min(90, Math.max(44, Math.floor(viewportH * 0.10)));
+    document.documentElement.style.setProperty('--log-max-height', maxH + 'px');
+    return { minH, maxH };
+  }
+  function syncLogMaxHeight() {
+    const { maxH } = getLogResizeBounds();
+    if (container.offsetHeight > maxH) container.style.height = maxH + 'px';
+  }
   function startDrag(y) {
     dragging = true;
     startY = y;
     startH = container.offsetHeight;
+    syncLogMaxHeight();
     document.body.style.userSelect = 'none';
   }
   function moveDrag(y) {
     if (!dragging) return;
     const diff = startY - y;
-    const maxH = window.innerHeight - 90;
-    const newH = Math.max(40, Math.min(maxH, startH + diff));
+    const { minH, maxH } = getLogResizeBounds();
+    const newH = Math.max(minH, Math.min(maxH, startH + diff));
     container.style.height = newH + 'px';
   }
   function endDrag() {
@@ -9087,6 +9162,10 @@ window.addEventListener('beforeunload', () => { if (G.started) saveGame(false); 
     e.preventDefault();
   }, { passive:false });
   document.addEventListener('touchend', endDrag);
+  window.addEventListener('resize', syncLogMaxHeight);
+  window.visualViewport?.addEventListener('resize', syncLogMaxHeight);
+  window.visualViewport?.addEventListener('scroll', syncLogMaxHeight);
+  syncLogMaxHeight();
 })();
 
 // Initialize class selection listeners
