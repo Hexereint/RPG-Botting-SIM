@@ -278,6 +278,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .reroll-new-line { display:block; color:#ffffff; font-size:10px; font-weight:bold; margin-top:2px; }
 .reroll-arrow { color:var(--yellow); opacity:.9; padding-right:3px; }
 .reroll-tag { color:var(--yellow); font-size:8px; margin-left:3px; }
+.rerolled-stat-icon { color:var(--yellow); font-size:0.82em; margin-left:4px; opacity:0.9; vertical-align:baseline; }
 
 .bs-reroll-btn { width:100%; background:#000; border:1px solid var(--border2); color:var(--white); font-family:inherit; font-size:9px; padding:6px; cursor:pointer; letter-spacing:1px; transition:all 0.1s; margin-top:4px; text-transform:uppercase; }
 .bs-reroll-btn:hover { background:var(--bg3); }
@@ -431,6 +432,13 @@ select.config-input { width:auto; cursor:pointer; }
 .combat-mini-bars { margin-top:5px; display:flex; flex-direction:column; gap:3px; }
 .combat-mini-bar { height:4px; background:rgba(0,0,0,0.58); border:1px solid rgba(255,255,255,0.08); }
 .combat-mini-bar div { height:100%; transition:width 0.18s linear; }
+.flamestealer-channel { display:none; margin-top:6px; border:1px solid rgba(255,136,68,0.42); background:rgba(25,8,0,0.72); padding:4px 5px; box-shadow:0 0 12px rgba(255,90,30,0.14), inset 0 0 12px rgba(255,136,68,0.08); }
+.flamestealer-channel.visible { display:block; }
+.flamestealer-channel-label { display:flex; justify-content:space-between; gap:8px; font-size:8px; color:#ffb07a; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; white-space:nowrap; }
+.flamestealer-channel-bar { height:5px; background:rgba(0,0,0,0.72); border:1px solid rgba(255,136,68,0.22); overflow:hidden; }
+.flamestealer-channel-fill { height:100%; width:0%; background:linear-gradient(90deg, #773111, #ff8844, #ffd0a0); box-shadow:0 0 10px rgba(255,136,68,0.75); transition:width 0.12s linear; }
+.sprite-plinth.channeling { border-color:rgba(255,136,68,0.72); box-shadow:0 0 16px rgba(255,112,45,0.38), inset 0 0 24px rgba(255,136,68,0.09); animation:channelPulse 0.72s ease-in-out infinite alternate; }
+@keyframes channelPulse { from { filter:brightness(1); } to { filter:brightness(1.38); } }
 #player-hp-fill { background:#cc4444; }
 #player-mp-fill { background:#445588; }
 .combat-versus {
@@ -927,19 +935,19 @@ canvas {
           <div id="salvage-empty" style="font-size:9px;color:#444;display:none;">No items available to salvage</div>
 
           <div style="font-size:9px;color:#888;margin:10px 0 4px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border);padding-top:8px;">— Mythic Essence Reroll —</div>
-          <div style="color:#aaaaaa;font-size:10px;margin-bottom:3px;">Select Mythic item (1 Essence per reroll):</div>
+          <div style="color:#aaaaaa;font-size:10px;margin-bottom:3px;">Select Mythic item (Legendary Essence + gold per reroll):</div>
           <select class="bs-select" id="essence-item-select" onchange="essenceSelectItem()"><option value="">— choose —</option></select>
           <div style="color:#aaaaaa;font-size:10px;margin:4px 0 2px;" id="essence-stat-label" style="display:none;">Select stat line:</div>
           <div class="bs-stat-select" id="essence-stat-select"></div>
           <div style="display:flex;gap:6px;margin-top:6px;">
             <div style="flex:1;">
               <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Value</div>
-              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="essence-val-cost-display">Cost: 1 Essence</div>
+              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="essence-val-cost-display">Cost: —</div>
               <button class="bs-reroll-btn" id="essence-reroll-val-btn" onclick="doEssenceReroll('value')" disabled style="border-color:var(--unique);color:var(--unique);">REROLL VALUE</button>
             </div>
             <div style="flex:1;">
               <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Type</div>
-              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="essence-type-cost-display">Cost: 1 Essence</div>
+              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="essence-type-cost-display">Cost: —</div>
               <button class="bs-reroll-btn" id="essence-reroll-type-btn" onclick="doEssenceReroll('type')" disabled style="border-color:var(--unique);color:var(--unique);">REROLL TYPE</button>
             </div>
           </div>
@@ -1255,6 +1263,10 @@ canvas {
             <div class="combat-mini-bars">
               <div class="combat-mini-bar"><div id="player-hp-fill" style="width:100%"></div></div>
               <div class="combat-mini-bar"><div id="player-mp-fill" style="width:100%"></div></div>
+            </div>
+            <div id="flamestealer-channel" class="flamestealer-channel">
+              <div class="flamestealer-channel-label"><span>Flamestealer Channel</span><span id="flamestealer-channel-time">4.0s</span></div>
+              <div class="flamestealer-channel-bar"><div id="flamestealer-channel-fill" class="flamestealer-channel-fill"></div></div>
             </div>
           </div>
         </div>
@@ -2544,6 +2556,27 @@ function updateCombatViewport() {
   const pmpf = document.getElementById('player-mp-fill');
   if (pmpf) pmpf.style.width = `${Math.max(0, Math.min(100, G.mp/G.maxMp*100))}%`;
 
+  const channel = G.combat?.flamestealerFireball;
+  const channelEl = document.getElementById('flamestealer-channel');
+  const channelFill = document.getElementById('flamestealer-channel-fill');
+  const channelTime = document.getElementById('flamestealer-channel-time');
+  const heroPlinth = document.querySelector('.hero-plinth');
+  if (channelEl && channel && (channel.finishAt || 0) > now) {
+    const total = Math.max(1, (channel.finishAt || now) - (channel.startedAt || ((channel.finishAt || now) - 4000)));
+    const remaining = Math.max(0, (channel.finishAt || now) - now);
+    const pct = Math.max(0, Math.min(100, 100 - (remaining / total * 100)));
+    channelEl.classList.add('visible');
+    if (channelFill) channelFill.style.width = `${pct}%`;
+    if (channelTime) channelTime.textContent = `${(remaining / 1000).toFixed(1)}s`;
+    if (heroPlinth) heroPlinth.classList.add('channeling');
+    if (Math.random() < 0.35) spawnParticleCluster(0.22 + randf(-0.018, 0.018), 0.52 + randf(-0.025, 0.025), '#ff8844', 2, 0.012);
+  } else {
+    if (channelEl) channelEl.classList.remove('visible');
+    if (channelFill) channelFill.style.width = '0%';
+    if (channelTime) channelTime.textContent = '0.0s';
+    if (heroPlinth) heroPlinth.classList.remove('channeling');
+  }
+
   const m = G.monsters[0];
   drawMonsterSprite(document.getElementById('monster-canvas'), m, m.isElite, m.isBoss);
 
@@ -3660,16 +3693,16 @@ const MYTHIC_ITEMS = {
     ],
   },
   wizard: {
-    helmet: { name:"Arcanist's Crown",     mod:'arcanist_crown',desc:'Overload triggers after %val% casts',                       val:2    },
+    helmet: { name:"Arcanist's Crown",     mod:'arcanist_crown',desc:'Overload triggers after %val% skill casts',                 val:3    },
     armor:  { name:'Void Mantle',          mod:'void_mantle',   desc:'Mana Shield absorbs all damage, MP drain x%val%',           val:3    },
     weapon: [
       { name:'Lightning Staff',      mod:'lightning_staff',desc:'Chain Lightning has no cooldown, costs 20%% max MP per cast', val:20   },
-      { name:'Hellfire Torch',       mod:'hellfire_torch', desc:'Fireball also deals 15%% of each enemy max HP',              val:15   },
+      { name:'Hellfire Torch',       mod:'hellfire_torch', desc:'Fireball also deals 15% of each enemy max HP',               val:15   },
       { name:'Freezing Orb',         mod:'ethereal',       desc:'Frost Nova cooldown reduced by %val%%',                      val:40   },
     ],
     offhand:[
       { name:'Frosted Codex',        mod:'frosted_codex', desc:'Frost Nova delay duration x%val%',                          val:2    },
-      { name:'Flamestealer',         mod:'flamestealer',  desc:'Fireball takes 4s to cast, blocks your other actions while casting, and deals 2x damage', val:2 },
+      { name:'Flamestealer',         mod:'flamestealer',  desc:'Channels Fireball for 4s, then unleashes it at 2x damage', val:2 },
     ],
   }
 };
@@ -4671,10 +4704,10 @@ function gameTick(ts) {
         // Check skill condition; manual casts bypass configured auto-cast condition.
         if(!isManualCast && !checkSkillCondition(k)) continue;
 
-        // Overload (Wizard) — every 3rd cast (2nd with Arcanist's Crown) costs 0 MP and deals bonus damage
+        // Overload (Wizard) — every 5th cast (3rd with Arcanist's Crown) costs 0 MP and deals bonus damage
         let overloadActive = false;
         if (G.playerClass==='wizard' && G.passives?.overload?.enabled) {
-          const overloadThreshold = hasMythicMod('arcanist_crown') ? 2 : 3;
+          const overloadThreshold = hasMythicMod('arcanist_crown') ? 3 : 5;
           G.combat.overloadCasts = (G.combat.overloadCasts||0) + 1;
           if (G.combat.overloadCasts >= overloadThreshold) {
             overloadActive = true;
@@ -4838,12 +4871,13 @@ function gameTick(ts) {
           skillDmg = 0;
           if (hasMythicMod('flamestealer')) {
             G.combat.flamestealerFireball = {
+              startedAt: ts,
               finishAt: ts + 4000,
               fbDmg: Math.round(fbDmg * 2),
               overloadText: `${overloadText} <span style="color:#ff8844">[Flamestealer x2 after 4s cast]</span>`
             };
             G.lastAttack = ts;
-            log('<span style="color:#ff8844">[Flamestealer] Fireball cast begins — you cannot attack or cast skills for 4s.</span>', 'spellcast');
+            log('<span style="color:#ff8844">[Flamestealer] Fireball channel begins — releasing in 4s.</span>', 'spellcast');
           } else {
             dealFireballDamage(fbDmg, ts, 'Fireball', overloadText);
           }
@@ -6191,14 +6225,87 @@ function bsSelectItem() {
   updateBsCost();
 }
 
-function bsRerollCostFor(item, mode) {
-  const key = item.id+'_'+mode;
-  const count = G.bsRerollCounts[key]||0;
-  let base;
-  if (item.rarity==='legendary') base = 500;
-  else base = 200;
-  if (mode==='type') base = Math.round(base * 1.5);
-  return Math.min(1000000, Math.round(base * Math.pow(2.0, count)));
+function rerollCostKey(item, stat, type) {
+  return item && stat && type ? `${item.id}_${type}_${stat}` : '';
+}
+function getRerollCostCount(item, stat, type) {
+  const key = rerollCostKey(item, stat, type);
+  if (!key) return 0;
+  return Math.max(0, G.bsRerollCounts?.[key] || 0);
+}
+function incrementRerollCostCount(item, stat, type) {
+  if (!G.bsRerollCounts || typeof G.bsRerollCounts !== 'object') G.bsRerollCounts = {};
+  const key = rerollCostKey(item, stat, type);
+  if (!key) return 0;
+  G.bsRerollCounts[key] = getRerollCostCount(item, stat, type) + 1;
+  return G.bsRerollCounts[key];
+}
+function moveRerollCostCount(item, oldStat, newStat, type) {
+  if (!G.bsRerollCounts || typeof G.bsRerollCounts !== 'object' || !item || !oldStat || !newStat || oldStat === newStat) return;
+  const oldKey = rerollCostKey(item, oldStat, type);
+  const newKey = rerollCostKey(item, newStat, type);
+  const oldCount = G.bsRerollCounts[oldKey] || 0;
+  const newCount = G.bsRerollCounts[newKey] || 0;
+  if (oldCount > 0) {
+    G.bsRerollCounts[newKey] = Math.max(oldCount, newCount);
+    delete G.bsRerollCounts[oldKey];
+  }
+}
+function markItemStatRerolled(item, stat, type) {
+  if (!item || !stat || !type) return;
+  if (!item.rerolledStats || typeof item.rerolledStats !== 'object') item.rerolledStats = { main:{}, sub:{} };
+  if (!item.rerolledStats.main || typeof item.rerolledStats.main !== 'object') item.rerolledStats.main = {};
+  if (!item.rerolledStats.sub || typeof item.rerolledStats.sub !== 'object') item.rerolledStats.sub = {};
+  item.rerolledStats[type][stat] = true;
+}
+function moveRerolledStatMarker(item, oldStat, newStat, type) {
+  if (!item || !oldStat || !newStat || oldStat === newStat) return;
+  if (!item.rerolledStats || !item.rerolledStats[type]) return;
+  if (item.rerolledStats[type][oldStat]) {
+    item.rerolledStats[type][newStat] = true;
+    delete item.rerolledStats[type][oldStat];
+  }
+}
+function rerollIconFor(item, stat, type) {
+  const has = !!(item?.rerolledStats?.[type]?.[stat]);
+  return has ? '<span class="rerolled-stat-icon" title="This stat was rerolled">↻</span>' : '';
+}
+function bsRerollCostFor(item, mode, stat=G.bsSelectedStat, type=G.bsSelectedStatType) {
+  if (!item) return 0;
+  const count = getRerollCostCount(item, stat, type);
+  // Reroll pricing uses the item's current sell value as the base.
+  // 1st reroll: 120% of current sell value.
+  // 2nd reroll: 202% of current sell value.
+  // 3rd reroll: 304% of current sell value.
+  // After that, the surcharge keeps climbing by +102 percentage points per reroll.
+  const base = Math.max(1, Math.round(calcItemGold(item) || item.goldVal || 1));
+  const pct = count === 0 ? 1.20 : 2.02 + Math.max(0, count - 1) * 1.02;
+  return Math.min(1000000, Math.round(base * pct));
+}
+function rerollCostPctFor(item, stat, type) {
+  const count = getRerollCostCount(item, stat, type);
+  const pct = count === 0 ? 1.20 : 2.02 + Math.max(0, count - 1) * 1.02;
+  return Math.round(pct * 100);
+}
+function rerollRequiresLegendaryEssence(item) {
+  return !!item && (item.rarity === 'legendary' || item.rarity === 'mythic');
+}
+function formatRerollCostText(item, goldCost, stat, type) {
+  const pct = rerollCostPctFor(item, stat, type);
+  const essenceText = rerollRequiresLegendaryEssence(item) ? '1 Legendary Essence + ' : '';
+  return `Cost: ${essenceText}${goldCost}g · ${pct}% sell value`;
+}
+function canPayRerollCost(item, goldCost) {
+  return G.gold >= goldCost && (!rerollRequiresLegendaryEssence(item) || G.legendaryEssence >= 1);
+}
+function payRerollCost(item, goldCost) {
+  if (!canPayRerollCost(item, goldCost)) return false;
+  G.gold -= goldCost;
+  if (rerollRequiresLegendaryEssence(item)) G.legendaryEssence--;
+  return true;
+}
+function rerollCostPaidText(item, goldCost) {
+  return rerollRequiresLegendaryEssence(item) ? `1 Legendary Essence + ${goldCost}g` : `${goldCost}g`;
 }
 
 function getStatRange(stat, rarity, slot) {
@@ -6257,15 +6364,15 @@ function updateBsCost() {
     valCost.textContent='Locked to another stat line'; typeCost.textContent='Locked to another stat line';
     valBtn.disabled=true; typeBtn.disabled=true; return;
   }
-  const vc=bsRerollCostFor(G.bsSelectedItem,'value');
-  const tc=bsRerollCostFor(G.bsSelectedItem,'type');
-  valCost.textContent=`Cost: ${vc}g`;
-  typeCost.textContent=`Cost: ${tc}g`;
-  valBtn.disabled=G.gold<vc;
+  const vc=bsRerollCostFor(G.bsSelectedItem,'value',G.bsSelectedStat,G.bsSelectedStatType);
+  const tc=bsRerollCostFor(G.bsSelectedItem,'type',G.bsSelectedStat,G.bsSelectedStatType);
+  valCost.textContent=formatRerollCostText(G.bsSelectedItem,vc,G.bsSelectedStat,G.bsSelectedStatType);
+  typeCost.textContent=formatRerollCostText(G.bsSelectedItem,tc,G.bsSelectedStat,G.bsSelectedStatType);
+  valBtn.disabled=!canPayRerollCost(G.bsSelectedItem, vc);
   // Can't reroll type if only one option available
   const isMain = G.bsSelectedStatType==='main';
   const canType = isMain?MAIN_STATS.length>1:SUB_STATS.filter(s=>!Object.keys(G.bsSelectedItem.subStats||{}).includes(s)||s===G.bsSelectedStat).length>1;
-  typeBtn.disabled=G.gold<tc||!canType;
+  typeBtn.disabled=!canPayRerollCost(G.bsSelectedItem, tc)||!canType;
 }
 
 function doReroll(mode) {
@@ -6274,12 +6381,12 @@ function doReroll(mode) {
   const stat=G.bsSelectedStat;
   const statType=G.bsSelectedStatType;
   if(!isRerollLineAllowed(item, stat, statType)){ log('This item has already locked a different '+statType+' stat line for rerolling.'); return; }
-  const cost=bsRerollCostFor(item,mode);
-  if(G.gold<cost){log('Not enough gold!');return;}
+  const cost=bsRerollCostFor(item,mode,stat,statType);
+  if(!canPayRerollCost(item,cost)){log(rerollRequiresLegendaryEssence(item) ? 'Need 1 Legendary Essence and enough gold!' : 'Not enough gold!');return;}
   lockRerollLine(item, stat, statType);
-  G.gold-=cost;
-  const key=item.id+'_'+mode;
-  G.bsRerollCounts[key]=(G.bsRerollCounts[key]||0)+1;
+  payRerollCost(item,cost);
+  incrementRerollCostCount(item, stat, statType);
+  markItemStatRerolled(item, stat, statType);
 
   if(mode==='value'){
     let newVal;
@@ -6293,7 +6400,7 @@ function doReroll(mode) {
       const range=getStatRange(stat,item.rarity,item.slot);
       const tagText = minMaxTag(newVal,range).replace(/<[^>]+>/g,'').trim();
       G.lastBsRerollResult = { itemId:item.id, targetStat:stat, targetType:statType, oldLine:formatStatLineForReroll(stat, old), newLine:formatStatLineForReroll(stat, newVal), tag:tagText };
-      log(`Blacksmith: [${stat.toUpperCase()}] ${fmt1(old)} → ${fmt1(newVal)}${minMaxTag(newVal,range)} (${cost}g)`);
+      log(`Blacksmith: [${stat.toUpperCase()}] ${fmt1(old)} → ${fmt1(newVal)}${minMaxTag(newVal,range)} (${rerollCostPaidText(item,cost)})`);
     } else {
       const old=item.subStats[stat];
             item.subStats[stat] = rollSubStatValue(stat, item.rarity, item.slot);
@@ -6301,7 +6408,7 @@ function doReroll(mode) {
       const range=getStatRange(stat,item.rarity,item.slot);
       const tagText = minMaxTag(typeof nv==='number'?nv:0,range).replace(/<[^>]+>/g,'').trim();
       G.lastBsRerollResult = { itemId:item.id, targetStat:stat, targetType:statType, oldLine:formatStatLineForReroll(stat, typeof old==='number'?old:0), newLine:formatStatLineForReroll(stat, typeof nv==='number'?nv:0), tag:tagText };
-      log(`Blacksmith: [${stat.toUpperCase()}] ${fmt1(typeof old==='number'?old:0)} → ${fmt1(typeof nv==='number'?nv:0)}${minMaxTag(typeof nv==='number'?nv:0,range)} (${cost}g)`);
+      log(`Blacksmith: [${stat.toUpperCase()}] ${fmt1(typeof old==='number'?old:0)} → ${fmt1(typeof nv==='number'?nv:0)}${minMaxTag(typeof nv==='number'?nv:0,range)} (${rerollCostPaidText(item,cost)})`);
     }
   } else {
     // Reroll type — swap to a different stat in same pool
@@ -6313,8 +6420,11 @@ function doReroll(mode) {
       delete item.mainStats[stat];
       item.mainStats[newStat]=val;
       moveRerollLock(item, stat, newStat, 'main');
+      moveRerollCostCount(item, stat, newStat, 'main');
+      moveRerolledStatMarker(item, stat, newStat, 'main');
+      markItemStatRerolled(item, newStat, 'main');
       G.lastBsRerollResult = { itemId:item.id, targetStat:newStat, targetType:'main', oldLine:formatStatLineForReroll(stat, val), newLine:formatStatLineForReroll(newStat, val), tag:'TYPE' };
-      log(`Blacksmith: Main [${stat.toUpperCase()}] → [${newStat.toUpperCase()}] (${cost}g)`);
+      log(`Blacksmith: Main [${stat.toUpperCase()}] → [${newStat.toUpperCase()}] (${rerollCostPaidText(item,cost)})`);
       G.bsSelectedStat=newStat;
     } else {
       const existing=Object.keys(item.subStats).filter(s=>s!==stat);
@@ -6326,9 +6436,12 @@ function doReroll(mode) {
       // Roll new value
             item.subStats[newStat] = rollSubStatValue(newStat, item.rarity, item.slot);
       moveRerollLock(item, stat, newStat, 'sub');
+      moveRerollCostCount(item, stat, newStat, 'sub');
+      moveRerolledStatMarker(item, stat, newStat, 'sub');
+      markItemStatRerolled(item, newStat, 'sub');
       const newVal = item.subStats[newStat];
       G.lastBsRerollResult = { itemId:item.id, targetStat:newStat, targetType:'sub', oldLine:formatStatLineForReroll(stat, oldVal), newLine:formatStatLineForReroll(newStat, newVal), tag:'TYPE' };
-      log(`Blacksmith: Sub [${stat.toUpperCase()}] → [${newStat.toUpperCase()}] (${cost}g)`);
+      log(`Blacksmith: Sub [${stat.toUpperCase()}] → [${newStat.toUpperCase()}] (${rerollCostPaidText(item,cost)})`);
       G.bsSelectedStat=newStat;
       G.bsSelectedStatType='sub';
     }
@@ -6390,7 +6503,7 @@ function upgradeInventory() {
   G.gold-=cost;
   G.invMax=Math.min(1000,G.invMax+10);
   G.invUpgradeCount++;
-  log(`📦 Inventory expanded to ${G.invMax} slots (${cost}g)`);
+  log(`📦 Inventory expanded to ${G.invMax} slots (${rerollCostPaidText(item,cost)})`);
   renderInventory();renderStats();
   updateInventoryUpgradeDisplay();
 }
@@ -6727,19 +6840,21 @@ function formatItemStats(item) {
     if (v == null) continue;
     const range=getStatRange(k,item.rarity,item.slot);
     const tag=minMaxTag(v,range);
-    parts.push(`<span style="color:#ccaa44">+${fmt1(v)} ${k.toUpperCase()}${tag}</span>`);
+    const rerollIcon = rerollIconFor(item, k, 'main');
+    parts.push(`<span style="color:#ccaa44">+${fmt1(v)} ${k.toUpperCase()}${rerollIcon}${tag}</span>`);
   }
   for(const [k,v] of Object.entries(item.subStats||{})){
     if (v == null) continue;
     const range=getStatRange(k,item.rarity,item.slot);
     const tag=minMaxTag(v,range);
-    if(k==='critchance') parts.push(`<span style="color:#cc7744">+${fmt1(v)}% Crit${tag}</span>`);
-    else if(k==='critdamage') parts.push(`<span style="color:#cc5544">+${fmt1(v)}% CritDmg${tag}</span>`);
-    else if(k==='maxhp') parts.push(`<span style="color:#886644">+${fmt1(v)} HP${tag}</span>`);
-    else if(k==='maxmp') parts.push(`<span style="color:#446688">+${fmt1(v)} MP${tag}</span>`);
-    else if(k==='hpregen') parts.push(`<span style="color:#668844">+${fmt1(v)} HP/s${tag}</span>`);
-    else if(k==='mpregen') parts.push(`<span style="color:#4466aa">+${fmt1(v)} MP/s${tag}</span>`);
-    else if(k==='cdr') parts.push(`<span style="color:#888844">-${fmt1(v)}s CDR${tag}</span>`);
+    const rerollIcon = rerollIconFor(item, k, 'sub');
+    if(k==='critchance') parts.push(`<span style="color:#cc7744">+${fmt1(v)}% Crit${rerollIcon}${tag}</span>`);
+    else if(k==='critdamage') parts.push(`<span style="color:#cc5544">+${fmt1(v)}% CritDmg${rerollIcon}${tag}</span>`);
+    else if(k==='maxhp') parts.push(`<span style="color:#886644">+${fmt1(v)} HP${rerollIcon}${tag}</span>`);
+    else if(k==='maxmp') parts.push(`<span style="color:#446688">+${fmt1(v)} MP${rerollIcon}${tag}</span>`);
+    else if(k==='hpregen') parts.push(`<span style="color:#668844">+${fmt1(v)} HP/s${rerollIcon}${tag}</span>`);
+    else if(k==='mpregen') parts.push(`<span style="color:#4466aa">+${fmt1(v)} MP/s${rerollIcon}${tag}</span>`);
+    else if(k==='cdr') parts.push(`<span style="color:#888844">-${fmt1(v)}s CDR${rerollIcon}${tag}</span>`);
   }
   if (item.rarity === 'mythic' && item.mythicMod) {
     const liveDef = item.mythicMod ? getMythicDefByMod(item.mythicMod, item.mythicClass || G.playerClass, item.slot) : null;
@@ -7038,7 +7153,7 @@ function getLivePassiveDesc(k, v) {
     d = `${base + bonus}% chance to dodge incoming attacks${bonus ? ` (${base}% base + ${bonus}% Hood of Shadows)` : ''}.`;
   }
   if (k==='manashield') d = `Absorbs ${10+Math.floor(G.level/4)}% of incoming damage as MP drain instead of HP loss.`;
-  if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=hasMythicMod('arcanist_crown')?2:3; d = `Every ${threshold}${threshold===2?'nd':'rd'} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
+  if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=hasMythicMod('arcanist_crown')?3:5; const suffix=(threshold===1?'st':threshold===2?'nd':threshold===3?'rd':'th'); d = `Every ${threshold}${suffix} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
   return d;
 }
 
@@ -7576,7 +7691,7 @@ function selectClass(cls) {
   } else {
     G.passives = {
       manashield: {name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true},
-      overload: {name:'Overload',desc:'Every 3rd skill cast is free and deals bonus damage. Scales with level.',enabled:true}
+      overload: {name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true}
     };
     G.skills = {
       fireball: {name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0},
@@ -7608,7 +7723,7 @@ function initClassSetup(cls) {
     G.passives = { shadowstep:{name:'Shadowstep',desc:'Chance to strike twice on basic attacks. Scales with level.',enabled:true}, evasion:{name:'Evasion',desc:'Chance to dodge incoming attacks. Scales with level.',enabled:true} };
     G.skills = { cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} };
   } else {
-    G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 3rd skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
+    G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
     G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
   const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
@@ -7643,14 +7758,17 @@ function renderPriorityQueue() {
     {val:'fields:dusty_outskirts', label:'Fields — Dusty Outskirts'},
     {val:'fields:goblin_camp', label:'Fields — Goblin Camp'},
     {val:'fields:golem_temple', label:'Fields — Golem Temple'},
+    {val:'fields:stormwind_fields', label:'Fields — Stormwind Fields'},
     {val:'caves', label:'Dark Cave'},
     {val:'caves:deep_tunnels', label:'Dark Cave — Deep Tunnels'},
     {val:'caves:bat_cave', label:'Dark Cave — Bat Cave'},
     {val:'caves:forbidden_library', label:'Dark Cave — Forbidden Library'},
+    {val:'caves:echoing_chasm', label:'Dark Cave — Echoing Chasm'},
     {val:'swamp', label:'Swamp'},
     {val:'swamp:murk_depths', label:'Swamp — Murk Depths'},
     {val:'swamp:crimson_rot', label:'Swamp — Crimson Rot'},
     {val:'swamp:witch_coven', label:'Swamp — Witch Coven'},
+    {val:'swamp:cursed_hollow', label:'Swamp — Cursed Hollow'},
     {val:'hoarspire', label:'Hoarspire — Snowwind Plains'},
     {val:'hoarspire:sheercold_terrace', label:'Hoarspire — Sheercold Terrace'},
     {val:'hoarspire:pale_hollow', label:'Hoarspire — Pale Hollow'},
@@ -7823,15 +7941,17 @@ function updateEssenceButtons() {
   const valCost = document.getElementById('essence-val-cost-display');
   const typeCost = document.getElementById('essence-type-cost-display');
   const hasSelection = !!(essenceSelectedItem && essenceSelectedStat);
-  if (valCost) valCost.textContent = 'Cost: 1 Essence';
-  if (typeCost) typeCost.textContent = 'Cost: 1 Essence';
+  const vc = hasSelection ? bsRerollCostFor(essenceSelectedItem,'value',essenceSelectedStat,essenceSelectedStatType) : 0;
+  const tc = hasSelection ? bsRerollCostFor(essenceSelectedItem,'type',essenceSelectedStat,essenceSelectedStatType) : 0;
+  if (valCost) valCost.textContent = hasSelection ? formatRerollCostText(essenceSelectedItem, vc, essenceSelectedStat, essenceSelectedStatType) : 'Cost: —';
+  if (typeCost) typeCost.textContent = hasSelection ? formatRerollCostText(essenceSelectedItem, tc, essenceSelectedStat, essenceSelectedStatType) : 'Cost: —';
   const lockedOut = hasSelection && !isRerollLineAllowed(essenceSelectedItem, essenceSelectedStat, essenceSelectedStatType);
   if (lockedOut) {
     if (valCost) valCost.textContent = 'Locked to another stat line';
     if (typeCost) typeCost.textContent = 'Locked to another stat line';
   }
-  if (valueBtn) valueBtn.disabled = !hasSelection || lockedOut || G.legendaryEssence < 1;
-  if (typeBtn) typeBtn.disabled = !hasSelection || lockedOut || G.legendaryEssence < 1 || !canEssenceRerollType(essenceSelectedItem, essenceSelectedStat, essenceSelectedStatType);
+  if (valueBtn) valueBtn.disabled = !hasSelection || lockedOut || !canPayRerollCost(essenceSelectedItem, vc);
+  if (typeBtn) typeBtn.disabled = !hasSelection || lockedOut || !canPayRerollCost(essenceSelectedItem, tc) || !canEssenceRerollType(essenceSelectedItem, essenceSelectedStat, essenceSelectedStatType);
 }
 
 function essenceSelectItem() {
@@ -7889,19 +8009,23 @@ function essenceSelectItem() {
 }
 
 function doEssenceReroll(mode='value') {
-  if (!essenceSelectedItem || !essenceSelectedStat || G.legendaryEssence < 1) return;
+  if (!essenceSelectedItem || !essenceSelectedStat) return;
   const item = essenceSelectedItem;
   const stat = essenceSelectedStat;
   const statType = essenceSelectedStatType;
   if(!isRerollLineAllowed(item, stat, statType)){ log('This item has already locked a different '+statType+' stat line for rerolling.'); return; }
-  lockRerollLine(item, stat, statType);
 
   if (mode === 'type' && !canEssenceRerollType(item, stat, statType)) {
     log('Essence Reroll: No other stat type available.');
     return;
   }
 
-  G.legendaryEssence--;
+  const cost = bsRerollCostFor(item, mode, stat, statType);
+  if(!canPayRerollCost(item,cost)){ log('Need 1 Legendary Essence and enough gold!'); return; }
+  lockRerollLine(item, stat, statType);
+  payRerollCost(item,cost);
+  incrementRerollCostCount(item, stat, statType);
+  markItemStatRerolled(item, stat, statType);
   const ed = document.getElementById('essence-display');
   if (ed) ed.textContent = G.legendaryEssence;
 
@@ -7913,7 +8037,7 @@ function doEssenceReroll(mode='value') {
       const range = getStatRange(stat, 'mythic', item.slot);
       const tagText = minMaxTag(newVal, range).replace(/<[^>]+>/g,'').trim();
       G.lastEssenceRerollResult = { itemId:item.id, targetStat:stat, targetType:statType, oldLine:formatStatLineForReroll(stat, oldVal), newLine:formatStatLineForReroll(stat, newVal), tag:tagText };
-      log(`Essence Value Reroll: [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → ${formatRerollVal(newVal)}${minMaxTag(newVal, range)}`);
+      log(`Essence Value Reroll: [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → ${formatRerollVal(newVal)}${minMaxTag(newVal, range)} (${rerollCostPaidText(item,cost)})`);
     } else {
       const oldVal = item.subStats[stat];
       const newVal = rollMythicStatValue(stat, item.slot);
@@ -7921,7 +8045,7 @@ function doEssenceReroll(mode='value') {
       const range = getStatRange(stat, 'mythic', item.slot);
       const tagText = minMaxTag(newVal, range).replace(/<[^>]+>/g,'').trim();
       G.lastEssenceRerollResult = { itemId:item.id, targetStat:stat, targetType:statType, oldLine:formatStatLineForReroll(stat, oldVal), newLine:formatStatLineForReroll(stat, newVal), tag:tagText };
-      log(`Essence Value Reroll: [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → ${formatRerollVal(newVal)}${minMaxTag(newVal, range)}`);
+      log(`Essence Value Reroll: [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → ${formatRerollVal(newVal)}${minMaxTag(newVal, range)} (${rerollCostPaidText(item,cost)})`);
     }
   } else {
     if (statType === 'main') {
@@ -7933,10 +8057,13 @@ function doEssenceReroll(mode='value') {
       const newVal = rollMythicStatValue(newStat, item.slot);
       item.mainStats[newStat] = newVal;
       moveRerollLock(item, stat, newStat, 'main');
+      moveRerollCostCount(item, stat, newStat, 'main');
+      moveRerolledStatMarker(item, stat, newStat, 'main');
+      markItemStatRerolled(item, newStat, 'main');
       G.lastEssenceRerollResult = { itemId:item.id, targetStat:newStat, targetType:'main', oldLine:formatStatLineForReroll(stat, oldVal), newLine:formatStatLineForReroll(newStat, newVal), tag:'TYPE' };
       essenceSelectedStat = newStat;
       essenceSelectedStatType = 'main';
-      log(`Essence Type Reroll: Main [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → [${newStat.toUpperCase()}] ${formatRerollVal(newVal)}`);
+      log(`Essence Type Reroll: Main [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → [${newStat.toUpperCase()}] ${formatRerollVal(newVal)} (${rerollCostPaidText(item,cost)})`);
     } else {
       const current = Object.keys(item.subStats || {}).filter(s => s !== stat);
       const pool = SUB_STATS.filter(s => !current.includes(s) && s !== stat);
@@ -7946,10 +8073,13 @@ function doEssenceReroll(mode='value') {
       const newVal = rollMythicStatValue(newStat, item.slot);
       item.subStats[newStat] = newVal;
       moveRerollLock(item, stat, newStat, 'sub');
+      moveRerollCostCount(item, stat, newStat, 'sub');
+      moveRerolledStatMarker(item, stat, newStat, 'sub');
+      markItemStatRerolled(item, newStat, 'sub');
       G.lastEssenceRerollResult = { itemId:item.id, targetStat:newStat, targetType:'sub', oldLine:formatStatLineForReroll(stat, oldVal), newLine:formatStatLineForReroll(newStat, newVal), tag:'TYPE' };
       essenceSelectedStat = newStat;
       essenceSelectedStatType = 'sub';
-      log(`Essence Type Reroll: Sub [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → [${newStat.toUpperCase()}] ${formatRerollVal(newVal)}`);
+      log(`Essence Type Reroll: Sub [${stat.toUpperCase()}] ${formatRerollVal(oldVal)} → [${newStat.toUpperCase()}] ${formatRerollVal(newVal)} (${rerollCostPaidText(item,cost)})`);
     }
   }
 
@@ -8980,8 +9110,8 @@ function estimateOfflineSurvival(zs, kills, secs, zone, subZone) {
 }
 
 function calcOfflineProgress(elapsed, zone, subZone) {
-  const EFF = 0.4;
-  const MAX_SECS = 10 * 3600;
+  const EFF = 0.5;
+  const MAX_SECS = 12 * 3600;
   const MAX_OFFLINE_ITEMS = 50;
   const secs = Math.min(elapsed, MAX_SECS);
   const zs = getZoneAvgStats(zone, subZone);
@@ -9075,7 +9205,7 @@ function applyOfflineProgress(result) {
 
   log(`— OFFLINE PROGRESS (${timeStr} away) —`);
   log(`~${kills} kills | +${gold}g | +${exp} EXP${levelsGained > 0 ? ` | +${levelsGained} level${levelsGained > 1 ? 's' : ''}` : ''}`);
-  log(`${potsAdded} potions | ${itemsAdded} items (40% efficiency)`);
+  log(`${potsAdded} potions | ${itemsAdded} items (50% efficiency)`);
   if (survival) {
     log(`Offline danger estimate: ${fmtNum(survival.totalIncoming)} incoming dmg - ${fmtNum(survival.totalRegen)} HP regen = ${fmtNum(survival.netDamage)} net dmg.`);
     if (survival.wouldDie) {
