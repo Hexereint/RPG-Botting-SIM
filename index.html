@@ -673,6 +673,49 @@ canvas {
   .sprite-plinth canvas { width:40px; height:40px; }
 }
 
+/* SALVAGE ITEM STAT PREVIEW -------------------------------------------- */
+.salvage-row {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:4px 5px;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  cursor:pointer;
+  outline:none;
+}
+.salvage-row:hover,
+.salvage-row:focus-within,
+.salvage-row.salvage-expanded {
+  border-color:var(--yellow);
+  background:#111;
+}
+.salvage-main {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  min-width:0;
+}
+.salvage-stats {
+  display:none;
+  border-top:1px solid var(--border);
+  padding-top:5px;
+  font-size:9px;
+  line-height:1.45;
+  color:#aaa;
+}
+.salvage-row:hover .salvage-stats,
+.salvage-row:focus-within .salvage-stats,
+.salvage-row.salvage-expanded .salvage-stats {
+  display:block;
+}
+.salvage-hint {
+  font-size:8px;
+  color:#555;
+  margin-top:3px;
+}
+
 </style>
 </head>
 <body>
@@ -1707,7 +1750,7 @@ function dealFireballDamage(fbDmg, ts=performance.now(), label='Fireball', overl
   let total = 0;
   const hellfireActive = hasMythicMod('hellfire_torch');
   for (const t of targets) {
-    const hellfireBonus = hellfireActive ? Math.round((t.maxHp || 0) * 0.15) : 0;
+    const hellfireBonus = hellfireActive ? Math.round(Math.max(0, t.hp || 0) * 0.10) : 0;
     const perTargetDmg = fbDmg + hellfireBonus;
     const res = dealSkillDamageToMonster(t, perTargetDmg, ts);
     if (res.arcaneBlocked) {
@@ -1725,7 +1768,7 @@ function dealFireballDamage(fbDmg, ts=performance.now(), label='Fireball', overl
   }
   log(`[${label}] cast at ${targetCount} target${targetCount!==1?'s':''}`, 'spellcast');
   if (hitCount > 0) {
-    const hellfireText = hellfireActive ? ` <span style="color:#ff6644">[Hellfire Torch +15% max HP]</span>` : '';
+    const hellfireText = hellfireActive ? ` <span style="color:#ff6644">[Hellfire Torch +10% current HP]</span>` : '';
     log(`[${label}] hits for ${fmtNum(fbDmg)} base dmg × ${hitCount} target${hitCount!==1?'s':''} (${fmtNum(total)} total)${overloadText}${hellfireText}`, 'spelldmg');
   } else if (shieldedCount > 0) {
     log(`[${label}] all ${shieldedCount} target${shieldedCount!==1?'s were':' was'} Arcane Shielded`, 'spelldmg');
@@ -3697,7 +3740,7 @@ const MYTHIC_ITEMS = {
     armor:  { name:'Void Mantle',          mod:'void_mantle',   desc:'Mana Shield absorbs all damage, MP drain x%val%',           val:3    },
     weapon: [
       { name:'Lightning Staff',      mod:'lightning_staff',desc:'Chain Lightning has no cooldown, costs 20%% max MP per cast', val:20   },
-      { name:'Hellfire Torch',       mod:'hellfire_torch', desc:'Fireball also deals 15% of each enemy max HP',               val:15   },
+      { name:'Hellfire Torch',       mod:'hellfire_torch', desc:'Fireball also deals 10% of each enemy current HP',             val:10   },
       { name:'Freezing Orb',         mod:'ethereal',       desc:'Frost Nova cooldown reduced by %val%%',                      val:40   },
     ],
     offhand:[
@@ -7115,7 +7158,7 @@ function skillDamagePreview(k) {
   }
   if(k==='fireball') {
     const dmg=Math.round(int_*9*(1+sp*0.010));
-    const hellfireText = hasMythicMod('hellfire_torch') ? ' · Hellfire Torch: +15% enemy max HP' : '';
+    const hellfireText = hasMythicMod('hellfire_torch') ? ' · Hellfire Torch: +10% enemy current HP' : '';
     return `~${fmtNum(dmg)} base dmg all targets · scales with INT · skill pts: +1% dmg each${hellfireText}`;
   }
   if(k==='chainlightning') {
@@ -7694,7 +7737,7 @@ function selectClass(cls) {
       overload: {name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true}
     };
     G.skills = {
-      fireball: {name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0},
+      fireball: {name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0},
       chainlightning: {name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0},
       frostnova: {name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0},
       manasurge: {name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
@@ -7724,7 +7767,7 @@ function initClassSetup(cls) {
     G.skills = { cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} };
   } else {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
-    G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:25000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
+    G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
   const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
@@ -7845,14 +7888,33 @@ function buildSalvageSelect() {
     if (r.legEssence > 0) rewardStr += ` +${r.legEssence} LE`;
     const rarityColor = RC[item.rarity] || '#aaaaaa';
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 4px;background:var(--bg3);border:1px solid var(--border2);';
+    row.className = `salvage-row rarity-${item.rarity}`;
+    row.tabIndex = 0;
+    row.title = 'Hover or click to preview item stats';
+    const statsHtml = formatItemStats(item) || '<span style="color:#555;">No stats</span>';
     row.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
-        <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · <span style="color:#44bbaa;">${rewardStr}</span></div>
+      <div class="salvage-main">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+          <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · Sell ${fmtNum(item.goldVal || calcItemGold(item))}g · <span style="color:#44bbaa;">${rewardStr}</span></div>
+        </div>
+        <button onclick="event.stopPropagation();doSalvage(${item.id})" style="background:#000;border:1px solid #886633;color:#aa8833;font-family:inherit;font-size:8px;padding:2px 7px;cursor:pointer;flex-shrink:0;white-space:nowrap;">SALVAGE</button>
       </div>
-      <button onclick="doSalvage(${item.id})" style="background:#000;border:1px solid #886633;color:#aa8833;font-family:inherit;font-size:8px;padding:2px 7px;cursor:pointer;flex-shrink:0;white-space:nowrap;">SALVAGE</button>
+      <div class="salvage-stats">
+        ${statsHtml}
+        <div class="salvage-hint">Tap/click row to pin this preview. Use this to distinguish duplicate item names.</div>
+      </div>
     `;
+    row.addEventListener('click', (e) => {
+      if (e.target && e.target.closest && e.target.closest('button')) return;
+      row.classList.toggle('salvage-expanded');
+    });
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        row.classList.toggle('salvage-expanded');
+      }
+    });
     list.appendChild(row);
   }
 }
