@@ -1200,7 +1200,7 @@ canvas {
           <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 1% chance of an S-rank route.</div>
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
             <span style="font-size:9px;color:#888;">Gold: <span id="fr-shop-gold" style="color:var(--yellow);font-weight:bold;">0</span></span>
-            <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (50k)</button>
+            <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (20k)</button>
           </div>
           <div class="fr-shop-grid" id="fr-shop-grid"></div>
         </div>
@@ -1334,16 +1334,12 @@ canvas {
 
         <div class="config-section">
           <div class="config-title">FARM ROUTE QUEUE</div>
-          <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.45;">Queue routes in order. The bot runs them top to bottom, then loops or stops. Routes with no path are skipped.</div>
+          <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.45;">Queue routes in order. The bot loops through them continuously. A single route in the queue repeats indefinitely.</div>
 
           <div id="fr-queue-rows" style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
             <button onclick="frQueueAdd()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">+ ADD SLOT</button>
             <button onclick="frQueueClear()" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">CLEAR ALL</button>
-          </div>
-          <div class="config-row" style="margin-top:2px;">
-            <div class="config-label">Loop Queue<span class="config-sub">Restart from slot 1 after last route completes</span></div>
-            <div class="toggle-switch" id="toggle-fr-queue-loop" onclick="frQueueToggleLoop()"></div>
           </div>
           <div class="config-row" style="margin-top:2px;">
             <div class="config-label">Step-Down HP (%)<span class="config-sub">Skip to next queued route below this HP</span></div>
@@ -1389,7 +1385,6 @@ canvas {
                   <option value="caves">Dark Cave</option>
                   <option value="swamp">Bleakmoor Swamp</option>
                   <option value="hoarspire">Hoarspire Valley</option>
-                  <option value="abyss">The Abyss</option>
                 </select>
                 <select class="fr-zone-select" id="fr-editor-subzone" onchange="frChangeEditorSubzone()" style="min-width:110px;">
                   <option value="">Base Zone</option>
@@ -6741,38 +6736,39 @@ function updateUnifiedCost() {
 
   const valBtn = document.getElementById('bs-reroll-val-btn');
   const typeBtn = document.getElementById('bs-reroll-type-btn');
-  const valCost = document.getElementById('bs-val-cost-display');
-  const typeCost = document.getElementById('bs-type-cost-display');
+  const valCostEl = document.getElementById('bs-val-cost-display');
+  const typeCostEl = document.getElementById('bs-type-cost-display');
   if (!valBtn || !typeBtn) return;
 
   if (!item || !stat) {
     valBtn.disabled = typeBtn.disabled = true;
-    if (valCost) valCost.textContent = 'Cost: —';
-    if (typeCost) typeCost.textContent = 'Cost: —';
+    if (valCostEl) valCostEl.textContent = 'Cost: —';
+    if (typeCostEl) typeCostEl.textContent = 'Cost: —';
     return;
   }
 
-  const costVal = bsRerollCostFor(item, 'value', stat, statType);
-  const costType = bsRerollCostFor(item, 'type', stat, statType);
+  // bsRerollCostFor returns a plain gold number
+  const goldVal = bsRerollCostFor(item, 'value', stat, statType);
+  const goldType = bsRerollCostFor(item, 'type', stat, statType);
+  const needsEssence = rerollRequiresLegendaryEssence(item);
 
-  const fmtCost = (c) => {
-    if (!c) return '—';
-    let s = `${fmtNum(c.gold)}g`;
-    if (c.legendaryEssence) s += ` + ${c.legendaryEssence}LE`;
+  const fmtCost = (gold) => {
+    if (!gold && gold !== 0) return '—';
+    let s = `${fmtNum(gold)}g`;
+    if (needsEssence) s += ` + 1 LE`;
     return s;
   };
 
-  if (valCost) valCost.textContent = `Cost: ${fmtCost(costVal)}`;
-  if (typeCost) typeCost.textContent = `Cost: ${fmtCost(costType)}`;
+  if (valCostEl) valCostEl.textContent = `Cost: ${fmtCost(goldVal)}`;
+  if (typeCostEl) typeCostEl.textContent = `Cost: ${fmtCost(goldType)}`;
 
-  valBtn.disabled = !canPayRerollCost(item, costVal);
-  typeBtn.disabled = !canPayRerollCost(item, costType);
+  valBtn.disabled = !canPayRerollCost(item, goldVal);
+  typeBtn.disabled = !canPayRerollCost(item, goldType);
 
-  // Style buttons based on essence requirement
-  const accentColor = isEssence ? 'var(--unique)' : '';
+  // Style buttons for essence items
   [valBtn, typeBtn].forEach(btn => {
-    btn.style.borderColor = !btn.disabled && isEssence ? 'var(--unique)' : '';
-    btn.style.color = !btn.disabled && isEssence ? 'var(--unique)' : '';
+    btn.style.borderColor = !btn.disabled && needsEssence ? 'var(--unique)' : '';
+    btn.style.color = !btn.disabled && needsEssence ? 'var(--unique)' : '';
   });
 }
 
@@ -8346,7 +8342,7 @@ function initClassUI() {
 function frQueueEnsure() {
   const fr = FarmRoutes.ensure();
   if (!Array.isArray(fr.queue)) fr.queue = [];
-  if (typeof fr.queueLoop !== 'boolean') fr.queueLoop = false;
+  fr.queueLoop = true;  // always loops
   if (typeof fr.queueIdx !== 'number') fr.queueIdx = 0;
   return fr;
 }
@@ -8367,27 +8363,47 @@ function frQueueClear() {
   saveConfig();
 }
 
-function frQueueToggleLoop() {
+function frQueueToggleLoop() { /* no-op — always loops */ }
+
+function frQueueSetRepeat(slotIdx, val) { /* no-op — repeat removed */ }
+
+// Get the currently active queued route
+function frQueueGetCurrent() {
   const fr = frQueueEnsure();
-  fr.queueLoop = !fr.queueLoop;
-  const tog = document.getElementById('toggle-fr-queue-loop');
-  if (tog) tog.classList.toggle('active', fr.queueLoop);
-  saveConfig();
+  if (!fr.queue.length) return null;
+  const idx = fr.queueIdx % fr.queue.length;
+  const slot = fr.queue[idx];
+  if (!slot || !slot.routeId) return null;
+  return FarmRoutes.getRoutes().find(r => r.id === slot.routeId) || null;
 }
 
+// Called when current route finishes a full loop — always advance to next (loop back at end)
+function frQueueAdvance() {
+  const fr = frQueueEnsure();
+  if (!fr.queue.length) return;
+  const idx = fr.queueIdx % fr.queue.length;
+  // Always advance — single-slot queues just wrap back to 0
+  fr.queueIdx = (idx + 1) % fr.queue.length;
+  // Equip next route
+  const nextSlot = fr.queue[fr.queueIdx];
+  if (nextSlot && nextSlot.routeId) {
+    const next = FarmRoutes.getRoutes().find(r => r.id === nextSlot.routeId);
+    if (next && next.path && next.path.length > 0) {
+      FarmRoutes.equip(next.id);
+      if (next.zone && next.zone !== 'town') setZone(next.zone, false, next.subZone);
+      if (fr.queue.length > 1) log(`Farm Route Queue: now running "${next.name}"`, 'system');
+    }
+  }
+  frUpdateQueueStatus();
+  frUpdateEquippedIndicator();
+  renderRouteQueue();
+}
 function frQueueSetRoute(slotIdx, routeId) {
   const fr = frQueueEnsure();
   if (!fr.queue[slotIdx]) return;
   fr.queue[slotIdx].routeId = routeId || null;
   saveConfig();
   frUpdateQueueStatus();
-}
-
-function frQueueSetRepeat(slotIdx, val) {
-  const fr = frQueueEnsure();
-  if (!fr.queue[slotIdx]) return;
-  fr.queue[slotIdx].repeat = !!val;
-  saveConfig();
 }
 
 function frQueueRemove(slotIdx) {
@@ -8407,53 +8423,6 @@ function frQueueMoveUp(slotIdx) {
   saveConfig();
 }
 
-// Get the currently active queued route (advances queue when a route finishes all steps)
-function frQueueGetCurrent() {
-  const fr = frQueueEnsure();
-  if (!fr.queue.length) return null;
-  const idx = fr.queueIdx % fr.queue.length;
-  const slot = fr.queue[idx];
-  if (!slot || !slot.routeId) return null;
-  return FarmRoutes.getRoutes().find(r => r.id === slot.routeId) || null;
-}
-
-// Called when current route finishes a full loop — advance to next queue slot
-function frQueueAdvance() {
-  const fr = frQueueEnsure();
-  if (!fr.queue.length) return;
-  const idx = fr.queueIdx % fr.queue.length;
-  const slot = fr.queue[idx];
-  // If repeat is set, stay on this slot
-  if (slot && slot.repeat) {
-    FarmRoutes.get().botStep = 0;
-    frUpdateEquippedIndicator();
-    return;
-  }
-  // Advance
-  fr.queueIdx = idx + 1;
-  if (fr.queueIdx >= fr.queue.length) {
-    if (fr.queueLoop) {
-      fr.queueIdx = 0;
-    } else {
-      fr.queueIdx = fr.queue.length; // past end = stop
-      frUpdateQueueStatus();
-      return;
-    }
-  }
-  // Equip next route
-  const nextSlot = fr.queue[fr.queueIdx];
-  if (nextSlot && nextSlot.routeId) {
-    const next = FarmRoutes.getRoutes().find(r => r.id === nextSlot.routeId);
-    if (next) {
-      FarmRoutes.equip(next.id);
-      if (next.zone && next.zone !== 'town') setZone(next.zone, false, next.subZone);
-      log(`Farm Route Queue: now running "${next.name}"`, 'system');
-    }
-  }
-  frUpdateQueueStatus();
-  frUpdateEquippedIndicator();
-  renderRouteQueue();
-}
 
 function frUpdateQueueStatus() {
   const el = document.getElementById('fr-queue-status');
@@ -8461,12 +8430,10 @@ function frUpdateQueueStatus() {
   const fr = frQueueEnsure();
   const active = frQueueGetCurrent();
   if (!fr.queue.length) { el.textContent = 'Queue empty.'; return; }
-  if (fr.queueIdx >= fr.queue.length && !fr.queueLoop) {
-    el.textContent = 'Queue complete.';
-    return;
-  }
   if (active) {
-    el.innerHTML = `Running: <strong style="color:#aaeaaa;">${active.name}</strong> (slot ${(fr.queueIdx % fr.queue.length) + 1}/${fr.queue.length})${fr.queueLoop ? ' · looping' : ''}`;
+    const curPos = (fr.queueIdx % fr.queue.length) + 1;
+    const total = fr.queue.length;
+    el.innerHTML = `Running: <strong style="color:#aaeaaa;">${active.name}</strong> (${curPos}/${total})${total === 1 ? ' · repeating' : ' · looping'}`;
   } else {
     el.textContent = 'No valid route in current slot.';
   }
@@ -8480,11 +8447,9 @@ function renderRouteQueue() {
   const routes = FarmRoutes.getRoutes().filter(r => r.path && r.path.length > 0);
   const curIdx = fr.queueIdx % Math.max(1, fr.queue.length);
 
-  const tog = document.getElementById('toggle-fr-queue-loop');
-  if (tog) tog.classList.toggle('active', fr.queueLoop);
-
   if (fr.queue.length === 0) {
     container.innerHTML = '<div style="font-size:9px;color:#444;padding:4px 0;">No slots. Add slots below.</div>';
+    frUpdateQueueStatus();
     return;
   }
 
@@ -8495,8 +8460,6 @@ function renderRouteQueue() {
 
     let opts = '<option value="">— choose route —</option>';
     for (const r of routes) {
-      const ratingColors = {'S':'#ffcc44','A+':'#ccaa44','A':'#bbaa44','B+':'#88aa66','B':'#77aa66','C+':'#888','C':'#888','D':'#cc4444'};
-      const rc = ratingColors[r.rating] || '#888';
       const loc = r.subZone ? r.subZone.replace(/_/g,' ') : r.zone;
       opts += `<option value="${r.id}" ${r.id === slot.routeId ? 'selected' : ''}>${r.name} (${loc})</option>`;
     }
@@ -8504,10 +8467,6 @@ function renderRouteQueue() {
     row.innerHTML = `
       <span style="font-size:9px;color:${isActive ? '#77aa66' : '#555'};min-width:16px;">${idx+1}${isActive ? '▶' : '.'}</span>
       <select style="flex:1;background:#000;border:1px solid var(--border2);color:#fff;font-family:inherit;font-size:9px;padding:2px;" onchange="frQueueSetRoute(${idx},this.value)">${opts}</select>
-      <label style="display:flex;align-items:center;gap:3px;font-size:8px;color:#555;cursor:pointer;white-space:nowrap;">
-        <input type="checkbox" ${slot.repeat ? 'checked' : ''} onchange="frQueueSetRepeat(${idx},this.checked)" style="accent-color:var(--white);width:10px;height:10px;">
-        REPEAT
-      </label>
       <button onclick="frQueueMoveUp(${idx})" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:1px 5px;cursor:pointer;" title="Move up">↑</button>
       <button onclick="frQueueRemove(${idx})" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:1px 5px;cursor:pointer;" title="Remove">✕</button>
     `;
@@ -10002,9 +9961,9 @@ const FR_TILE_TYPES = {
 // These are set so the start is at the top/entry of the map and boss cluster is reachable
 const FR_START_TILES = {
   fields:    { dusty_outskirts:1, goblin_camp:2, golem_temple:3, stormwind_fields:1 },
-  caves:     { deep_tunnels:2, bat_cave:2, forbidden_library:3, echoing_chasm:3 },
-  swamp:     { murk_depths:3, crimson_rot:3, witch_coven:3, cursed_hollow:2 },
-  hoarspire: { sheercold_terrace:2, pale_hollow:2, frozen_dragon_grave:4 },
+  caves:     { deep_tunnels:1, bat_cave:0, forbidden_library:0, echoing_chasm:0 },
+  swamp:     { murk_depths:3, crimson_rot:5, witch_coven:0, cursed_hollow:1 },
+  hoarspire: { sheercold_terrace:0, pale_hollow:0, frozen_dragon_grave:4 },
   abyss:     { abyss: 2 },
 };
 
@@ -10085,165 +10044,166 @@ const FR_ZONE_LAYOUTS = {
   },
 
   // ── DARK CAVE ──────────────────────────────────────────────────────────
-  // Deep Tunnels
+  // Deep Tunnels: branching T-shape — two arms off a central corridor
   caves_deep_tunnels: {
-    cols:9, rows:9, zone:'caves', subZone:'deep_tunnels', label:'Deep Tunnels',
+    cols:11, rows:8, zone:'caves', subZone:'deep_tunnels', label:'Deep Tunnels',
     tiles:[
-      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
-      'dead','normal','normal','slow','slow','dead','dead','dead','dead',
-      'dead','normal','slow','slow','normal','dead','dead','dead','dead',
-      'normal','normal','slow','normal','normal','dead','dead','dead','dead',
-      'normal','normal','normal','dead','normal','normal','dead','dead','dead',
-      'dead','normal','dead','dead','elite','normal','dead','dead','dead',
-      'dead','dead','dead','elite','elite_swarm','boss','boss','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','boss','boss','dead','dead','dead','dead',
+      'dead','normal','normal','dead','dead','dead','dead','dead','normal','normal','dead',
+      'dead','normal','slow','slow','dead','dead','dead','slow','slow','normal','dead',
+      'dead','normal','slow','slow','normal','normal','normal','slow','slow','normal','dead',
+      'dead','normal','normal','slow','normal','normal','normal','slow','normal','normal','dead',
+      'dead','dead','normal','normal','normal','normal','normal','normal','normal','dead','dead',
+      'dead','dead','dead','normal','elite','elite_swarm','elite','normal','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','boss','boss','boss','dead','dead','dead','dead',
     ]
   },
 
-  // Bat Cave
+  // Bat Cave: wide fan shape — spreads out at top, narrows to boss den at bottom
   caves_bat_cave: {
-    cols:9, rows:9, zone:'caves', subZone:'bat_cave', label:'Bat Cave',
+    cols:11, rows:8, zone:'caves', subZone:'bat_cave', label:'Bat Cave',
     tiles:[
-      'dead','dead','fast','fast','fast','dead','dead','dead','dead',
-      'dead','fast','fast','normal','fast','dead','dead','dead','dead',
-      'dead','fast','normal','normal','normal','dead','dead','dead','dead',
-      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
-      'dead','normal','normal','dead','normal','normal','dead','dead','dead',
-      'dead','dead','normal','dead','elite','normal','dead','dead','dead',
-      'dead','dead','dead','elite','elite_swarm','boss','boss','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','boss','boss','dead','dead','dead','dead',
+      'fast','fast','fast','fast','fast','fast','fast','fast','fast','fast','fast',
+      'dead','fast','fast','fast','fast','fast','fast','fast','fast','fast','dead',
+      'dead','dead','fast','fast','normal','fast','normal','fast','fast','dead','dead',
+      'dead','dead','dead','normal','normal','normal','normal','normal','dead','dead','dead',
+      'dead','dead','dead','normal','normal','normal','normal','normal','dead','dead','dead',
+      'dead','dead','dead','dead','elite','elite_swarm','elite','dead','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','boss','boss','boss','dead','dead','dead','dead',
     ]
   },
 
-  // Forbidden Library
+  // Forbidden Library: narrow vertical corridor — 4 cols wide, 14 rows tall
   caves_forbidden_library: {
-    cols:9, rows:9, zone:'caves', subZone:'forbidden_library', label:'Forbidden Library',
+    cols:4, rows:14, zone:'caves', subZone:'forbidden_library', label:'Forbidden Library',
     tiles:[
-      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
-      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
-      'dead','normal','normal','normal','slow','dead','dead','dead','dead',
-      'normal','normal','slow','slow','normal','dead','dead','dead','dead',
-      'normal','slow','normal','dead','normal','elite','dead','dead','dead',
-      'dead','slow','dead','dead','elite','elite_swarm','dead','dead','dead',
-      'dead','dead','dead','elite','boss','boss','boss','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','boss','boss','dead','dead','dead','dead',
+      'normal','normal','normal','dead',
+      'normal','slow','normal','dead',
+      'dead','slow','normal','normal',
+      'normal','slow','slow','normal',
+      'normal','slow','slow','normal',
+      'normal','normal','slow','normal',
+      'dead','normal','normal','normal',
+      'normal','normal','normal','dead',
+      'normal','normal','slow','dead',
+      'dead','slow','normal','normal',
+      'dead','elite','elite','normal',
+      'dead','elite','elite_swarm','dead',
+      'boss','boss','boss','boss',
+      'boss','boss','boss','boss',
     ]
   },
 
-  // Echoing Chasm
+  // Echoing Chasm: hourglass — wide at top and bottom, narrow in the middle
   caves_echoing_chasm: {
-    cols:9, rows:9, zone:'caves', subZone:'echoing_chasm', label:'Echoing Chasm',
+    cols:11, rows:9, zone:'caves', subZone:'echoing_chasm', label:'Echoing Chasm',
     tiles:[
-      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
-      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
-      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
-      'normal','normal','dead','dead','normal','elite','dead','dead','dead',
-      'normal','normal','dead','dead','elite','elite_swarm','dead','dead','dead',
-      'dead','normal','normal','elite','boss','boss','dead','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'normal','normal','normal','normal','normal','normal','normal','normal','normal','dead','dead',
+      'dead','normal','normal','normal','normal','normal','normal','normal','dead','dead','dead',
+      'dead','dead','normal','normal','normal','normal','normal','dead','dead','dead','dead',
+      'dead','dead','dead','normal','normal','normal','dead','dead','dead','dead','dead',
+      'dead','dead','dead','normal','normal','normal','dead','dead','dead','dead','dead',
+      'dead','dead','normal','normal','elite','elite','normal','dead','dead','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','boss','dead','dead','dead',
+      'dead','boss','boss','boss','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','dead','boss','boss','boss','dead','dead','dead','dead',
     ]
   },
 
   // ── BLEAKMOOR SWAMP ────────────────────────────────────────────────────
-  // Murk Depths
+  // Murk Depths: sunken bowl — dead ring with water pooling in centre
   swamp_murk_depths: {
-    cols:9, rows:9, zone:'swamp', subZone:'murk_depths', label:'Murk Depths',
+    cols:11, rows:9, zone:'swamp', subZone:'murk_depths', label:'Murk Depths',
     tiles:[
-      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
-      'dead','slow','slow','normal','slow','dead','dead','dead','dead',
-      'slow','slow','normal','normal','slow','dead','dead','dead','dead',
-      'slow','normal','normal','dead','elite','dead','dead','dead','dead',
-      'dead','normal','dead','elite','elite_swarm','boss','dead','dead','dead',
-      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','slow','slow','slow','slow','dead','dead','dead','dead',
+      'dead','dead','slow','slow','normal','normal','slow','slow','dead','dead','dead',
+      'dead','slow','slow','normal','normal','normal','normal','slow','slow','dead','dead',
+      'dead','slow','normal','normal','dead','dead','normal','normal','slow','dead','dead',
+      'dead','slow','normal','dead','dead','dead','dead','normal','slow','dead','dead',
+      'dead','slow','normal','normal','elite','elite','normal','normal','slow','dead','dead',
+      'dead','dead','slow','boss','boss','boss','boss','boss','slow','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead','dead','dead',
     ]
   },
 
-  // Crimson Rot
+  // Crimson Rot: diagonal slash from top-right to bottom-left
   swamp_crimson_rot: {
-    cols:9, rows:9, zone:'swamp', subZone:'crimson_rot', label:'The Crimson Rot',
+    cols:11, rows:8, zone:'swamp', subZone:'crimson_rot', label:'The Crimson Rot',
     tiles:[
-      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
-      'dead','normal','normal','slow','normal','dead','dead','dead','dead',
-      'dead','slow','normal','normal','normal','dead','dead','dead','dead',
-      'slow','slow','normal','normal','normal','elite','dead','dead','dead',
-      'dead','slow','normal','elite','elite_swarm','boss','dead','dead','dead',
-      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','slow','slow','normal','normal','normal','dead',
+      'dead','dead','dead','dead','slow','slow','normal','normal','normal','dead','dead',
+      'dead','dead','dead','slow','slow','normal','normal','normal','dead','dead','dead',
+      'dead','dead','slow','slow','normal','normal','normal','dead','dead','dead','dead',
+      'dead','slow','slow','normal','normal','elite','dead','dead','dead','dead','dead',
+      'slow','slow','normal','normal','elite_swarm','boss','boss','dead','dead','dead','dead',
+      'dead','normal','boss','boss','boss','boss','boss','dead','dead','dead','dead',
+      'dead','dead','boss','boss','boss','dead','dead','dead','dead','dead','dead',
     ]
   },
 
-  // Witch Coven
+  // Witch Coven: X / cross shape with boss altar at intersection
   swamp_witch_coven: {
-    cols:9, rows:9, zone:'swamp', subZone:'witch_coven', label:'Witch Coven',
+    cols:11, rows:9, zone:'swamp', subZone:'witch_coven', label:'Witch Coven',
     tiles:[
-      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
-      'dead','normal','slow','normal','slow','dead','dead','dead','dead',
-      'dead','slow','slow','normal','normal','dead','dead','dead','dead',
-      'slow','slow','normal','normal','elite','dead','dead','dead','dead',
-      'dead','normal','normal','elite','elite_swarm','boss','dead','dead','dead',
-      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'slow','slow','dead','dead','dead','dead','dead','dead','slow','slow','dead',
+      'dead','slow','slow','dead','dead','dead','dead','slow','slow','dead','dead',
+      'dead','dead','slow','slow','dead','dead','slow','slow','dead','dead','dead',
+      'dead','dead','dead','slow','slow','slow','slow','dead','dead','dead','dead',
+      'dead','dead','dead','slow','elite_swarm','elite','slow','dead','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead','dead','dead',
+      'dead','dead','slow','boss','boss','boss','dead','slow','dead','dead','dead',
+      'dead','slow','slow','dead','boss','dead','dead','slow','slow','dead','dead',
     ]
   },
 
-  // Cursed Hollow
+  // Cursed Hollow: hollow ring — walkable only around the perimeter, dead centre
   swamp_cursed_hollow: {
     cols:9, rows:9, zone:'swamp', subZone:'cursed_hollow', label:'Cursed Hollow',
     tiles:[
-      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
-      'dead','slow','slow','normal','slow','dead','dead','dead','dead',
-      'slow','normal','normal','normal','slow','dead','dead','dead','dead',
-      'slow','normal','normal','elite','normal','dead','dead','dead','dead',
-      'dead','normal','elite','elite_swarm','boss','boss','dead','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','slow','slow','slow','slow','slow','slow','slow','dead',
+      'slow','slow','normal','normal','normal','normal','normal','slow','slow',
+      'slow','normal','normal','dead','dead','dead','normal','normal','slow',
+      'slow','normal','dead','dead','dead','dead','dead','normal','slow',
+      'slow','normal','dead','dead','dead','dead','dead','normal','slow',
+      'slow','normal','normal','dead','dead','dead','normal','normal','slow',
+      'slow','slow','elite','elite_swarm','boss','boss','boss','slow','slow',
+      'dead','slow','boss','boss','boss','boss','boss','slow','dead',
       'dead','dead','dead','boss','boss','boss','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
     ]
   },
 
   // ── HOARSPIRE VALLEY ───────────────────────────────────────────────────
-  // Sheercold Terrace
+  // Sheercold Terrace: stepped terraces descending left to right
   hoarspire_sheercold_terrace: {
-    cols:9, rows:9, zone:'hoarspire', subZone:'sheercold_terrace', label:'Sheercold Terrace',
+    cols:11, rows:8, zone:'hoarspire', subZone:'sheercold_terrace', label:'Sheercold Terrace',
     tiles:[
-      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
-      'dead','slow','slow','normal','slow','dead','dead','dead','dead',
-      'slow','slow','normal','normal','slow','dead','dead','dead','dead',
-      'slow','normal','normal','elite','normal','dead','dead','dead','dead',
-      'dead','normal','elite','elite_swarm','boss','boss','dead','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'slow','slow','slow','dead','dead','dead','dead','dead','dead','dead','dead',
+      'slow','slow','normal','slow','dead','dead','dead','dead','dead','dead','dead',
+      'dead','slow','normal','normal','slow','dead','dead','dead','dead','dead','dead',
+      'dead','dead','normal','normal','slow','slow','dead','dead','dead','dead','dead',
+      'dead','dead','dead','normal','slow','normal','slow','dead','dead','dead','dead',
+      'dead','dead','dead','dead','elite','elite_swarm','elite','slow','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','boss','slow','dead','dead',
+      'dead','dead','dead','dead','boss','boss','boss','boss','dead','dead','dead',
     ]
   },
 
-  // Pale Hollow
+  // Pale Hollow: spiral inward — square that winds toward central boss cluster
   hoarspire_pale_hollow: {
     cols:9, rows:9, zone:'hoarspire', subZone:'pale_hollow', label:'Pale Hollow',
     tiles:[
-      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
-      'dead','slow','normal','slow','slow','dead','dead','dead','dead',
-      'slow','normal','normal','normal','slow','dead','dead','dead','dead',
-      'slow','normal','normal','elite','normal','dead','dead','dead','dead',
-      'dead','normal','elite','elite_swarm','boss','boss','dead','dead','dead',
-      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
-      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
-      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'slow','slow','slow','slow','slow','slow','slow','slow','slow',
+      'slow','dead','dead','dead','dead','dead','dead','dead','slow',
+      'slow','dead','normal','normal','normal','normal','normal','dead','slow',
+      'slow','dead','normal','dead','dead','dead','normal','dead','slow',
+      'slow','dead','normal','dead','boss','boss','normal','dead','slow',
+      'slow','dead','elite','boss','boss','boss','boss','dead','slow',
+      'slow','dead','normal','boss','boss','boss','boss','dead','slow',
+      'slow','dead','dead','boss','boss','boss','dead','dead','slow',
+      'slow','slow','slow','slow','slow','slow','slow','slow','slow',
     ]
   },
 
@@ -11034,9 +10994,7 @@ const FR_SUBZONE_OPTIONS = {
     { value:'pale_hollow',          label:'Pale Hollow' },
     { value:'frozen_dragon_grave',  label:'Frozen Dragon Grave' },
   ],
-  abyss: [
-    { value:'abyss', label:'The Abyss' },
-  ],
+  // Abyss has no farm routes — removed from editor
 };
 
 function frUpdateSubzoneSelect(zone, selectedSub) {
@@ -11632,9 +11590,9 @@ function frGenerateShopRoute(zone, subZone, forceS) {
 
 function refreshFarmRouteShop(free=false) {
   const fr = FarmRoutes.ensure();
-  const cost = 50000;
+  const cost = 20000;
   if (!free && fr.shopStock && fr.shopStock.length > 0) {
-    if (G.gold < cost) { log('Not enough gold to refresh route shop (50k needed).', 'system'); return; }
+    if (G.gold < cost) { log('Not enough gold to refresh route shop (20k needed).', 'system'); return; }
     G.gold -= cost;
     updateUI();
   }
@@ -11693,16 +11651,16 @@ function renderFarmRouteShop() {
     <div class="fr-shop-name" style="color:#888;">Blank Route</div>
     <div class="fr-shop-zone" style="color:#444;">Any zone</div>
     <div class="fr-shop-desc" style="color:#444;">An empty route. Draw your own path in the editor.</div>
-    <div class="fr-shop-price">&#x2B21; 100k</div>
-    <button class="fr-shop-buy-btn" ${G.gold<100000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
+    <div class="fr-shop-price">&#x2B21; 50k</div>
+    <button class="fr-shop-buy-btn" ${G.gold<50000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
   `;
   grid.appendChild(blankCard);
   updateShopGoldDisplay();
 }
 
 function frBuyBlankRoute() {
-  const price = 100000;
-  if (G.gold < price) { log('Not enough gold for a blank route (100k needed).', 'system'); return; }
+  const price = 50000;
+  if (G.gold < price) { log('Not enough gold for a blank route (50k needed).', 'system'); return; }
   G.gold -= price;
   updateUI();
   const blankNum = FarmRoutes.getRoutes().filter(r => r.blank).length + 1;
@@ -11710,7 +11668,7 @@ function frBuyBlankRoute() {
   renderFarmRouteList();
   renderFarmRouteShop();
   saveGame(false);
-  log('Purchased a blank Farm Route for 100k gold.', 'system');
+  log('Purchased a blank Farm Route for 50k gold.', 'system');
 }
 
 function frMakeBlankRoute(label) {
@@ -11823,10 +11781,7 @@ function initFarmRoutesUI() {
   frUpdateBlankCount();
   renderRouteQueue();
   frUpdateQueueStatus();
-  const tog = document.getElementById('toggle-fr-queue-loop');
-  const fr = frQueueEnsure();
-  if (tog) tog.classList.toggle('active', fr.queueLoop);
-  // Auto-populate shop if empty
+  const fr = FarmRoutes.ensure();
   if (!fr.shopStock || fr.shopStock.length === 0) refreshFarmRouteShop(true);
   else renderFarmRouteShop();
   updateShopGoldDisplay();
