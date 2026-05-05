@@ -3106,10 +3106,15 @@ function spawnDelay(zone) {
   const zc = getZoneConfig();
   if (!zc) return 3000;
   const base = randi(zc.delay[0], zc.delay[1]) * 1000;
-  // Farm route tile modifier
   const tileMod = frGetCurrentTileModifiers ? frGetCurrentTileModifiers() : null;
   if (tileMod && !tileMod.dead) {
-    return Math.round(base * tileMod.spawnMult);
+    const result = Math.round(base * tileMod.spawnMult);
+    // S-rank routes: hard cap of 3000ms regardless of tile or zone
+    const route = FarmRoutes.getEquipped();
+    if (route && route.spawnBoost) {
+      return Math.min(result, 3000);
+    }
+    return result;
   }
   return base;
 }
@@ -11730,9 +11735,15 @@ function frGetCurrentTileModifiers() {
   const layout = frGetLayout(route.zone, route.subZone);
   const tileType = route.gridTiles ? (route.gridTiles[tileIdx] || 'normal') : (layout.tiles[tileIdx] || 'normal');
   const base = FR_TILE_TYPES[tileType] || FR_TILE_TYPES.normal;
-  // S-rank boost: spawn 25% faster than each tile's default
   if (route.spawnBoost && !base.dead) {
-    return { ...base, spawnMult: Math.max(0.2, base.spawnMult * 0.75) };
+    // S-rank: spawn 50% faster than tile default, boss chance doubled, elite chance guaranteed where applicable
+    return {
+      ...base,
+      spawnMult:  Math.max(0.1, base.spawnMult * 0.50),
+      bossChance: Math.min(0.80, base.bossChance > 0 ? base.bossChance * 2.0 : 0),
+      forceElite: base.forceElite,   // elite tiles still guarantee elites
+      eliteSwarm: base.eliteSwarm,   // elite swarm tiles still swarm
+    };
   }
   return base;
 }
