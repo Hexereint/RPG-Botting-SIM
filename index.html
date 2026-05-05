@@ -795,9 +795,8 @@ canvas {
   position:relative; z-index:1;
 }
 .fr-cell {
-  width:20px; height:20px; position:relative; box-sizing:border-box;
+  width:24px; height:24px; position:relative; box-sizing:border-box;
   transition:background 0.06s, border-color 0.06s;
-  /* Transparent base so canvas shows through */
   background:rgba(0,0,0,0.18);
   border:1px solid rgba(255,255,255,0.05);
 }
@@ -1369,54 +1368,54 @@ canvas {
           <div id="fr-config-display" style="margin-bottom:6px;"></div>
 
           <!-- Collapsible Route Editor -->
-          <div style="border-top:1px solid var(--border);padding-top:6px;">
-            <button onclick="frToggleEditor()" style="width:100%;background:transparent;border:none;padding:4px 0;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;" id="fr-editor-toggle-btn">
-              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Route Editor</span>
+          <div style="border:1px solid #2a3a1a;background:#060e04;padding:0;margin-top:6px;">
+            <button onclick="frToggleEditor()" style="width:100%;background:#0a1a06;border:none;border-bottom:1px solid #2a3a1a;padding:7px 10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;" id="fr-editor-toggle-btn">
+              <span style="font-size:10px;color:#88cc66;letter-spacing:2px;text-transform:uppercase;font-weight:bold;">✎ Route Editor</span>
               <span style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:8px;color:#555;" id="fr-blank-count-label"></span>
-                <span style="font-size:10px;color:#555;" id="fr-editor-chevron">▼</span>
+                <span style="font-size:8px;color:#446633;" id="fr-blank-count-label"></span>
+                <span style="font-size:11px;color:#446633;" id="fr-editor-chevron">▼</span>
               </span>
             </button>
-            <div id="fr-editor-body" style="display:none;padding-top:6px;">
-              <div class="fr-name-row" style="margin-bottom:6px;">
-                <input class="fr-name-input" id="fr-route-name" placeholder="Route name..." value="My Route" maxlength="32">
-                <select class="fr-zone-select" id="fr-editor-zone" onchange="frChangeEditorZone()">
+            <div id="fr-editor-body" style="display:none;padding:10px;">
+              <div class="fr-name-row" style="margin-bottom:8px;">
+                <input class="fr-name-input" id="fr-route-name" placeholder="Route name..." value="My Route" maxlength="32" style="background:#000;border:1px solid #335522;color:#cceeaa;">
+                <select class="fr-zone-select" id="fr-editor-zone" onchange="frChangeEditorZone()" style="background:#000;border:1px solid #335522;color:#cceeaa;">
                   <option value="fields">The Fields</option>
                   <option value="caves">Dark Cave</option>
                   <option value="swamp">Bleakmoor Swamp</option>
                   <option value="hoarspire">Hoarspire Valley</option>
                 </select>
-                <select class="fr-zone-select" id="fr-editor-subzone" onchange="frChangeEditorSubzone()" style="min-width:110px;">
+                <select class="fr-zone-select" id="fr-editor-subzone" onchange="frChangeEditorSubzone()" style="min-width:110px;background:#000;border:1px solid #335522;color:#cceeaa;">
                   <option value="">Base Zone</option>
                 </select>
               </div>
 
               <!-- Toolbar -->
-              <div class="fr-toolbar" style="margin-bottom:6px;">
-                <button class="fr-tool-btn active" id="fr-tool-route" onclick="frSetTool('route')">PATH</button>
-                <button class="fr-tool-btn" id="fr-tool-erase" onclick="frSetTool('erase')">ERASE</button>
+              <div class="fr-toolbar" style="margin-bottom:8px;background:#0a1a06;border:1px solid #2a3a1a;">
+                <button class="fr-tool-btn active" id="fr-tool-route" onclick="frSetTool('route')" style="font-size:10px;padding:4px 12px;">PATH</button>
+                <button class="fr-tool-btn" id="fr-tool-erase" onclick="frSetTool('erase')" style="font-size:10px;padding:4px 12px;">ERASE</button>
                 <div class="fr-tool-sep"></div>
-                <button class="fr-tool-btn" onclick="frClearRoute()">CLEAR</button>
+                <button class="fr-tool-btn" onclick="frClearRoute()" style="font-size:10px;padding:4px 12px;">CLEAR</button>
               </div>
 
               <!-- Grid -->
-              <div class="fr-grid-wrap" id="fr-grid-wrap">
+              <div class="fr-grid-wrap" id="fr-grid-wrap" style="border:1px solid #2a3a1a;">
                 <canvas id="fr-bg-canvas"></canvas>
                 <div class="fr-grid" id="fr-grid"></div>
               </div>
 
               <!-- Steps counter -->
-              <div class="fr-route-stats" style="margin-bottom:6px;">
-                <div class="fr-stat">Steps: <strong id="frs-steps">0</strong> / <span id="frs-max-steps">—</span></div>
-                <div class="fr-stat">Rating: <strong id="frs-rating">—</strong></div>
+              <div class="fr-route-stats" style="margin-bottom:8px;background:#0a1a06;border:1px solid #2a3a1a;">
+                <div class="fr-stat" style="font-size:10px;">Steps: <strong id="frs-steps" style="color:#cceeaa;">0</strong> / <span id="frs-max-steps" style="color:#88cc66;">—</span></div>
+                <div class="fr-stat" style="font-size:10px;">Rating: <strong id="frs-rating" style="color:#cceeaa;">—</strong></div>
               </div>
 
               <!-- Save / action buttons -->
               <div class="fr-action-row">
-                <button class="fr-action-btn primary" onclick="frSaveRoute()">SAVE</button>
-                <button class="fr-action-btn" onclick="frNewRoute()">NEW</button>
-                <button class="fr-action-btn danger" onclick="frDeleteEditing()">RESET</button>
-                <button class="fr-action-btn" onclick="frUnequipRoute()" id="fr-unequip-btn" style="display:none;">UNEQUIP</button>
+                <button class="fr-action-btn primary" onclick="frSaveRoute()" style="font-size:10px;padding:5px 14px;border-color:#55aa33;color:#88cc55;">SAVE</button>
+                <button class="fr-action-btn" onclick="frNewRoute()" style="font-size:10px;padding:5px 14px;">NEW</button>
+                <button class="fr-action-btn danger" onclick="frDeleteEditing()" style="font-size:10px;padding:5px 14px;">RESET</button>
+                <button class="fr-action-btn" onclick="frUnequipRoute()" id="fr-unequip-btn" style="display:none;font-size:10px;padding:5px 14px;">UNEQUIP</button>
               </div>
               <div style="font-size:8px;color:#555;line-height:1.4;margin-top:4px;" id="fr-editor-hint">Start at <span style="color:rgba(130,220,100,0.9);">S</span>, then step onto highlighted adjacent tiles. Once saved, routes are permanent — use ✕ in your route list to delete.</div>
             </div>
@@ -7103,7 +7102,7 @@ function updateUI() {
     return;
   }
   if(G.config.paused){
-    ci.innerHTML=`<span style="color:var(--yellow)">⏸ PAUSED</span>`;
+    ci.innerHTML=`<span style="color:var(--yellow);cursor:pointer;text-decoration:underline dotted;" onclick="togglePause()" title="Click to resume">⏸ PAUSED — click to resume</span>`;
     return;
   }
   if(G.zone==='town'){
@@ -8203,6 +8202,17 @@ function togglePause() {
   }else{
     G.nextSpawnAt=performance.now()+1000;
     lastTick=performance.now();
+    // If a farm route is equipped, ensure the bot is in the right zone
+    const equippedRoute = FarmRoutes.getEquipped();
+    if(equippedRoute && equippedRoute.zone && equippedRoute.zone !== 'town' && G.zone !== equippedRoute.zone){
+      setZone(equippedRoute.zone, true, equippedRoute.subZone);
+    } else if(G.zone === 'town'){
+      // Resume without a route — try queue or stay in town
+      const queueRoute = frQueueGetCurrent ? frQueueGetCurrent() : null;
+      if(queueRoute && queueRoute.zone && queueRoute.zone !== 'town'){
+        setZone(queueRoute.zone, true, queueRoute.subZone);
+      }
+    }
     log('▶ Bot resumed.');
   }
   updateUI();
@@ -10823,7 +10833,7 @@ const FREditor = {
     const grid = document.getElementById('fr-grid');
     if (!grid) return;
     const layout = this.getLayout();
-    const CELL = 20, GAP = 1, PAD = 4;
+    const CELL = 24, GAP = 1, PAD = 4;
     grid.style.gridTemplateColumns = `repeat(${layout.cols}, ${CELL}px)`;
     grid.innerHTML = '';
     const startTile = this.getStartTile();
