@@ -716,6 +716,194 @@ canvas {
   margin-top:3px;
 }
 
+/* Unified reroll item list — extends salvage-row visual pattern */
+.reroll-row {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:4px 5px;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  cursor:pointer;
+  outline:none;
+  transition:border-color 0.1s, background 0.1s;
+}
+.reroll-row:hover,
+.reroll-row:focus-within {
+  border-color:#555;
+  background:#111;
+}
+.reroll-row.reroll-selected {
+  border-color:var(--white);
+  background:#0d0d0d;
+}
+.reroll-row.rarity-mythic { border-left:2px solid var(--unique); }
+.reroll-row.rarity-mythic.reroll-selected { border-color:var(--unique); }
+.reroll-row.rarity-legendary { border-left:2px solid var(--legendary); }
+.reroll-row.rarity-legendary.reroll-selected { border-color:var(--legendary); }
+.reroll-main { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; }
+.reroll-stats { display:none; border-top:1px solid var(--border); padding-top:5px; font-size:9px; line-height:1.45; color:#aaa; }
+.reroll-row:hover .reroll-stats,
+.reroll-row.reroll-selected .reroll-stats { display:block; }
+.reroll-essence-tag { font-size:8px; color:var(--legendary); margin-left:4px; }
+
+/* ===================== FARM ROUTES ===================== */
+.farm-routes-section { margin-top:6px; }
+.fr-title { font-size:9px; color:var(--muted); letter-spacing:2px; padding-bottom:4px; border-bottom:1px solid var(--border); text-transform:uppercase; margin-bottom:6px; }
+
+/* Toolbar */
+.fr-toolbar { display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-bottom:8px; padding:6px; background:var(--bg2); border:1px solid var(--border); }
+.fr-tool-btn { background:#000; border:1px solid var(--border2); color:var(--muted); font-size:9px; padding:3px 8px; cursor:pointer; font-family:inherit; letter-spacing:1px; transition:all 0.12s; text-transform:uppercase; }
+.fr-tool-btn:hover { color:var(--white); border-color:var(--white); }
+.fr-tool-btn.active { background:var(--bg3); color:var(--white); border-color:var(--white); }
+.fr-tool-sep { width:1px; height:18px; background:var(--border); margin:0 2px; }
+/* Tile type palette — just labeled buttons, no color swatches */
+.fr-tile-palette { display:flex; gap:3px; align-items:center; flex-wrap:wrap; }
+.fr-tile-type-btn { background:#000; border:1px solid var(--border2); color:var(--muted); font-size:8px; padding:2px 7px; cursor:pointer; font-family:inherit; letter-spacing:1px; transition:all 0.1s; text-transform:uppercase; }
+.fr-tile-type-btn:hover { color:var(--white); border-color:var(--white); }
+.fr-tile-type-btn.selected { background:var(--bg3); color:var(--white); border-color:var(--white); }
+
+/* Grid — canvas background + transparent tile overlay */
+.fr-grid-wrap {
+  overflow:auto; margin-bottom:8px; border:1px solid var(--border);
+  padding:4px; position:relative;
+  /* background set dynamically per zone */
+}
+/* Canvas background sits behind the grid */
+#fr-bg-canvas {
+  position:absolute; top:0; left:0;
+  pointer-events:none;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+}
+.fr-grid {
+  display:inline-grid; gap:1px; user-select:none; cursor:crosshair;
+  position:relative; z-index:1;
+}
+.fr-cell {
+  width:20px; height:20px; position:relative; box-sizing:border-box;
+  transition:background 0.06s, border-color 0.06s;
+  /* Transparent base so canvas shows through */
+  background:rgba(0,0,0,0.18);
+  border:1px solid rgba(255,255,255,0.05);
+}
+/* Hoverable walkable tiles */
+.fr-cell.fr-walkable:hover {
+  background:rgba(255,255,255,0.12);
+  border-color:rgba(255,255,255,0.22);
+  cursor:crosshair;
+}
+/* Dead / terrain tiles — opaque dark mask over canvas */
+.fr-cell.fr-cell-dead {
+  background:rgba(0,0,0,0.72);
+  border-color:rgba(0,0,0,0.5);
+  cursor:not-allowed;
+}
+/* Start point tile */
+.fr-cell.fr-start {
+  background:rgba(30,60,20,0.55);
+  border-color:rgba(80,160,60,0.5);
+}
+.fr-cell.fr-start::before {
+  content:'S';
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  font-size:7px; font-weight:bold; color:rgba(130,220,100,0.9);
+  pointer-events:none;
+}
+/* Selected as route step — lit up */
+.fr-cell.route-step {
+  background:rgba(40,80,10,0.75);
+  border-color:rgba(100,180,40,0.7);
+}
+.fr-cell.route-step::after {
+  content:attr(data-step);
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  font-size:7px; font-weight:bold; color:#b0e050;
+  text-shadow:0 0 4px rgba(0,0,0,0.9);
+  pointer-events:none;
+}
+/* Player position indicator */
+.fr-cell.player-here {
+  background:rgba(60,140,10,0.85) !important;
+  border-color:rgba(160,255,50,0.9) !important;
+  box-shadow:inset 0 0 8px rgba(136,255,40,0.5);
+  z-index:5;
+}
+.fr-cell.player-here::after { color:#d0ff50 !important; }
+/* Reachable next-step tiles highlighted when in PATH mode */
+.fr-cell.fr-reachable {
+  background:rgba(80,120,20,0.3);
+  border-color:rgba(120,180,40,0.5);
+}
+.fr-cell.fr-reachable:hover {
+  background:rgba(100,160,30,0.5) !important;
+  border-color:rgba(160,220,50,0.8) !important;
+}
+/* Start tile that's also a route step */
+.fr-cell.fr-start.route-step::before { display:none; }
+
+/* Route stats bar — no spawn rate shown */
+.fr-route-stats { display:flex; gap:10px; flex-wrap:wrap; padding:5px 8px; background:var(--bg2); border:1px solid var(--border); font-size:9px; color:var(--muted); margin-bottom:8px; }
+.fr-stat { display:flex; gap:4px; align-items:center; }
+.fr-stat strong { color:var(--white); }
+
+/* Route list */
+.fr-route-list { display:flex; flex-direction:column; gap:4px; max-height:180px; overflow-y:auto; margin-bottom:8px; }
+.fr-route-card { background:var(--bg2); border:1px solid var(--border); padding:7px 9px; display:flex; align-items:center; gap:8px; transition:border-color 0.12s; }
+.fr-route-card:hover { border-color:var(--border2); }
+.fr-route-card.active-route { border-color:var(--yellow); background:#0d0a00; }
+.fr-route-card.equipped-route { border-left:3px solid #44cc44; }
+.fr-rc-btns { display:flex; gap:3px; }
+.fr-rc-btn { background:#000; border:1px solid var(--border2); color:var(--muted); font-size:9px; padding:2px 7px; cursor:pointer; font-family:inherit; }
+.fr-rc-btn:hover { color:var(--white); border-color:var(--white); }
+.fr-rc-btn.equip-btn { border-color:#446644; color:#77aa77; }
+.fr-rc-btn.equip-btn:hover { border-color:#77cc77; color:#aaeaaa; }
+.fr-rc-btn.equip-btn.on { background:#0a200a; border-color:#66cc66; color:#88ee88; }
+.fr-rc-btn.del-btn:hover { border-color:var(--red); color:var(--red); }
+
+/* Name/zone row */
+.fr-name-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.fr-name-input { flex:1; background:#000; border:1px solid var(--border2); color:var(--white); font-family:inherit; font-size:10px; padding:4px 7px; }
+.fr-name-input:focus { outline:none; border-color:var(--white); }
+.fr-zone-select { background:#000; border:1px solid var(--border2); color:var(--white); font-family:inherit; font-size:9px; padding:3px 6px; }
+
+/* Action buttons */
+.fr-action-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.fr-action-btn { background:#000; border:1px solid var(--border2); color:var(--muted); font-size:9px; padding:4px 10px; cursor:pointer; font-family:inherit; text-transform:uppercase; letter-spacing:1px; transition:all 0.12s; }
+.fr-action-btn:hover { color:var(--white); border-color:var(--white); }
+.fr-action-btn.primary { border-color:#446644; color:#77aa77; }
+.fr-action-btn.primary:hover { border-color:#77cc77; color:#aaeaaa; }
+.fr-action-btn.danger:hover { border-color:var(--red); color:var(--red); }
+
+/* Bot route display */
+.fr-bot-display { padding:5px; background:var(--bg2); border:1px solid var(--border); font-size:9px; color:var(--muted); margin-bottom:4px; }
+.fr-bot-display strong { color:var(--white); }
+
+/* Grid mini-map in equipped route info — shows live player position on the route grid */
+.fr-live-grid-wrap { overflow:auto; margin-top:6px; border:1px solid var(--border); padding:3px; position:relative; }
+#fr-live-bg-canvas { position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
+.fr-live-grid { display:inline-grid; gap:1px; pointer-events:none; position:relative; z-index:1; }
+.fr-live-cell { width:14px; height:14px; background:rgba(0,0,0,0.22); border:1px solid rgba(255,255,255,0.04); position:relative; }
+.fr-live-cell.fr-live-dead { background:rgba(0,0,0,0.7); border-color:rgba(0,0,0,0.5); }
+.fr-live-cell.fr-live-start { background:rgba(30,60,20,0.5); border-color:rgba(80,160,60,0.4); }
+.fr-live-cell.fr-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.5); }
+.fr-live-cell.fr-live-step::after { content:attr(data-step); position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:6px; color:rgba(160,230,60,0.8); pointer-events:none; }
+.fr-live-cell.fr-live-player { background:rgba(60,140,10,0.9) !important; border-color:rgba(160,255,50,0.9) !important; box-shadow:inset 0 0 4px rgba(136,255,40,0.6); }
+.fr-live-cell.fr-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:7px; color:#d0ff50; pointer-events:none; }
+
+/* Route Shop */
+.fr-shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:6px; }
+.fr-shop-card { background:#050505; border:1px solid var(--border); padding:8px; position:relative; }
+.fr-shop-card .fr-shop-name { font-size:10px; font-weight:bold; color:var(--white); margin-bottom:3px; }
+.fr-shop-card .fr-shop-zone { font-size:8px; color:var(--muted); margin-bottom:4px; }
+.fr-shop-card .fr-shop-price { font-size:9px; color:var(--yellow); margin-bottom:5px; }
+.fr-shop-buy-btn { width:100%; background:#000; border:1px solid var(--border2); color:var(--muted); font-size:9px; padding:4px; cursor:pointer; font-family:inherit; text-transform:uppercase; letter-spacing:1px; }
+.fr-shop-buy-btn:hover { border-color:var(--yellow); color:var(--yellow); }
+.fr-shop-buy-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+/* Active route indicator in combat status bar */
+#fr-active-indicator { font-size:9px; color:#77aa66; }
+
 </style>
 </head>
 <body>
@@ -760,6 +948,7 @@ canvas {
 <div id="combat-status">
   <span id="combat-info">— IDLE —</span>
   <span id="combat-rates">EXP/min: — · Gold/min: —</span>
+  <span id="fr-active-indicator" style="display:none;"></span>
 </div>
 
 <!-- NAV -->
@@ -954,21 +1143,27 @@ canvas {
             <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gear-essence-display">0</span>
           </div>
 
-          <div style="font-size:9px;color:#888;margin-bottom:2px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">— Reroll —</div>
-          <div style="color:#aaaaaa;font-size:10px;margin-bottom:3px;">Select item:</div>
-          <select class="bs-select" id="bs-item-select" onchange="bsSelectItem()"><option value="">— choose —</option></select>
-          <div style="color:#aaaaaa;font-size:10px;margin:6px 0 2px;">Select stat line:</div>
-          <div class="bs-stat-select" id="bs-stat-select"></div>
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <div style="flex:1;">
-              <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Value</div>
-              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-val-cost-display">Cost: —g</div>
-              <button class="bs-reroll-btn" id="bs-reroll-val-btn" onclick="doReroll('value')" disabled>REROLL VALUE</button>
-            </div>
-            <div style="flex:1;">
-              <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Type</div>
-              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-type-cost-display">Cost: —g</div>
-              <button class="bs-reroll-btn" id="bs-reroll-type-btn" onclick="doReroll('type')" disabled>REROLL TYPE</button>
+          <div style="font-size:9px;color:#888;margin-bottom:4px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">— Reroll —</div>
+          <div style="font-size:8px;color:#555;margin-bottom:6px;">Hover or click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
+          <div id="bs-reroll-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+          <div id="bs-reroll-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No rerollable items.</div>
+
+          <!-- Selected item stat picker + reroll buttons — shown when an item is selected -->
+          <div id="bs-reroll-panel" style="display:none;margin-top:8px;">
+            <div style="font-size:8px;color:#777;margin-bottom:4px;" id="bs-reroll-item-label"></div>
+            <div style="font-size:9px;color:#aaa;margin-bottom:3px;">Select stat line:</div>
+            <div class="bs-stat-select" id="bs-stat-select"></div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <div style="flex:1;">
+                <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Value</div>
+                <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-val-cost-display">Cost: —</div>
+                <button class="bs-reroll-btn" id="bs-reroll-val-btn" onclick="doUnifiedReroll('value')" disabled>REROLL VALUE</button>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Type</div>
+                <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-type-cost-display">Cost: —</div>
+                <button class="bs-reroll-btn" id="bs-reroll-type-btn" onclick="doUnifiedReroll('type')" disabled>REROLL TYPE</button>
+              </div>
             </div>
           </div>
 
@@ -976,24 +1171,17 @@ canvas {
           <div style="font-size:8px;color:#555;margin-bottom:5px;">All rarities. Equipped or locked items cannot be salvaged.</div>
           <div id="salvage-list" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
           <div id="salvage-empty" style="font-size:9px;color:#444;display:none;">No items available to salvage</div>
+        </div>
 
-          <div style="font-size:9px;color:#888;margin:10px 0 4px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border);padding-top:8px;">— Mythic Essence Reroll —</div>
-          <div style="color:#aaaaaa;font-size:10px;margin-bottom:3px;">Select Mythic item (Legendary Essence + gold per reroll):</div>
-          <select class="bs-select" id="essence-item-select" onchange="essenceSelectItem()"><option value="">— choose —</option></select>
-          <div style="color:#aaaaaa;font-size:10px;margin:4px 0 2px;" id="essence-stat-label" style="display:none;">Select stat line:</div>
-          <div class="bs-stat-select" id="essence-stat-select"></div>
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <div style="flex:1;">
-              <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Value</div>
-              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="essence-val-cost-display">Cost: —</div>
-              <button class="bs-reroll-btn" id="essence-reroll-val-btn" onclick="doEssenceReroll('value')" disabled style="border-color:var(--unique);color:var(--unique);">REROLL VALUE</button>
-            </div>
-            <div style="flex:1;">
-              <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Type</div>
-              <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="essence-type-cost-display">Cost: —</div>
-              <button class="bs-reroll-btn" id="essence-reroll-type-btn" onclick="doEssenceReroll('type')" disabled style="border-color:var(--unique);color:var(--unique);">REROLL TYPE</button>
-            </div>
+        <!-- FARM ROUTE SHOP -->
+        <div class="town-section" id="fr-shop-section">
+          <div class="town-section-title">🗺 FARM ROUTE SHOP</div>
+          <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 1% chance of an S-rank route.</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:9px;color:#888;">Gold: <span id="fr-shop-gold" style="color:var(--yellow);font-weight:bold;">0</span></span>
+            <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (50k)</button>
           </div>
+          <div class="fr-shop-grid" id="fr-shop-grid"></div>
         </div>
 
       </div>
@@ -1051,7 +1239,6 @@ canvas {
         <div id="abyss-floor-display" style="margin-top:5px;font-size:10px;color:var(--red);display:none;"></div>
       </div>
 
-
     </div>
 
     <!-- CONFIG PANEL -->
@@ -1070,18 +1257,6 @@ canvas {
           <div class="config-row" style="border:none;">
             <div class="config-label" style="font-size:12px;">Pause Bot<span class="config-sub">Suspend all combat/auto-systems</span></div>
             <div class="toggle-switch" id="toggle-paused" onclick="togglePause()"></div>
-          </div>
-        </div>
-
-        <div class="config-section">
-          <div class="config-title">AUTO-HEAL</div>
-          <div class="config-row">
-            <div class="config-label">Enable<span class="config-sub">Use potion at threshold</span></div>
-            <div class="toggle-switch" id="toggle-autoheal" onclick="toggleConfig('autoheal')"></div>
-          </div>
-          <div class="config-row">
-            <div class="config-label">HP Threshold (%)</div>
-            <input class="config-input" type="number" id="cfg-heal-threshold" value="40" min="1" max="99" onchange="saveConfig()">
           </div>
         </div>
 
@@ -1118,16 +1293,6 @@ canvas {
         </div>
 
         <div class="config-section">
-          <div class="config-title">ZONE PRIORITY QUEUE</div>
-          <div style="font-size:9px;color:#888;margin-bottom:6px;">Bot farms slot 1 first. Steps down on low HP. Steps back up when healed.</div>
-          <div id="priority-queue-rows"></div>
-          <div class="config-row" style="margin-top:4px;">
-            <div class="config-label">Step-Down HP (%)<span class="config-sub">Step to next zone below this HP</span></div>
-            <input class="config-input" type="number" id="cfg-flee-threshold" value="20" min="0" max="99" onchange="saveConfig()">
-          </div>
-        </div>
-
-        <div class="config-section">
           <div class="config-title">TOWN RUN</div>
           <div class="config-row">
             <div class="config-label">Enable Town Run<span class="config-sub">Travels to town when inventory full, auto-salvages configured rarities</span></div>
@@ -1142,6 +1307,102 @@ canvas {
               <div class="rarity-tag epic" onclick="setTownRunFilter('epic')">EPIC</div>
               <div class="rarity-tag legendary" onclick="setTownRunFilter('legendary')">LEGENDARY</div>
               <div class="rarity-tag mythic" onclick="setTownRunFilter('mythic')">MYTHIC</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-section">
+          <div class="config-title">FARM ROUTE QUEUE</div>
+          <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.45;">Queue routes in order. The bot runs them top to bottom, then loops or stops. Routes with no path are skipped.</div>
+
+          <div id="fr-queue-rows" style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+            <button onclick="frQueueAdd()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">+ ADD SLOT</button>
+            <button onclick="frQueueClear()" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">CLEAR ALL</button>
+          </div>
+          <div class="config-row" style="margin-top:2px;">
+            <div class="config-label">Loop Queue<span class="config-sub">Restart from slot 1 after last route completes</span></div>
+            <div class="toggle-switch" id="toggle-fr-queue-loop" onclick="frQueueToggleLoop()"></div>
+          </div>
+          <div class="config-row" style="margin-top:2px;">
+            <div class="config-label">Step-Down HP (%)<span class="config-sub">Skip to next queued route below this HP</span></div>
+            <input class="config-input" type="number" id="cfg-flee-threshold" value="20" min="0" max="99" onchange="saveConfig()">
+          </div>
+          <div id="fr-queue-status" style="font-size:9px;color:#555;margin-top:4px;min-height:14px;"></div>
+        </div>
+
+        <div class="config-section" style="border-color:rgba(100,180,100,0.2);background:rgba(50,100,50,0.04);">
+          <div class="config-title" style="color:#77aa77;">FARM ROUTES</div>
+          <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.45;">Draw a connected path from the start tile. The bot follows it tile by tile per kill. Equip to override queue.</div>
+
+          <!-- Saved routes list -->
+          <div class="fr-route-list" id="fr-route-list"></div>
+          <div style="font-size:9px;color:#444;display:none;padding:4px 0;" id="fr-no-routes">No routes yet. Create one below or buy from the town shop.</div>
+
+          <!-- Active equipped route info with live mini-grid -->
+          <div id="fr-equipped-info" style="display:none;padding:6px 8px;background:#080d04;border:1px solid #1a2a0a;margin-bottom:8px;">
+            <div style="font-size:9px;color:#77aa66;margin-bottom:4px;">▶ Active Route: <strong id="fr-equipped-name" style="color:#aaeaaa;">—</strong> · Step <span id="fr-bot-current-step">1</span>/<span id="fr-bot-total-steps">?</span></div>
+            <div class="fr-live-grid-wrap">
+              <canvas id="fr-live-bg-canvas"></canvas>
+              <div class="fr-live-grid" id="fr-live-grid"></div>
+            </div>
+          </div>
+
+          <!-- Unequip button -->
+          <div id="fr-config-display" style="margin-bottom:6px;"></div>
+
+          <!-- Collapsible Route Editor -->
+          <div style="border-top:1px solid var(--border);padding-top:6px;">
+            <button onclick="frToggleEditor()" style="width:100%;background:transparent;border:none;padding:4px 0;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;" id="fr-editor-toggle-btn">
+              <span style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Route Editor</span>
+              <span style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:8px;color:#555;" id="fr-blank-count-label"></span>
+                <span style="font-size:10px;color:#555;" id="fr-editor-chevron">▼</span>
+              </span>
+            </button>
+            <div id="fr-editor-body" style="display:none;padding-top:6px;">
+              <div class="fr-name-row" style="margin-bottom:6px;">
+                <input class="fr-name-input" id="fr-route-name" placeholder="Route name..." value="My Route" maxlength="32">
+                <select class="fr-zone-select" id="fr-editor-zone" onchange="frChangeEditorZone()">
+                  <option value="fields">The Fields</option>
+                  <option value="caves">Dark Cave</option>
+                  <option value="swamp">Bleakmoor Swamp</option>
+                  <option value="hoarspire">Hoarspire Valley</option>
+                  <option value="abyss">The Abyss</option>
+                </select>
+                <select class="fr-zone-select" id="fr-editor-subzone" onchange="frChangeEditorSubzone()" style="min-width:110px;">
+                  <option value="">Base Zone</option>
+                </select>
+              </div>
+
+              <!-- Toolbar -->
+              <div class="fr-toolbar" style="margin-bottom:6px;">
+                <button class="fr-tool-btn active" id="fr-tool-route" onclick="frSetTool('route')">PATH</button>
+                <button class="fr-tool-btn" id="fr-tool-erase" onclick="frSetTool('erase')">ERASE</button>
+                <div class="fr-tool-sep"></div>
+                <button class="fr-tool-btn" onclick="frClearRoute()">CLEAR</button>
+              </div>
+
+              <!-- Grid -->
+              <div class="fr-grid-wrap" id="fr-grid-wrap">
+                <canvas id="fr-bg-canvas"></canvas>
+                <div class="fr-grid" id="fr-grid"></div>
+              </div>
+
+              <!-- Steps counter -->
+              <div class="fr-route-stats" style="margin-bottom:6px;">
+                <div class="fr-stat">Steps: <strong id="frs-steps">0</strong> / <span id="frs-max-steps">—</span></div>
+                <div class="fr-stat">Rating: <strong id="frs-rating">—</strong></div>
+              </div>
+
+              <!-- Save / action buttons -->
+              <div class="fr-action-row">
+                <button class="fr-action-btn primary" onclick="frSaveRoute()">SAVE</button>
+                <button class="fr-action-btn" onclick="frNewRoute()">NEW</button>
+                <button class="fr-action-btn danger" onclick="frDeleteEditing()">RESET</button>
+                <button class="fr-action-btn" onclick="frUnequipRoute()" id="fr-unequip-btn" style="display:none;">UNEQUIP</button>
+              </div>
+              <div style="font-size:8px;color:#555;line-height:1.4;margin-top:4px;" id="fr-editor-hint">Start at <span style="color:rgba(130,220,100,0.9);">S</span>, then step onto highlighted adjacent tiles. Once saved, routes are permanent — use ✕ in your route list to delete.</div>
             </div>
           </div>
         </div>
@@ -1195,6 +1456,18 @@ canvas {
 
       <!-- PLAYER SETTINGS -->
       <div id="cfg-tab-player" style="display:none;">
+        <div class="config-section">
+          <div class="config-title">AUTO-HEAL</div>
+          <div class="config-row">
+            <div class="config-label">Enable<span class="config-sub">Use potion at threshold</span></div>
+            <div class="toggle-switch" id="toggle-autoheal" onclick="toggleConfig('autoheal')"></div>
+          </div>
+          <div class="config-row">
+            <div class="config-label">HP Threshold (%)</div>
+            <input class="config-input" type="number" id="cfg-heal-threshold" value="40" min="1" max="99" onchange="saveConfig()">
+          </div>
+        </div>
+
         <div class="config-section">
           <div class="config-title">AUTO-EQUIP BETTER</div>
           <div style="font-size:9px;color:#888;margin-bottom:6px;">Automatically equips loot using the rules below.</div>
@@ -2817,7 +3090,13 @@ function getZoneConfig() {
 function spawnDelay(zone) {
   const zc = getZoneConfig();
   if (!zc) return 3000;
-  return randi(zc.delay[0], zc.delay[1]) * 1000;
+  const base = randi(zc.delay[0], zc.delay[1]) * 1000;
+  // Farm route tile modifier
+  const tileMod = frGetCurrentTileModifiers ? frGetCurrentTileModifiers() : null;
+  if (tileMod && !tileMod.dead) {
+    return Math.round(base * tileMod.spawnMult);
+  }
+  return base;
 }
 
 // Spawn a single monster from zone config — used by Echoing Chasm reinforcements
@@ -3402,12 +3681,72 @@ function spawnMonsters() {
   if (special==='witch_coven') { spawnWitchCoven(zc); return; }
 
   // Standard spawn
+  // Farm route tile modifiers
+  const frTile = (typeof frGetCurrentTileModifiers === 'function') ? frGetCurrentTileModifiers() : null;
+
+  // BOSS TILE — 40% chance of zone boss, otherwise normal spawn
+  if (frTile && frTile.bossChance > 0 && Math.random() < frTile.bossChance) {
+    const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
+    const bossHp = Math.round(randi(zc.hp[0], zc.hp[1]) * 2.5);
+    const dmgMult = 1.8;
+    G.monsters.push({
+      id:Date.now()+Math.random(),
+      name:`<span style="color:${TAG_COLORS.ELITE}">[BOSS]</span> ${baseName}`,
+      baseName, zone:G.zone, subZone:G.subZone,
+      maxHp:bossHp, hp:bossHp, shield:0, arcaneShield:0,
+      dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
+      expMin:Math.round(zc.exp[0]*2), expMax:Math.round(zc.exp[1]*2),
+      atkMin:1000, atkMax:3000,
+      isBoss:true, isAbyssBoss:false, isRouteBoss:true, isElite:false, isSwarm:false, tags:[],
+      prefixData:PREFIXES[1], dmgMult, lastAttack:performance.now()
+    });
+    log(`<span style="color:#cc8844">⚑ Route Boss tile — <span class="log-monster">${baseName}</span> appears!</span>`, 'system');
+    if (typeof frOnSpawn === 'function') frOnSpawn();
+    return;
+  }
+
+  // ELITE SWARM TILE — force 3-5 elites
+  if (frTile && frTile.eliteSwarm) {
+    const swarmCount = randi(3, 5);
+    const maxEliteTags = zc.maxEliteTags || 1;
+    const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
+    for (let i = 0; i < swarmCount; i++) {
+      const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
+      const prefix = rollPrefix(true);
+      const tags = rollEliteTags(maxEliteTags, forceMaxEliteTags);
+      let baseHp = Math.round(randi(zc.hp[0], zc.hp[1]) * prefix.hpMult * 2);
+      if (G.zone==='abyss') baseHp = Math.round(baseHp * G.abyssDifficulty);
+      const shield = tags.includes('SHIELDED') ? Math.round(baseHp * 0.4) : 0;
+      const arcaneShield = tags.includes('ARCANE_SHIELDED') ? Math.round(baseHp * 0.4) : 0;
+      const dmgMult = prefix.dmgMult * 1.2;
+      let atkMin = 1000, atkMax = 2000;
+      if (tags.includes('FAST')) { atkMin=500; atkMax=800; }
+      if (tags.includes('FREEZING')) G.debuffs.freezing = true;
+      G.monsters.push({
+        id:Date.now()+Math.random(),
+        name: formatMonsterName(prefix.name, baseName, true, tags),
+        baseName, zone:G.zone, subZone:G.subZone,
+        maxHp:baseHp, hp:baseHp, shield, arcaneShield,
+        dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
+        expMin:Math.round(zc.exp[0]*prefix.expMult), expMax:Math.round(zc.exp[1]*prefix.expMult),
+        atkMin, atkMax,
+        isBoss:false, isElite:true, isSwarm:true, tags,
+        prefixData:prefix, dmgMult, lastAttack:performance.now()
+      });
+    }
+    log(`<span style="color:#9966cc">⚔ Elite Swarm tile — ${swarmCount} elites!</span>`, 'system');
+    if (typeof frOnSpawn === 'function') frOnSpawn();
+    return;
+  }
+
+  // ELITE TILE — force a single elite (guaranteed, overrides normal roll)
+  const forceElite = frTile && frTile.forceElite && !frTile.eliteSwarm;
+
   const isSwarm = zc.swarmChance > 0 && Math.random() < zc.swarmChance;
   const count = isSwarm ? randi(zc.swarmSize[0], zc.swarmSize[1]) : 1;
-  const canElite = zc.eliteChance > 0 && !isSwarm;
-  const isElite = canElite && Math.random() < zc.eliteChance;
   const maxEliteTags = zc.maxEliteTags || 1;
   const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
+  const isElite = forceElite || (!isSwarm && zc.eliteChance > 0 && Math.random() < zc.eliteChance);
 
   for (let i=0; i<count; i++) {
     const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
@@ -3446,6 +3785,7 @@ function spawnMonsters() {
   }
 
   logEncounterFlavor(G.monsters[0], count, isSwarm, isElite, special);
+  if (typeof frOnSpawn === 'function') frOnSpawn();
 }
 
 function spawnGoblinCamp(zc) {
@@ -4526,16 +4866,26 @@ function gameTick(ts) {
     }
   }
 
-  // Priority queue step-down on low HP — never flees to town automatically
+  // Farm Route Queue: step-down on low HP — move to next queued route
   const fleeThreshold = G.config.fleeThreshold;
-  if (fleeThreshold>0 && G.hp/G.maxHp*100<=fleeThreshold && G.zone!=='town') {
-    const currentPriIdx = G.config.priorityQueue.findIndex(s=>s.zone===G.zone&&s.subZone===(G.subZone||null));
-    const nextSlot = G.config.priorityQueue.slice(currentPriIdx+1).find(s=>s.zone&&s.zone!=='town');
-    if (nextSlot) {
-      log(`HP low — stepping down to ${ZONE_DATA[nextSlot.zone]?.name||nextSlot.zone}`);
-      setZone(nextSlot.zone, true, nextSlot.subZone);
+  if (fleeThreshold > 0 && G.hp / G.maxHp * 100 <= fleeThreshold && G.zone !== 'town') {
+    const fr = frQueueEnsure ? frQueueEnsure() : null;
+    if (fr && fr.queue && fr.queue.length > 0) {
+      const curIdx = fr.queueIdx % fr.queue.length;
+      const nextIdx = curIdx + 1;
+      if (nextIdx < fr.queue.length) {
+        const nextSlot = fr.queue[nextIdx];
+        if (nextSlot && nextSlot.routeId) {
+          const nextRoute = FarmRoutes.getRoutes().find(r => r.id === nextSlot.routeId);
+          if (nextRoute && nextRoute.path && nextRoute.path.length > 0) {
+            fr.queueIdx = nextIdx;
+            FarmRoutes.equip(nextRoute.id);
+            if (nextRoute.zone && nextRoute.zone !== 'town') setZone(nextRoute.zone, true, nextRoute.subZone);
+            log(`HP low — stepping to next route: "${nextRoute.name}"`, 'system');
+          }
+        }
+      }
     }
-    // No fallback to town — player must go manually
   }
 
   // Town: full regen. Auto-sell/salvage filters run when entering town or pressing Trigger Town Run.
@@ -6124,25 +6474,72 @@ function buyMerchantItem(idx) {
 }
 
 function buildBsItemSelect() {
-  const sel=document.getElementById('bs-item-select');
-  if(!sel)return;
-  const prev = sel.value;
-  sel.innerHTML='<option value="">— choose —</option>';
-  for(const item of G.inventory){
-    if(item.rarity==='mythic')continue;
-    const opt=document.createElement('option');
-    opt.value=item.id;
-    opt.textContent=`[${item.rarity.toUpperCase()}] ${item.name}`;
-    opt.style.color = (RC[item.rarity]||'#aaaaaa').replace('var(--','').replace(')','');
-    sel.appendChild(opt);
-  }
-  if(prev) sel.value=prev;
+  // Backwards compat — calls unified builder
+  buildBsRerollList();
   buildSalvageSelect();
-  buildEssenceItemSelect();
   const ed=document.getElementById('essence-display');
   if(ed)ed.textContent=G.legendaryEssence;
   const ged=document.getElementById('gear-essence-display');
   if(ged)ged.textContent=G.gearEssence;
+}
+
+// Unified reroll item list — all rarities, salvage-style rows with stat preview
+function buildBsRerollList() {
+  const list = document.getElementById('bs-reroll-list');
+  const empty = document.getElementById('bs-reroll-empty');
+  const panel = document.getElementById('bs-reroll-panel');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (G.zone !== 'town') {
+    if (empty) { empty.style.display='block'; empty.textContent='Travel to town to reroll items.'; }
+    if (panel) panel.style.display='none';
+    return;
+  }
+
+  const rerollable = G.inventory.filter(i => !i.locked);
+  if (rerollable.length === 0) {
+    if (empty) { empty.style.display='block'; empty.textContent='No items available to reroll.'; }
+    if (panel) panel.style.display='none';
+    return;
+  }
+  if (empty) empty.style.display='none';
+
+  const isEssenceRarity = (rarity) => rarity === 'mythic' || rarity === 'legendary';
+
+  for (const item of rerollable) {
+    if (!item || !item.rarity || !item.name) continue;
+    const rarityColor = RC[item.rarity] || '#aaaaaa';
+    const row = document.createElement('div');
+    row.className = `reroll-row rarity-${item.rarity}`;
+    row.tabIndex = 0;
+    const needsEssence = isEssenceRarity(item.rarity);
+    const statsHtml = formatItemStats(item) || '<span style="color:#555;">No stats</span>';
+    const essenceTag = needsEssence ? `<span class="reroll-essence-tag">⬡LE</span>` : '';
+
+    row.innerHTML = `
+      <div class="reroll-main">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${essenceTag}</div>
+          <div style="font-size:8px;color:#555;">${item.slot ? item.slot.toUpperCase() : ''} · ${item.rarity.toUpperCase()}${item.equipped ? ' · <span style="color:#886633;">EQUIPPED</span>' : ''}</div>
+        </div>
+        <button onclick="event.stopPropagation();bsUnifiedSelectItem(${item.id})" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:2px 7px;cursor:pointer;flex-shrink:0;white-space:nowrap;letter-spacing:1px;">SELECT</button>
+      </div>
+      <div class="reroll-stats">
+        ${statsHtml}
+        <div style="font-size:8px;color:#555;margin-top:3px;">${needsEssence ? 'Requires Legendary Essence + gold per reroll.' : 'Cost: gold only.'}</div>
+      </div>
+    `;
+    row.addEventListener('click', (e) => {
+      if (e.target && e.target.closest && e.target.closest('button')) return;
+      // Toggle stat preview without selecting for reroll
+      row.classList.toggle('reroll-selected');
+      document.querySelectorAll('.reroll-row').forEach(r => {
+        if (r !== row) r.classList.remove('reroll-selected');
+      });
+    });
+    list.appendChild(row);
+  }
 }
 
 
@@ -6216,58 +6613,165 @@ function applyRerollResultToButton(btn, item, stat, type, source) {
   btn.innerHTML = `<span class="reroll-old-line">${r.oldLine}</span><span class="reroll-new-line"><span class="reroll-arrow">↳</span>${r.newLine}${r.tag ? ` <span class="reroll-tag">${r.tag}</span>` : ''}</span>`;
 }
 
-function bsSelectItem() {
-  const id=parseFloat(document.getElementById('bs-item-select').value);
-  G.bsSelectedItem=G.inventory.find(i=>i.id===id)||null;
-  G.bsSelectedStat=null;
-  const statDiv=document.getElementById('bs-stat-select');
-  statDiv.innerHTML='';
-  if(!G.bsSelectedItem){updateBsCost();return;}
-  const item=G.bsSelectedItem;
-  ensureItemRerollLocks(item);
-  const lockInfo=document.createElement('div');
-  lockInfo.style.cssText='font-size:8px;color:#777;flex-basis:100%;width:100%;line-height:1.35;margin-bottom:2px;';
-  lockInfo.textContent=rerollLockSummary(item);
-  statDiv.appendChild(lockInfo);
-  // Main stats
-  for(const s of Object.keys(item.mainStats||{})){
-    const btn=document.createElement('button');
-    btn.className='bs-stat-btn';
-    btn.textContent=s.toUpperCase()+' (main)';
-    applyRerollResultToButton(btn, item, s, 'main', 'bs');
-    btn.setAttribute('data-stat',s);
-    btn.setAttribute('data-type','main');
-    btn.style.borderColor='#ccaa44';
-    const lockedOut=applyRerollLockState(btn, item, s, 'main');
-    if(!lockedOut) btn.onclick=()=>{
-      document.querySelectorAll('.bs-stat-btn').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      G.bsSelectedStat=s;G.bsSelectedStatType='main';
-      updateBsCost();
-    };
-    statDiv.appendChild(btn);
+// Unified reroll — select item from list
+function bsUnifiedSelectItem(itemId) {
+  const item = G.inventory.find(i => i.id === itemId) || null;
+
+  // Highlight selected row
+  document.querySelectorAll('.reroll-row').forEach(r => {
+    const btn = r.querySelector('button');
+    if (btn && btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(String(itemId))) {
+      r.classList.add('reroll-selected');
+    } else {
+      r.classList.remove('reroll-selected');
+    }
+  });
+
+  // Route to the right state variables
+  const isEssence = item && (item.rarity === 'mythic' || item.rarity === 'legendary');
+  if (isEssence) {
+    essenceSelectedItem = item;
+    essenceSelectedStat = null;
+    essenceSelectedStatType = null;
+    G.bsSelectedItem = null;
+  } else {
+    G.bsSelectedItem = item;
+    G.bsSelectedStat = null;
+    essenceSelectedItem = null;
   }
-  // Sub stats
-  for(const s of Object.keys(item.subStats||{})){
-    const btn=document.createElement('button');
-    btn.className='bs-stat-btn';
-    btn.textContent=s.toUpperCase()+' (sub)';
-    applyRerollResultToButton(btn, item, s, 'sub', 'bs');
-    btn.setAttribute('data-stat',s);
-    btn.setAttribute('data-type','sub');
-    btn.style.borderColor='#4466aa';
-    const lockedOut=applyRerollLockState(btn, item, s, 'sub');
-    if(!lockedOut) btn.onclick=()=>{
-      document.querySelectorAll('.bs-stat-btn').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      G.bsSelectedStat=s;G.bsSelectedStatType='sub';
-      updateBsCost();
-    };
-    statDiv.appendChild(btn);
-  }
-  updateBsCost();
+
+  updateUnifiedRerollPanel();
 }
 
+function updateUnifiedRerollPanel() {
+  const panel = document.getElementById('bs-reroll-panel');
+  const statDiv = document.getElementById('bs-stat-select');
+  const label = document.getElementById('bs-reroll-item-label');
+  if (!panel || !statDiv) return;
+
+  const item = essenceSelectedItem || G.bsSelectedItem;
+  if (!item) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  statDiv.innerHTML = '';
+
+  const isEssence = essenceSelectedItem != null;
+  const rarityColor = RC[item.rarity] || '#aaa';
+  if (label) {
+    label.innerHTML = `<span style="color:${rarityColor};">${item.name}</span> ${isEssence ? '<span style="color:var(--legendary);font-size:8px;">(Legendary Essence required)</span>' : ''}`;
+  }
+
+  ensureItemRerollLocks(item);
+  const lockInfo = document.createElement('div');
+  lockInfo.style.cssText = 'font-size:8px;color:#777;flex-basis:100%;width:100%;line-height:1.35;margin-bottom:2px;';
+  lockInfo.textContent = rerollLockSummary(item);
+  statDiv.appendChild(lockInfo);
+
+  const selectedStat = isEssence ? essenceSelectedStat : G.bsSelectedStat;
+  const selectedType = isEssence ? essenceSelectedStatType : G.bsSelectedStatType;
+  const source = isEssence ? 'essence' : 'bs';
+
+  for (const s of Object.keys(item.mainStats || {})) {
+    const b = document.createElement('button');
+    b.className = 'bs-stat-btn';
+    b.textContent = `${s.toUpperCase()} (main)`;
+    applyRerollResultToButton(b, item, s, 'main', source);
+    b.setAttribute('data-stat', s);
+    b.setAttribute('data-type', 'main');
+    if (isEssence) b.style.borderColor = '#ccaa44';
+    const lockedOut = applyRerollLockState(b, item, s, 'main');
+    if (!lockedOut) b.onclick = () => {
+      statDiv.querySelectorAll('.bs-stat-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      if (isEssence) { essenceSelectedStat = s; essenceSelectedStatType = 'main'; }
+      else { G.bsSelectedStat = s; G.bsSelectedStatType = 'main'; }
+      updateUnifiedCost();
+    };
+    statDiv.appendChild(b);
+  }
+  for (const s of Object.keys(item.subStats || {})) {
+    const b = document.createElement('button');
+    b.className = 'bs-stat-btn';
+    b.textContent = `${s.toUpperCase()} (sub)`;
+    applyRerollResultToButton(b, item, s, 'sub', source);
+    b.setAttribute('data-stat', s);
+    b.setAttribute('data-type', 'sub');
+    if (isEssence) b.style.borderColor = '#4466aa';
+    const lockedOut = applyRerollLockState(b, item, s, 'sub');
+    if (!lockedOut) b.onclick = () => {
+      statDiv.querySelectorAll('.bs-stat-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      if (isEssence) { essenceSelectedStat = s; essenceSelectedStatType = 'sub'; }
+      else { G.bsSelectedStat = s; G.bsSelectedStatType = 'sub'; }
+      updateUnifiedCost();
+    };
+    statDiv.appendChild(b);
+  }
+  updateUnifiedCost();
+}
+
+function updateUnifiedCost() {
+  const isEssence = essenceSelectedItem != null;
+  const item = isEssence ? essenceSelectedItem : G.bsSelectedItem;
+  const stat = isEssence ? essenceSelectedStat : G.bsSelectedStat;
+  const statType = isEssence ? essenceSelectedStatType : G.bsSelectedStatType;
+
+  const valBtn = document.getElementById('bs-reroll-val-btn');
+  const typeBtn = document.getElementById('bs-reroll-type-btn');
+  const valCost = document.getElementById('bs-val-cost-display');
+  const typeCost = document.getElementById('bs-type-cost-display');
+  if (!valBtn || !typeBtn) return;
+
+  if (!item || !stat) {
+    valBtn.disabled = typeBtn.disabled = true;
+    if (valCost) valCost.textContent = 'Cost: —';
+    if (typeCost) typeCost.textContent = 'Cost: —';
+    return;
+  }
+
+  const costVal = bsRerollCostFor(item, 'value', stat, statType);
+  const costType = bsRerollCostFor(item, 'type', stat, statType);
+
+  const fmtCost = (c) => {
+    if (!c) return '—';
+    let s = `${fmtNum(c.gold)}g`;
+    if (c.legendaryEssence) s += ` + ${c.legendaryEssence}LE`;
+    return s;
+  };
+
+  if (valCost) valCost.textContent = `Cost: ${fmtCost(costVal)}`;
+  if (typeCost) typeCost.textContent = `Cost: ${fmtCost(costType)}`;
+
+  valBtn.disabled = !canPayRerollCost(item, costVal);
+  typeBtn.disabled = !canPayRerollCost(item, costType);
+
+  // Style buttons based on essence requirement
+  const accentColor = isEssence ? 'var(--unique)' : '';
+  [valBtn, typeBtn].forEach(btn => {
+    btn.style.borderColor = !btn.disabled && isEssence ? 'var(--unique)' : '';
+    btn.style.color = !btn.disabled && isEssence ? 'var(--unique)' : '';
+  });
+}
+
+function doUnifiedReroll(mode) {
+  const isEssence = essenceSelectedItem != null;
+  if (isEssence) {
+    doEssenceReroll(mode);
+    // Refresh panel to show results
+    setTimeout(() => updateUnifiedRerollPanel(), 20);
+  } else {
+    doReroll(mode);
+    setTimeout(() => updateUnifiedRerollPanel(), 20);
+  }
+}
+
+function bsSelectItem() {
+  // Legacy — reroute to unified
+  const id = parseFloat(document.getElementById('bs-item-select')?.value || '0');
+  if (id) bsUnifiedSelectItem(id);
+}
 function rerollCostKey(item, stat, type) {
   return item && stat && type ? `${item.id}_${type}_${stat}` : '';
 }
@@ -7464,7 +7968,7 @@ function switchTab(tab) {
   if(tab==='stats'){renderStats();renderEquipSlots();renderPotions();}
   if(tab==='inv'){renderInventory(); renderKeyItems();}
   if(tab==='skills'){renderSkills();}
-  if(tab==='config'){renderPriorityQueue(); switchCfgTab('bot'); loadConfigUI(); renderLogFilterUI();}
+  if(tab==='config'){renderPriorityQueue(); switchCfgTab('bot'); loadConfigUI(); renderLogFilterUI(); initFarmRoutesUI();}
   if(tab==='map'){updateAbyssFloor();}
 }
 
@@ -7791,57 +8295,187 @@ function initClassUI() {
   renderInventory(); renderPotions(); updateZoneUI(); updateAbyssFloor();
 }
 
-function renderPriorityQueue() {
-  const container = document.getElementById('priority-queue-rows');
+// ── FARM ROUTE QUEUE ─────────────────────────────────────────────────────────
+// Queue state lives in G.farmRoutes.queue (array of {routeId, repeat} items)
+// and G.farmRoutes.queueLoop (bool), G.farmRoutes.queueIdx (current position)
+
+function frQueueEnsure() {
+  const fr = FarmRoutes.ensure();
+  if (!Array.isArray(fr.queue)) fr.queue = [];
+  if (typeof fr.queueLoop !== 'boolean') fr.queueLoop = false;
+  if (typeof fr.queueIdx !== 'number') fr.queueIdx = 0;
+  return fr;
+}
+
+function frQueueAdd() {
+  const fr = frQueueEnsure();
+  fr.queue.push({ routeId: null, repeat: false });
+  renderRouteQueue();
+  saveConfig();
+}
+
+function frQueueClear() {
+  const fr = frQueueEnsure();
+  fr.queue = [];
+  fr.queueIdx = 0;
+  renderRouteQueue();
+  frUpdateQueueStatus();
+  saveConfig();
+}
+
+function frQueueToggleLoop() {
+  const fr = frQueueEnsure();
+  fr.queueLoop = !fr.queueLoop;
+  const tog = document.getElementById('toggle-fr-queue-loop');
+  if (tog) tog.classList.toggle('active', fr.queueLoop);
+  saveConfig();
+}
+
+function frQueueSetRoute(slotIdx, routeId) {
+  const fr = frQueueEnsure();
+  if (!fr.queue[slotIdx]) return;
+  fr.queue[slotIdx].routeId = routeId || null;
+  saveConfig();
+  frUpdateQueueStatus();
+}
+
+function frQueueSetRepeat(slotIdx, val) {
+  const fr = frQueueEnsure();
+  if (!fr.queue[slotIdx]) return;
+  fr.queue[slotIdx].repeat = !!val;
+  saveConfig();
+}
+
+function frQueueRemove(slotIdx) {
+  const fr = frQueueEnsure();
+  fr.queue.splice(slotIdx, 1);
+  if (fr.queueIdx >= fr.queue.length) fr.queueIdx = Math.max(0, fr.queue.length - 1);
+  renderRouteQueue();
+  frUpdateQueueStatus();
+  saveConfig();
+}
+
+function frQueueMoveUp(slotIdx) {
+  if (slotIdx === 0) return;
+  const fr = frQueueEnsure();
+  [fr.queue[slotIdx-1], fr.queue[slotIdx]] = [fr.queue[slotIdx], fr.queue[slotIdx-1]];
+  renderRouteQueue();
+  saveConfig();
+}
+
+// Get the currently active queued route (advances queue when a route finishes all steps)
+function frQueueGetCurrent() {
+  const fr = frQueueEnsure();
+  if (!fr.queue.length) return null;
+  const idx = fr.queueIdx % fr.queue.length;
+  const slot = fr.queue[idx];
+  if (!slot || !slot.routeId) return null;
+  return FarmRoutes.getRoutes().find(r => r.id === slot.routeId) || null;
+}
+
+// Called when current route finishes a full loop — advance to next queue slot
+function frQueueAdvance() {
+  const fr = frQueueEnsure();
+  if (!fr.queue.length) return;
+  const idx = fr.queueIdx % fr.queue.length;
+  const slot = fr.queue[idx];
+  // If repeat is set, stay on this slot
+  if (slot && slot.repeat) {
+    FarmRoutes.get().botStep = 0;
+    frUpdateEquippedIndicator();
+    return;
+  }
+  // Advance
+  fr.queueIdx = idx + 1;
+  if (fr.queueIdx >= fr.queue.length) {
+    if (fr.queueLoop) {
+      fr.queueIdx = 0;
+    } else {
+      fr.queueIdx = fr.queue.length; // past end = stop
+      frUpdateQueueStatus();
+      return;
+    }
+  }
+  // Equip next route
+  const nextSlot = fr.queue[fr.queueIdx];
+  if (nextSlot && nextSlot.routeId) {
+    const next = FarmRoutes.getRoutes().find(r => r.id === nextSlot.routeId);
+    if (next) {
+      FarmRoutes.equip(next.id);
+      if (next.zone && next.zone !== 'town') setZone(next.zone, false, next.subZone);
+      log(`Farm Route Queue: now running "${next.name}"`, 'system');
+    }
+  }
+  frUpdateQueueStatus();
+  frUpdateEquippedIndicator();
+  renderRouteQueue();
+}
+
+function frUpdateQueueStatus() {
+  const el = document.getElementById('fr-queue-status');
+  if (!el) return;
+  const fr = frQueueEnsure();
+  const active = frQueueGetCurrent();
+  if (!fr.queue.length) { el.textContent = 'Queue empty.'; return; }
+  if (fr.queueIdx >= fr.queue.length && !fr.queueLoop) {
+    el.textContent = 'Queue complete.';
+    return;
+  }
+  if (active) {
+    el.innerHTML = `Running: <strong style="color:#aaeaaa;">${active.name}</strong> (slot ${(fr.queueIdx % fr.queue.length) + 1}/${fr.queue.length})${fr.queueLoop ? ' · looping' : ''}`;
+  } else {
+    el.textContent = 'No valid route in current slot.';
+  }
+}
+
+function renderRouteQueue() {
+  const container = document.getElementById('fr-queue-rows');
   if (!container) return;
   container.innerHTML = '';
-  const zones = [
-    {val:'', label:'— empty —'},
-    {val:'fields', label:'Fields'},
-    {val:'fields:dusty_outskirts', label:'Fields — Dusty Outskirts'},
-    {val:'fields:goblin_camp', label:'Fields — Goblin Camp'},
-    {val:'fields:golem_temple', label:'Fields — Golem Temple'},
-    {val:'fields:stormwind_fields', label:'Fields — Stormwind Fields'},
-    {val:'caves', label:'Dark Cave'},
-    {val:'caves:deep_tunnels', label:'Dark Cave — Deep Tunnels'},
-    {val:'caves:bat_cave', label:'Dark Cave — Bat Cave'},
-    {val:'caves:forbidden_library', label:'Dark Cave — Forbidden Library'},
-    {val:'caves:echoing_chasm', label:'Dark Cave — Echoing Chasm'},
-    {val:'swamp', label:'Swamp'},
-    {val:'swamp:murk_depths', label:'Swamp — Murk Depths'},
-    {val:'swamp:crimson_rot', label:'Swamp — Crimson Rot'},
-    {val:'swamp:witch_coven', label:'Swamp — Witch Coven'},
-    {val:'swamp:cursed_hollow', label:'Swamp — Cursed Hollow'},
-    {val:'hoarspire', label:'Hoarspire — Snowwind Plains'},
-    {val:'hoarspire:sheercold_terrace', label:'Hoarspire — Sheercold Terrace'},
-    {val:'hoarspire:pale_hollow', label:'Hoarspire — Pale Hollow'},
-    {val:'hoarspire:frozen_dragon_grave', label:'Hoarspire — Frozen Dragon Grave'},
-    {val:'abyss', label:'The Abyss'},
-  ];
-  G.config.priorityQueue.forEach((slot, idx) => {
+  const fr = frQueueEnsure();
+  const routes = FarmRoutes.getRoutes().filter(r => r.path && r.path.length > 0);
+  const curIdx = fr.queueIdx % Math.max(1, fr.queue.length);
+
+  const tog = document.getElementById('toggle-fr-queue-loop');
+  if (tog) tog.classList.toggle('active', fr.queueLoop);
+
+  if (fr.queue.length === 0) {
+    container.innerHTML = '<div style="font-size:9px;color:#444;padding:4px 0;">No slots. Add slots below.</div>';
+    return;
+  }
+
+  fr.queue.forEach((slot, idx) => {
+    const isActive = idx === curIdx && frQueueGetCurrent();
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bg3);';
-    const curVal = slot.zone ? (slot.subZone ? `${slot.zone}:${slot.subZone}` : slot.zone) : '';
-    let opts = zones.map(z=>`<option value="${z.val}" ${z.val===curVal?'selected':''}>${z.label}</option>`).join('');
+    row.style.cssText = `display:flex;align-items:center;gap:4px;padding:4px 6px;background:${isActive ? '#080d04' : 'var(--bg3)'};border:1px solid ${isActive ? '#1a4a1a' : 'var(--border2)'};`;
+
+    let opts = '<option value="">— choose route —</option>';
+    for (const r of routes) {
+      const ratingColors = {'S':'#ffcc44','A+':'#ccaa44','A':'#bbaa44','B+':'#88aa66','B':'#77aa66','C+':'#888','C':'#888','D':'#cc4444'};
+      const rc = ratingColors[r.rating] || '#888';
+      const loc = r.subZone ? r.subZone.replace(/_/g,' ') : r.zone;
+      opts += `<option value="${r.id}" ${r.id === slot.routeId ? 'selected' : ''}>${r.name} (${loc})</option>`;
+    }
+
     row.innerHTML = `
-      <span style="font-size:9px;color:#555;min-width:14px;">${idx+1}.</span>
-      <select style="flex:1;background:#000;border:1px solid var(--border2);color:#fff;font-family:inherit;font-size:10px;padding:3px;" onchange="setPrioritySlot(${idx},this.value)">${opts}</select>
+      <span style="font-size:9px;color:${isActive ? '#77aa66' : '#555'};min-width:16px;">${idx+1}${isActive ? '▶' : '.'}</span>
+      <select style="flex:1;background:#000;border:1px solid var(--border2);color:#fff;font-family:inherit;font-size:9px;padding:2px;" onchange="frQueueSetRoute(${idx},this.value)">${opts}</select>
+      <label style="display:flex;align-items:center;gap:3px;font-size:8px;color:#555;cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" ${slot.repeat ? 'checked' : ''} onchange="frQueueSetRepeat(${idx},this.checked)" style="accent-color:var(--white);width:10px;height:10px;">
+        REPEAT
+      </label>
+      <button onclick="frQueueMoveUp(${idx})" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:1px 5px;cursor:pointer;" title="Move up">↑</button>
+      <button onclick="frQueueRemove(${idx})" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:1px 5px;cursor:pointer;" title="Remove">✕</button>
     `;
     container.appendChild(row);
   });
+  frUpdateQueueStatus();
 }
 
+// Legacy stub — kept so any remaining calls don't crash
+function renderPriorityQueue() { renderRouteQueue(); }
 function setPrioritySlot(idx, val) {
-  if (!val) {
-    G.config.priorityQueue[idx] = { zone:null, subZone:null };
-  } else {
-    const parts = val.split(':');
-    G.config.priorityQueue[idx] = { zone:parts[0], subZone:parts[1]||null };
-  }
-  // If slot 1 changed and we're currently in combat, switch zone
-  if (idx===0 && G.config.priorityQueue[0].zone && G.zone!=='town') {
-    setZone(G.config.priorityQueue[0].zone, false, G.config.priorityQueue[0].subZone);
-  }
+  // Legacy: no-op, queue replaced by farm route queue
 }
 
 function updateAbyssFloor() {
@@ -7957,21 +8591,10 @@ function doSalvage(itemId) {
   renderMerchant();
 }
 
-// ESSENCE REROLL
+// ESSENCE REROLL — redirected through unified UI
 function buildEssenceItemSelect() {
-  const sel = document.getElementById('essence-item-select');
-  if (!sel) return;
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">— choose —</option>';
-  for (const item of G.inventory) {
-    if (item.rarity !== 'mythic') continue;
-    const opt = document.createElement('option');
-    opt.value = item.id;
-    opt.textContent = `[MYTHIC] ${item.name}`;
-    opt.style.color = '#aa4466';
-    sel.appendChild(opt);
-  }
-  if (prev) sel.value = prev;
+  // No longer a separate select — handled by unified reroll list
+  buildBsRerollList();
 }
 
 let essenceSelectedItem = null;
@@ -8017,7 +8640,9 @@ function updateEssenceButtons() {
 }
 
 function essenceSelectItem() {
-  const id = parseFloat(document.getElementById('essence-item-select').value);
+  const sel = document.getElementById('essence-item-select');
+  const id = sel ? parseFloat(sel.value) : NaN;
+  if (!sel || !id) { updateEssenceButtons(); return; }
   essenceSelectedItem = G.inventory.find(i=>i.id===id)||null;
   essenceSelectedStat = null;
   essenceSelectedStatType = null;
@@ -8540,6 +9165,7 @@ function serializeClassState() {
     bsRerollCounts: G.bsRerollCounts, passives: G.passives, skills: G.skills,
     legendaryEssence: G.legendaryEssence, gearEssence: G.gearEssence,
     abyssKills: G.abyssKills, hoarspire: G.hoarspire || { iceKitsuneKills:0, pendingShuuna:false }, swamp: G.swamp || { cursedHollowKills:0, pendingDarkYoung:false }, abyssBosses: G.abyssBosses, abyssDifficulty: G.abyssDifficulty,
+    farmRoutes: G.farmRoutes || { routes:[], equippedId:null, botStep:0, shopStock:[] },
     config: G.config, logFilter: G.logFilter, logColors: G.logColors,
     tutorialDone: !!G.tutorialDone,
     savedAt: Date.now(), lastActiveAt: Date.now(),
@@ -8748,6 +9374,7 @@ function applyClassData(data) {
   G.swamp = data.swamp || { cursedHollowKills:0, pendingDarkYoung:false };
   G.abyssBosses = data.abyssBosses||0;
   G.abyssDifficulty = data.abyssDifficulty||1;
+  G.farmRoutes = data.farmRoutes || { routes:[], equippedId:null, botStep:0, shopStock:[] };
   const DEFAULT_CONFIG = {
     paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
     uiFontSize:18,
@@ -8920,6 +9547,11 @@ function createClassSlot(slotIdx, cls) {
   initClassSetup(cls);
   G.stash = loadStash();
   G.started = true;
+  // Give 3 blank starter routes
+  FarmRoutes.ensure();
+  for (let i = 1; i <= 3; i++) {
+    FarmRoutes.saveRoute({ ...frMakeBlankRoute(`Blank Route ${i}`), id: `fr_starter_${i}_${Date.now()}` });
+  }
   document.getElementById('class-select-screen').style.cssText = 'display:none';
   initClassUI();
   updateDerived(); G.hp=G.maxHp; G.mp=G.maxMp;
@@ -8956,6 +9588,7 @@ function resetGameState() {
   G.potions={healing:0}; G.potionDiscovered={healing:true}; G.selectedPotion='healing'; G.potionCooldown=0; G.potionBuffs={arcanicUntil:0,fervorUntil:0};
   G.skills={}; G.passives={}; G.skillCooldowns={};
   G.abyssKills=0; G.hoarspire={iceKitsuneKills:0,pendingShuuna:false}; G.swamp={cursedHollowKills:0,pendingDarkYoung:false}; G.abyssBosses=0; G.abyssDifficulty=1;
+  G.farmRoutes={routes:[],equippedId:null,botStep:0,shopStock:[]};
   G.monsters=[]; G.nextSpawnAt=0; G.lastAttack=0; G.lastSpawnCountdown=-1;
   G.debuffs={plagued:0,freezing:false,crimsonRot:0,curseOfCoven:0,blackPoolUntil:0};
   G.combat={battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0};
@@ -9293,6 +9926,1857 @@ function applyOfflineProgress(result) {
   try { renderPotions(); renderStats(); renderInventory(); } catch(e) {}
 }
 
+// =====================================================================
+// FARM ROUTES SYSTEM
+// =====================================================================
+
+// Tile types: internal stats hidden from player. No colors exposed in UI.
+const FR_TILE_TYPES = {
+  normal:      { id:'normal',      label:'Normal',       spawnMult:1.0,  bossChance:0,   forceElite:false, eliteSwarm:false, dead:false },
+  fast:        { id:'fast',        label:'Fast',         spawnMult:0.4,  bossChance:0,   forceElite:false, eliteSwarm:false, dead:false },
+  slow:        { id:'slow',        label:'Slow',         spawnMult:1.55, bossChance:0,   forceElite:false, eliteSwarm:false, dead:false },
+  elite:       { id:'elite',       label:'Elite',        spawnMult:1.0,  bossChance:0,   forceElite:true,  eliteSwarm:false, dead:false },
+  elite_swarm: { id:'elite_swarm', label:'Elite Swarm',  spawnMult:1.0,  bossChance:0,   forceElite:true,  eliteSwarm:true,  dead:false },
+  boss:        { id:'boss',        label:'Boss',         spawnMult:1.0,  bossChance:0.4, forceElite:false, eliteSwarm:false, dead:false },
+  dead:        { id:'dead',        label:'Terrain',      spawnMult:0,    bossChance:0,   forceElite:false, eliteSwarm:false, dead:true  },
+};
+
+// Start tile indices — first walkable tile index for each layout
+// These are set so the start is at the top/entry of the map and boss cluster is reachable
+const FR_START_TILES = {
+  fields:    { dusty_outskirts:1, goblin_camp:2, golem_temple:3, stormwind_fields:1 },
+  caves:     { deep_tunnels:2, bat_cave:2, forbidden_library:3, echoing_chasm:3 },
+  swamp:     { murk_depths:3, crimson_rot:3, witch_coven:3, cursed_hollow:2 },
+  hoarspire: { sheercold_terrace:2, pale_hollow:2, frozen_dragon_grave:4 },
+  abyss:     { abyss: 2 },
+};
+
+function frGetStartTile(zone, subZone) {
+  const zStarts = FR_START_TILES[zone];
+  if (!zStarts) return 0;
+  if (subZone && zStarts[subZone] !== undefined) return zStarts[subZone];
+  // No base — use first available subzone start or default
+  const firstVal = Object.values(zStarts)[0];
+  return typeof firstVal === 'number' ? firstVal : 0;
+}
+
+// Per-zone+subzone grid layouts.
+// No dense tiles. Each boss zone has at least 8 boss tiles, all clustered.
+// Dusty Outskirts is exception — scattered boss tiles for Banditto.
+// elite_swarm tiles appear in dangerous areas near boss clusters.
+const FR_ZONE_LAYOUTS = {
+
+  // ── THE FIELDS ─────────────────────────────────────────────────────────
+  // Dusty Outskirts: scattered Banditto boss tiles (exception)
+  fields_dusty_outskirts: {
+    cols:9, rows:8, zone:'fields', subZone:'dusty_outskirts', label:'Dusty Outskirts',
+    tiles:[
+      'normal','normal','normal','dead','dead','dead','dead','dead','dead',
+      'normal','fast','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','fast','normal','normal','dead','dead','dead','dead',
+      'dead','dead','normal','boss','normal','normal','dead','dead','dead',
+      'dead','dead','normal','normal','boss','normal','normal','dead','dead',
+      'dead','dead','dead','normal','normal','boss','normal','dead','dead',
+      'dead','dead','dead','dead','normal','normal','dead','dead','dead',
+      'dead','dead','dead','dead','dead','normal','dead','dead','dead',
+    ]
+  },
+
+  // Goblin Camp: boss cluster in centre
+  fields_goblin_camp: {
+    cols:9, rows:8, zone:'fields', subZone:'goblin_camp', label:'Goblin Camp',
+    tiles:[
+      'dead','normal','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','fast','fast','normal','dead','dead','dead','dead',
+      'dead','normal','normal','normal','normal','normal','dead','dead','dead',
+      'dead','dead','normal','normal','elite','normal','dead','dead','dead',
+      'dead','dead','dead','elite','elite_swarm','elite','normal','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','boss','dead',
+      'dead','dead','dead','dead','boss','dead','dead','dead','dead',
+    ]
+  },
+
+  // Golem Temple: symmetric square, corners dead, centre 4 dead, bosses ring the void
+  fields_golem_temple: {
+    cols:9, rows:9, zone:'fields', subZone:'golem_temple', label:'Golem Temple',
+    tiles:[
+      'dead','dead','dead','slow','slow','slow','dead','dead','dead',
+      'dead','dead','slow','slow','normal','slow','slow','dead','dead',
+      'dead','slow','slow','normal','normal','normal','slow','slow','dead',
+      'slow','slow','normal','boss','boss','boss','normal','slow','slow',
+      'slow','normal','normal','boss','dead','boss','normal','normal','slow',
+      'slow','slow','normal','boss','boss','boss','normal','slow','slow',
+      'dead','slow','elite_swarm','elite','normal','elite','elite_swarm','slow','dead',
+      'dead','dead','slow','slow','normal','slow','slow','dead','dead',
+      'dead','dead','dead','slow','slow','slow','dead','dead','dead',
+    ]
+  },
+
+  // Stormwind Fields: wide open rectangle — fully walkable except corners
+  fields_stormwind_fields: {
+    cols:11, rows:7, zone:'fields', subZone:'stormwind_fields', label:'Stormwind Fields',
+    tiles:[
+      'dead','fast','fast','fast','fast','fast','fast','fast','fast','fast','dead',
+      'fast','fast','fast','fast','fast','fast','fast','fast','fast','fast','fast',
+      'fast','fast','normal','normal','normal','normal','normal','normal','normal','fast','fast',
+      'fast','fast','normal','normal','elite','elite_swarm','elite','normal','normal','fast','fast',
+      'fast','fast','normal','boss','boss','boss','boss','boss','normal','fast','fast',
+      'fast','fast','fast','boss','boss','boss','boss','boss','fast','fast','fast',
+      'dead','fast','fast','fast','boss','boss','boss','fast','fast','fast','dead',
+    ]
+  },
+
+  // ── DARK CAVE ──────────────────────────────────────────────────────────
+  // Deep Tunnels
+  caves_deep_tunnels: {
+    cols:9, rows:9, zone:'caves', subZone:'deep_tunnels', label:'Deep Tunnels',
+    tiles:[
+      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','normal','slow','slow','dead','dead','dead','dead',
+      'dead','normal','slow','slow','normal','dead','dead','dead','dead',
+      'normal','normal','slow','normal','normal','dead','dead','dead','dead',
+      'normal','normal','normal','dead','normal','normal','dead','dead','dead',
+      'dead','normal','dead','dead','elite','normal','dead','dead','dead',
+      'dead','dead','dead','elite','elite_swarm','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','dead','dead','dead','dead',
+    ]
+  },
+
+  // Bat Cave
+  caves_bat_cave: {
+    cols:9, rows:9, zone:'caves', subZone:'bat_cave', label:'Bat Cave',
+    tiles:[
+      'dead','dead','fast','fast','fast','dead','dead','dead','dead',
+      'dead','fast','fast','normal','fast','dead','dead','dead','dead',
+      'dead','fast','normal','normal','normal','dead','dead','dead','dead',
+      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
+      'dead','normal','normal','dead','normal','normal','dead','dead','dead',
+      'dead','dead','normal','dead','elite','normal','dead','dead','dead',
+      'dead','dead','dead','elite','elite_swarm','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','dead','dead','dead','dead',
+    ]
+  },
+
+  // Forbidden Library
+  caves_forbidden_library: {
+    cols:9, rows:9, zone:'caves', subZone:'forbidden_library', label:'Forbidden Library',
+    tiles:[
+      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
+      'dead','normal','normal','normal','slow','dead','dead','dead','dead',
+      'normal','normal','slow','slow','normal','dead','dead','dead','dead',
+      'normal','slow','normal','dead','normal','elite','dead','dead','dead',
+      'dead','slow','dead','dead','elite','elite_swarm','dead','dead','dead',
+      'dead','dead','dead','elite','boss','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','dead','dead','dead','dead',
+    ]
+  },
+
+  // Echoing Chasm
+  caves_echoing_chasm: {
+    cols:9, rows:9, zone:'caves', subZone:'echoing_chasm', label:'Echoing Chasm',
+    tiles:[
+      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
+      'dead','normal','normal','normal','normal','dead','dead','dead','dead',
+      'normal','normal','dead','dead','normal','elite','dead','dead','dead',
+      'normal','normal','dead','dead','elite','elite_swarm','dead','dead','dead',
+      'dead','normal','normal','elite','boss','boss','dead','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // ── BLEAKMOOR SWAMP ────────────────────────────────────────────────────
+  // Murk Depths
+  swamp_murk_depths: {
+    cols:9, rows:9, zone:'swamp', subZone:'murk_depths', label:'Murk Depths',
+    tiles:[
+      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
+      'dead','slow','slow','normal','slow','dead','dead','dead','dead',
+      'slow','slow','normal','normal','slow','dead','dead','dead','dead',
+      'slow','normal','normal','dead','elite','dead','dead','dead','dead',
+      'dead','normal','dead','elite','elite_swarm','boss','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // Crimson Rot
+  swamp_crimson_rot: {
+    cols:9, rows:9, zone:'swamp', subZone:'crimson_rot', label:'The Crimson Rot',
+    tiles:[
+      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','normal','slow','normal','dead','dead','dead','dead',
+      'dead','slow','normal','normal','normal','dead','dead','dead','dead',
+      'slow','slow','normal','normal','normal','elite','dead','dead','dead',
+      'dead','slow','normal','elite','elite_swarm','boss','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // Witch Coven
+  swamp_witch_coven: {
+    cols:9, rows:9, zone:'swamp', subZone:'witch_coven', label:'Witch Coven',
+    tiles:[
+      'dead','dead','normal','normal','dead','dead','dead','dead','dead',
+      'dead','normal','slow','normal','slow','dead','dead','dead','dead',
+      'dead','slow','slow','normal','normal','dead','dead','dead','dead',
+      'slow','slow','normal','normal','elite','dead','dead','dead','dead',
+      'dead','normal','normal','elite','elite_swarm','boss','dead','dead','dead',
+      'dead','dead','dead','boss','boss','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // Cursed Hollow
+  swamp_cursed_hollow: {
+    cols:9, rows:9, zone:'swamp', subZone:'cursed_hollow', label:'Cursed Hollow',
+    tiles:[
+      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
+      'dead','slow','slow','normal','slow','dead','dead','dead','dead',
+      'slow','normal','normal','normal','slow','dead','dead','dead','dead',
+      'slow','normal','normal','elite','normal','dead','dead','dead','dead',
+      'dead','normal','elite','elite_swarm','boss','boss','dead','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // ── HOARSPIRE VALLEY ───────────────────────────────────────────────────
+  // Sheercold Terrace
+  hoarspire_sheercold_terrace: {
+    cols:9, rows:9, zone:'hoarspire', subZone:'sheercold_terrace', label:'Sheercold Terrace',
+    tiles:[
+      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
+      'dead','slow','slow','normal','slow','dead','dead','dead','dead',
+      'slow','slow','normal','normal','slow','dead','dead','dead','dead',
+      'slow','normal','normal','elite','normal','dead','dead','dead','dead',
+      'dead','normal','elite','elite_swarm','boss','boss','dead','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // Pale Hollow
+  hoarspire_pale_hollow: {
+    cols:9, rows:9, zone:'hoarspire', subZone:'pale_hollow', label:'Pale Hollow',
+    tiles:[
+      'dead','dead','slow','slow','dead','dead','dead','dead','dead',
+      'dead','slow','normal','slow','slow','dead','dead','dead','dead',
+      'slow','normal','normal','normal','slow','dead','dead','dead','dead',
+      'slow','normal','normal','elite','normal','dead','dead','dead','dead',
+      'dead','normal','elite','elite_swarm','boss','boss','dead','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+  // Frozen Dragon Grave
+  // Frozen Dragon Grave: roughly circular — radiates from a central boss cluster
+  hoarspire_frozen_dragon_grave: {
+    cols:11, rows:11, zone:'hoarspire', subZone:'frozen_dragon_grave', label:'Frozen Dragon Grave',
+    tiles:[
+      'dead','dead','dead','dead','slow','slow','slow','dead','dead','dead','dead',
+      'dead','dead','dead','slow','slow','slow','slow','slow','dead','dead','dead',
+      'dead','dead','slow','slow','normal','normal','normal','slow','slow','dead','dead',
+      'dead','slow','slow','normal','normal','normal','normal','normal','slow','slow','dead',
+      'dead','slow','normal','normal','elite','elite','elite','normal','normal','slow','dead',
+      'slow','slow','normal','elite','boss','boss','boss','boss','normal','slow','slow',
+      'slow','slow','normal','elite','boss','boss','boss','boss','normal','slow','slow',
+      'dead','slow','normal','elite','boss','boss','boss','boss','normal','slow','dead',
+      'dead','slow','slow','normal','normal','normal','normal','normal','slow','slow','dead',
+      'dead','dead','slow','slow','normal','normal','normal','slow','slow','dead','dead',
+      'dead','dead','dead','slow','slow','slow','slow','slow','dead','dead','dead',
+    ]
+  },
+
+  abyss_abyss: {
+    cols:9, rows:9, zone:'abyss', subZone:'abyss', label:'The Abyss',
+    tiles:[
+      'dead','dead','elite','elite','elite','dead','dead','dead','dead',
+      'dead','elite','elite','elite','elite','dead','dead','dead','dead',
+      'elite','elite','elite','elite_swarm','elite','dead','dead','dead','dead',
+      'elite','elite','elite_swarm','elite','elite','dead','dead','dead','dead',
+      'dead','elite','elite','elite','boss','boss','dead','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','boss','boss','boss','boss','boss','dead','dead',
+      'dead','dead','dead','boss','boss','boss','dead','dead','dead',
+      'dead','dead','dead','dead','dead','dead','dead','dead','dead',
+    ]
+  },
+
+};
+
+
+function frLayoutKey(zone, subZone) {
+  if (!subZone) return null;  // no base zones
+  return `${zone}_${subZone}`;
+}
+
+function frGetLayout(zone, subZone) {
+  if (subZone) {
+    const key = `${zone}_${subZone}`;
+    if (FR_ZONE_LAYOUTS[key]) return FR_ZONE_LAYOUTS[key];
+  }
+  // Fall back to first layout for this zone
+  const fallback = Object.values(FR_ZONE_LAYOUTS).find(l => l.zone === zone);
+  return fallback || Object.values(FR_ZONE_LAYOUTS)[0];
+}
+
+// Count walkable tiles in a layout
+function frWalkableCount(layout) {
+  return layout.tiles.filter(t => !FR_TILE_TYPES[t]?.dead).length;
+}
+
+// Max steps allowed = floor(walkable / 2)
+function frMaxSteps(layout) {
+  return Math.max(2, Math.floor(frWalkableCount(layout) / 2));
+}
+
+// Given a tile index, return its orthogonal neighbours that are walkable
+function frAdjacentWalkable(idx, layout) {
+  const { cols, rows, tiles } = layout;
+  const row = Math.floor(idx / cols);
+  const col = idx % cols;
+  const neighbours = [];
+  const check = (r, c) => {
+    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+    const ni = r * cols + c;
+    if (!FR_TILE_TYPES[tiles[ni]]?.dead) neighbours.push(ni);
+  };
+  check(row - 1, col); check(row + 1, col);
+  check(row, col - 1); check(row, col + 1);
+  return neighbours;
+}
+
+// Farm route shop pool — pre-made routes with varying quality
+// Farm Route state manager
+const FarmRoutes = {
+  // G.farmRoutes = { routes:[], equippedId:null, botStep:0, shopRefreshCost:50, shopStock:[] }
+  ensure() {
+    if (!G.farmRoutes || typeof G.farmRoutes !== 'object') G.farmRoutes = {};
+    if (!Array.isArray(G.farmRoutes.routes)) G.farmRoutes.routes = [];
+    if (G.farmRoutes.equippedId === undefined) G.farmRoutes.equippedId = null;
+    if (G.farmRoutes.botStep === undefined) G.farmRoutes.botStep = 0;
+    if (!Array.isArray(G.farmRoutes.shopStock)) G.farmRoutes.shopStock = [];
+    return G.farmRoutes;
+  },
+  get() { return this.ensure(); },
+  getRoutes() { return this.ensure().routes; },
+  getEquipped() {
+    const fr = this.ensure();
+    if (!fr.equippedId) return null;
+    return fr.routes.find(r => r.id === fr.equippedId) || null;
+  },
+  equip(id) {
+    const fr = this.ensure();
+    fr.equippedId = id || null;
+    fr.botStep = 0;
+  },
+  unequip() { const fr = this.ensure(); fr.equippedId = null; fr.botStep = 0; },
+  advanceStep() {
+    const fr = this.ensure();
+    const route = this.getEquipped();
+    if (!route || !route.path || route.path.length === 0) return null;
+    const step = fr.botStep % route.path.length;
+    const tile = route.path[step];
+    fr.botStep = (step + 1) % route.path.length;
+    return tile;
+  },
+  currentStep() {
+    const fr = this.ensure();
+    const route = this.getEquipped();
+    if (!route || !route.path || route.path.length === 0) return 0;
+    return fr.botStep % route.path.length;
+  },
+  saveRoute(routeObj) {
+    const fr = this.ensure();
+    const idx = fr.routes.findIndex(r => r.id === routeObj.id);
+    if (idx >= 0) fr.routes[idx] = routeObj;
+    else fr.routes.push(routeObj);
+  },
+  deleteRoute(id) {
+    const fr = this.ensure();
+    fr.routes = fr.routes.filter(r => r.id !== id);
+    if (fr.equippedId === id) { fr.equippedId = null; fr.botStep = 0; }
+  },
+};
+
+// Zone background canvas painter — draws atmospheric pixel art per zone
+const FR_ZONE_BG = {
+  // Each painter takes (ctx, W, H, seed) and fills the canvas with zone atmosphere
+  fields(ctx, W, H, seed) {
+    // Sky gradient — pale dawn
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+    sky.addColorStop(0, '#0e1a08');
+    sky.addColorStop(1, '#1a2e0c');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.55);
+
+    // Ground gradient — lush grass
+    const ground = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    ground.addColorStop(0, '#1c3a0a');
+    ground.addColorStop(1, '#142b07');
+    ctx.fillStyle = ground;
+    ctx.fillRect(0, H * 0.55, W, H * 0.45);
+
+    // Rolling hills silhouette
+    ctx.fillStyle = '#162d08';
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.58);
+    for (let x = 0; x <= W; x += 4) {
+      const y = H * 0.54 + Math.sin(x / 28 + seed) * 7 + Math.sin(x / 11 + seed * 1.3) * 3;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+    ctx.fill();
+
+    // Scattered grass tufts
+    ctx.fillStyle = '#2a4e10';
+    const rng = frBgRng(seed);
+    for (let i = 0; i < 30; i++) {
+      const x = rng() * W, y = H * 0.56 + rng() * H * 0.38;
+      ctx.fillRect(x, y, 2, 3 + rng() * 4);
+      ctx.fillRect(x + 2, y + 1, 1, 2 + rng() * 3);
+    }
+
+    // Distant trees
+    ctx.fillStyle = '#1a3a0a';
+    for (let i = 0; i < 8; i++) {
+      const x = (rng() * W * 1.1) | 0;
+      const h = 12 + rng() * 14;
+      const bw = 4 + rng() * 4;
+      ctx.fillRect(x - bw / 2, H * 0.44 - h, bw, h);
+      ctx.fillStyle = '#22480e';
+      ctx.beginPath();
+      ctx.arc(x, H * 0.44 - h, bw * 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1a3a0a';
+    }
+
+    // Moon/sun
+    ctx.fillStyle = 'rgba(200,210,160,0.25)';
+    ctx.beginPath();
+    ctx.arc(W * 0.82, H * 0.14, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pixel stars
+    ctx.fillStyle = 'rgba(200,220,160,0.35)';
+    for (let i = 0; i < 12; i++) {
+      ctx.fillRect((rng() * W) | 0, (rng() * H * 0.45) | 0, 1, 1);
+    }
+  },
+
+  caves(ctx, W, H, seed) {
+    // Deep cave darkness
+    ctx.fillStyle = '#04040a';
+    ctx.fillRect(0, 0, W, H);
+
+    // Cave ceiling gradient
+    const ceil = ctx.createLinearGradient(0, 0, 0, H * 0.35);
+    ceil.addColorStop(0, '#0a0814');
+    ceil.addColorStop(1, '#06050e');
+    ctx.fillStyle = ceil;
+    ctx.fillRect(0, 0, W, H * 0.35);
+
+    // Rock floor
+    ctx.fillStyle = '#0c0b14';
+    ctx.fillRect(0, H * 0.65, W, H * 0.35);
+
+    const rng = frBgRng(seed);
+
+    // Stalactites from ceiling
+    ctx.fillStyle = '#14121e';
+    for (let i = 0; i < 14; i++) {
+      const x = rng() * W;
+      const h = 8 + rng() * 22;
+      const w = 3 + rng() * 5;
+      ctx.beginPath();
+      ctx.moveTo(x - w / 2, 0);
+      ctx.lineTo(x + w / 2, 0);
+      ctx.lineTo(x, h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Stalagmites from floor
+    ctx.fillStyle = '#16141e';
+    for (let i = 0; i < 10; i++) {
+      const x = rng() * W;
+      const h = 6 + rng() * 16;
+      const w = 3 + rng() * 4;
+      ctx.beginPath();
+      ctx.moveTo(x - w / 2, H);
+      ctx.lineTo(x + w / 2, H);
+      ctx.lineTo(x, H - h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Glowing crystals
+    for (let i = 0; i < 6; i++) {
+      const x = rng() * W, y = H * 0.3 + rng() * H * 0.4;
+      const col = rng() > 0.5 ? 'rgba(100,60,200,0.3)' : 'rgba(40,120,200,0.25)';
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 8);
+      ctx.lineTo(x + 3, y);
+      ctx.lineTo(x, y + 5);
+      ctx.lineTo(x - 3, y);
+      ctx.closePath();
+      ctx.fill();
+      // Glow
+      const grd = ctx.createRadialGradient(x, y, 1, x, y, 10);
+      grd.addColorStop(0, col);
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(x - 10, y - 10, 20, 20);
+    }
+
+    // Water/puddles on floor
+    ctx.fillStyle = 'rgba(30,40,80,0.5)';
+    for (let i = 0; i < 4; i++) {
+      const x = rng() * W, y = H * 0.75 + rng() * H * 0.15;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 8 + rng() * 12, 3 + rng() * 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Eerie light sources on walls
+    ctx.fillStyle = 'rgba(120,90,200,0.08)';
+    for (let i = 0; i < 3; i++) {
+      const x = rng() * W, y = rng() * H;
+      const grd = ctx.createRadialGradient(x, y, 2, x, y, 30);
+      grd.addColorStop(0, 'rgba(100,70,180,0.2)');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+    }
+  },
+
+  swamp(ctx, W, H, seed) {
+    // Murky sky
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+    sky.addColorStop(0, '#080e08');
+    sky.addColorStop(1, '#0c180a');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.5);
+
+    // Dark water
+    const water = ctx.createLinearGradient(0, H * 0.5, 0, H);
+    water.addColorStop(0, '#081208');
+    water.addColorStop(1, '#040c04');
+    ctx.fillStyle = water;
+    ctx.fillRect(0, H * 0.5, W, H * 0.5);
+
+    // Water surface shimmer
+    ctx.strokeStyle = 'rgba(30,60,20,0.4)';
+    ctx.lineWidth = 1;
+    const rng = frBgRng(seed);
+    for (let i = 0; i < 8; i++) {
+      const y = H * 0.52 + rng() * H * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(rng() * W * 0.3, y);
+      ctx.bezierCurveTo(W * 0.3, y - 2, W * 0.6, y + 2, W * (0.6 + rng() * 0.4), y);
+      ctx.stroke();
+    }
+
+    // Gnarled dead trees
+    ctx.strokeStyle = '#1a2a10';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const x = rng() * W;
+      const baseY = H * 0.52 + rng() * H * 0.1;
+      const h = 20 + rng() * 30;
+      ctx.beginPath();
+      ctx.moveTo(x, baseY);
+      ctx.lineTo(x + rng() * 4 - 2, baseY - h);
+      ctx.stroke();
+      // Branches
+      ctx.lineWidth = 1;
+      for (let b = 0; b < 3; b++) {
+        const by = baseY - h * (0.4 + rng() * 0.4);
+        ctx.beginPath();
+        ctx.moveTo(x, by);
+        ctx.lineTo(x + (rng() * 14 - 7), by - 6 - rng() * 8);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 2;
+    }
+
+    // Hanging moss
+    ctx.fillStyle = 'rgba(20,45,12,0.6)';
+    for (let i = 0; i < 10; i++) {
+      const x = rng() * W;
+      for (let j = 0; j < 4; j++) {
+        ctx.fillRect(x + j * 3, 0, 1, 6 + rng() * 20);
+      }
+    }
+
+    // Fog wisps near water surface
+    for (let i = 0; i < 4; i++) {
+      const x = rng() * W, y = H * 0.48 + rng() * H * 0.1;
+      const grd = ctx.createRadialGradient(x, y, 5, x, y, 35);
+      grd.addColorStop(0, 'rgba(40,80,20,0.15)');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // Fireflies / swamp lights
+    ctx.fillStyle = 'rgba(180,255,60,0.5)';
+    for (let i = 0; i < 8; i++) {
+      ctx.fillRect((rng() * W) | 0, (H * 0.3 + rng() * H * 0.4) | 0, 1, 1);
+    }
+  },
+
+  hoarspire(ctx, W, H, seed) {
+    // Icy sky
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+    sky.addColorStop(0, '#05080f');
+    sky.addColorStop(1, '#0a1020');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H * 0.6);
+
+    // Snow ground
+    const snow = ctx.createLinearGradient(0, H * 0.6, 0, H);
+    snow.addColorStop(0, '#1a2030');
+    snow.addColorStop(1, '#0e1420');
+    ctx.fillStyle = snow;
+    ctx.fillRect(0, H * 0.6, W, H * 0.4);
+
+    const rng = frBgRng(seed);
+
+    // Mountain silhouettes
+    ctx.fillStyle = '#0e1828';
+    for (let m = 0; m < 5; m++) {
+      const x = rng() * W;
+      const h = 30 + rng() * 50;
+      const w = 20 + rng() * 30;
+      ctx.beginPath();
+      ctx.moveTo(x - w, H * 0.65);
+      ctx.lineTo(x, H * 0.65 - h);
+      ctx.lineTo(x + w, H * 0.65);
+      ctx.closePath();
+      ctx.fill();
+      // Snow caps
+      ctx.fillStyle = 'rgba(180,200,240,0.2)';
+      ctx.beginPath();
+      ctx.moveTo(x - w * 0.25, H * 0.65 - h * 0.7);
+      ctx.lineTo(x, H * 0.65 - h);
+      ctx.lineTo(x + w * 0.25, H * 0.65 - h * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#0e1828';
+    }
+
+    // Aurora borealis strips
+    const auroras = [
+      'rgba(40,180,120,0.08)', 'rgba(60,120,220,0.07)', 'rgba(100,40,180,0.06)'
+    ];
+    for (let a = 0; a < 3; a++) {
+      const y = H * 0.1 + a * H * 0.12;
+      const grd = ctx.createLinearGradient(0, y - 8, 0, y + 8);
+      grd.addColorStop(0, 'transparent');
+      grd.addColorStop(0.5, auroras[a]);
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, y - 8, W, 16);
+    }
+
+    // Falling snow particles
+    ctx.fillStyle = 'rgba(200,220,255,0.5)';
+    for (let i = 0; i < 25; i++) {
+      ctx.fillRect((rng() * W) | 0, (rng() * H) | 0, 1, 1);
+    }
+    ctx.fillStyle = 'rgba(180,200,240,0.3)';
+    for (let i = 0; i < 10; i++) {
+      ctx.fillRect((rng() * W) | 0, (rng() * H) | 0, 2, 2);
+    }
+
+    // Ice spires in foreground
+    ctx.fillStyle = 'rgba(100,140,200,0.25)';
+    for (let i = 0; i < 5; i++) {
+      const x = rng() * W;
+      const h = 10 + rng() * 20;
+      ctx.beginPath();
+      ctx.moveTo(x - 3, H);
+      ctx.lineTo(x, H - h);
+      ctx.lineTo(x + 3, H);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Stars
+    ctx.fillStyle = 'rgba(180,200,255,0.5)';
+    for (let i = 0; i < 20; i++) {
+      ctx.fillRect((rng() * W) | 0, (rng() * H * 0.5) | 0, 1, 1);
+    }
+  },
+
+  abyss(ctx, W, H, seed) {
+    // Pure void
+    ctx.fillStyle = '#020004';
+    ctx.fillRect(0, 0, W, H);
+
+    const rng = frBgRng(seed);
+
+    // Void rift cracks
+    ctx.strokeStyle = 'rgba(120,0,180,0.25)';
+    ctx.lineWidth = 1;
+    for (let c = 0; c < 8; c++) {
+      const x = rng() * W, y = rng() * H;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      let cx = x, cy = y;
+      for (let s = 0; s < 5; s++) {
+        cx += (rng() - 0.5) * 20;
+        cy += (rng() - 0.5) * 20;
+        ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+    }
+
+    // Distant void eyes
+    ctx.fillStyle = 'rgba(180,0,60,0.35)';
+    for (let i = 0; i < 5; i++) {
+      const x = rng() * W, y = rng() * H;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 4 + rng() * 4, 2, rng() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+      // Pupil
+      ctx.fillStyle = 'rgba(255,20,20,0.6)';
+      ctx.beginPath();
+      ctx.ellipse(x, y, 2, 1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(180,0,60,0.35)';
+    }
+
+    // Glowing void portals
+    for (let i = 0; i < 3; i++) {
+      const x = rng() * W, y = rng() * H;
+      const grd = ctx.createRadialGradient(x, y, 2, x, y, 20 + rng() * 15);
+      grd.addColorStop(0, 'rgba(100,0,160,0.3)');
+      grd.addColorStop(0.5, 'rgba(60,0,100,0.15)');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // Floating debris/rocks
+    ctx.fillStyle = 'rgba(60,20,80,0.6)';
+    for (let i = 0; i < 12; i++) {
+      const x = rng() * W, y = rng() * H;
+      const s = 2 + rng() * 5;
+      ctx.fillRect(x | 0, y | 0, s | 0, (s * 0.7) | 0);
+    }
+
+    // Star-like void particles
+    ctx.fillStyle = 'rgba(200,100,255,0.4)';
+    for (let i = 0; i < 20; i++) {
+      ctx.fillRect((rng() * W) | 0, (rng() * H) | 0, 1, 1);
+    }
+    ctx.fillStyle = 'rgba(255,60,120,0.3)';
+    for (let i = 0; i < 8; i++) {
+      ctx.fillRect((rng() * W) | 0, (rng() * H) | 0, 2, 2);
+    }
+
+    // Bottom hellfire glow
+    const fire = ctx.createLinearGradient(0, H * 0.8, 0, H);
+    fire.addColorStop(0, 'transparent');
+    fire.addColorStop(1, 'rgba(120,0,40,0.3)');
+    ctx.fillStyle = fire;
+    ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  },
+};
+
+// Simple seeded RNG for deterministic background art
+function frBgRng(seed) {
+  let s = (seed * 9301 + 49297) % 233280;
+  return function() {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+// Draw zone background onto a canvas, sized to fit the grid
+function frDrawZoneBg(canvasId, zone, cols, rows, cellSize, gap, padding) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const W = padding * 2 + cols * cellSize + (cols - 1) * gap;
+  const H = padding * 2 + rows * cellSize + (rows - 1) * gap;
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const painter = FR_ZONE_BG[zone] || FR_ZONE_BG.fields;
+  // Derive a seed from the zone name string
+  let seed = 0;
+  for (let i = 0; i < zone.length; i++) seed = (seed * 31 + zone.charCodeAt(i)) & 0xffff;
+  painter(ctx, W, H, seed);
+}
+
+// Editor state
+const FREditor = {
+  zone: 'fields',
+  subZone: null,
+  tool: 'route',
+  gridTiles: [],
+  routePath: [],
+  editingId: null,
+  dragging: false,
+  lastDragCell: -1,
+
+  getLayout() {
+    return frGetLayout(this.zone, this.subZone);
+  },
+
+  getStartTile() {
+    return frGetStartTile(this.zone, this.subZone);
+  },
+
+  getMaxSteps() {
+    return frMaxSteps(this.getLayout());
+  },
+
+  // Returns set of tile indices reachable (adjacent to last path tile)
+  getReachable() {
+    const layout = this.getLayout();
+    if (this.routePath.length === 0) {
+      // Only the start tile is reachable first
+      return new Set([this.getStartTile()]);
+    }
+    const last = this.routePath[this.routePath.length - 1];
+    const adj = frAdjacentWalkable(last, layout);
+    // Exclude already-visited tiles
+    const visited = new Set(this.routePath);
+    return new Set(adj.filter(i => !visited.has(i)));
+  },
+
+  init(zone, subZone) {
+    this.zone = zone || 'fields';
+    this.subZone = subZone || null;
+    const layout = this.getLayout();
+    this.gridTiles = [...layout.tiles];
+    this.routePath = [];
+    this.editingId = null;
+    this.renderGrid();
+    this.updateStats();
+  },
+
+  loadRoute(route) {
+    if (!route) return;
+    this.zone = route.zone || 'fields';
+    this.subZone = route.subZone || null;
+    const layout = frGetLayout(this.zone, this.subZone);
+    this.gridTiles = route.gridTiles ? [...route.gridTiles] : [...layout.tiles];
+    this.routePath = route.path ? [...route.path] : [];
+    this.editingId = route.id;
+    const zoneEl = document.getElementById('fr-editor-zone');
+    if (zoneEl) zoneEl.value = this.zone;
+    frUpdateSubzoneSelect(this.zone, this.subZone);
+    const nameEl = document.getElementById('fr-route-name');
+    if (nameEl) nameEl.value = route.name || 'My Route';
+    this.renderGrid();
+    this.updateStats();
+  },
+
+  renderGrid() {
+    const grid = document.getElementById('fr-grid');
+    if (!grid) return;
+    const layout = this.getLayout();
+    const CELL = 20, GAP = 1, PAD = 4;
+    grid.style.gridTemplateColumns = `repeat(${layout.cols}, ${CELL}px)`;
+    grid.innerHTML = '';
+    const startTile = this.getStartTile();
+    const reachable = this.routePath.length < this.getMaxSteps() ? this.getReachable() : new Set();
+
+    // Draw themed background — use the zone for bg art
+    frDrawZoneBg('fr-bg-canvas', this.zone, layout.cols, layout.rows, CELL, GAP, PAD);
+
+    for (let i = 0; i < this.gridTiles.length; i++) {
+      const tType = this.gridTiles[i];
+      const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
+      const cell = document.createElement('div');
+      cell.className = 'fr-cell';
+      cell.dataset.idx = i;
+
+      if (tInfo.dead) {
+        cell.classList.add('fr-cell-dead');
+      } else {
+        cell.classList.add('fr-walkable');
+        if (i === startTile) cell.classList.add('fr-start');
+
+        // Reachable highlight (only in route mode)
+        if (this.tool === 'route' && reachable.has(i)) {
+          cell.classList.add('fr-reachable');
+        }
+      }
+
+      const stepIdx = this.routePath.indexOf(i);
+      if (stepIdx >= 0) {
+        cell.classList.add('route-step');
+        cell.dataset.step = stepIdx + 1;
+      }
+
+      cell.addEventListener('mousedown', e => {
+        FREditor.dragging = true; FREditor.lastDragCell = -1;
+        FREditor.handleCell(i, e); e.preventDefault();
+      });
+      cell.addEventListener('mouseenter', () => {
+        if (FREditor.dragging) FREditor.handleCell(i);
+      });
+      grid.appendChild(cell);
+    }
+    document.addEventListener('mouseup', () => { FREditor.dragging = false; }, { once: false });
+
+    // Update max steps display
+    const maxEl = document.getElementById('frs-max-steps');
+    if (maxEl) maxEl.textContent = this.getMaxSteps();
+  },
+
+  handleCell(idx, e) {
+    if (idx === this.lastDragCell) return;
+    this.lastDragCell = idx;
+    const tType = this.gridTiles[idx];
+    const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
+
+    if (this.tool === 'erase') {
+      // Only allow erasing the last tile in path (maintain contiguous chain)
+      if (this.routePath.length > 0 && this.routePath[this.routePath.length - 1] === idx) {
+        this.routePath.pop();
+        this.renderGrid();
+        this.updateStats();
+      }
+      return;
+    }
+
+    // route tool — dead tiles are never selectable
+    if (tInfo.dead) return;
+
+    const existing = this.routePath.indexOf(idx);
+    if (existing >= 0) {
+      // Allow removing from the end only
+      if (existing === this.routePath.length - 1) {
+        this.routePath.pop();
+        this.renderGrid();
+        this.updateStats();
+      }
+      return;
+    }
+
+    // First tile must be the start tile
+    if (this.routePath.length === 0) {
+      if (idx !== this.getStartTile()) {
+        // Flash hint
+        const hint = document.getElementById('fr-editor-hint');
+        if (hint) { hint.style.color = '#cc6644'; setTimeout(() => hint.style.color = '', 1200); }
+        return;
+      }
+      this.routePath.push(idx);
+      this.renderGrid();
+      this.updateStats();
+      return;
+    }
+
+    // Subsequent tiles must be adjacent to last tile
+    const reachable = this.getReachable();
+    if (!reachable.has(idx)) return;
+
+    // Max steps check
+    if (this.routePath.length >= this.getMaxSteps()) {
+      const hint = document.getElementById('fr-editor-hint');
+      if (hint) { hint.style.color = '#cc6644'; setTimeout(() => hint.style.color = '', 1200); }
+      return;
+    }
+
+    this.routePath.push(idx);
+    this.renderGrid();
+    this.updateStats();
+  },
+
+  updateCells() {
+    // Full re-render needed since reachable set changes every step
+    this.renderGrid();
+  },
+
+  updatePlayerMarker(stepIdx) {
+    const grid = document.getElementById('fr-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.player-here').forEach(c => c.classList.remove('player-here'));
+    const route = FarmRoutes.getEquipped();
+    if (!route || stepIdx == null) return;
+    const tileIdx = route.path[stepIdx];
+    if (tileIdx == null) return;
+    const cells = grid.querySelectorAll('.fr-cell');
+    if (cells[tileIdx]) cells[tileIdx].classList.add('player-here');
+  },
+
+  updateStats() {
+    const steps = this.routePath.length;
+    const maxSteps = this.getMaxSteps();
+    let bossCount = 0, eliteCount = 0, eliteSwarmCount = 0, fastCount = 0;
+    for (const idx of this.routePath) {
+      const t = FR_TILE_TYPES[this.gridTiles[idx]] || FR_TILE_TYPES.normal;
+      if (t.bossChance > 0) bossCount++;
+      if (t.forceElite && !t.eliteSwarm) eliteCount++;
+      if (t.eliteSwarm) eliteSwarmCount++;
+      if (t.spawnMult < 1.0 && !t.dead) fastCount++;
+    }
+    const rating = frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
+    const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+    set('frs-steps', steps);
+    set('frs-max-steps', maxSteps);
+    set('frs-rating', rating);
+  },
+};
+
+// Subzone options per zone
+const FR_SUBZONE_OPTIONS = {
+  fields: [
+    { value:'dusty_outskirts', label:'Dusty Outskirts' },
+    { value:'goblin_camp',     label:'Goblin Camp' },
+    { value:'golem_temple',    label:'Golem Temple' },
+    { value:'stormwind_fields',label:'Stormwind Fields' },
+  ],
+  caves: [
+    { value:'deep_tunnels',      label:'Deep Tunnels' },
+    { value:'bat_cave',          label:'Bat Cave' },
+    { value:'forbidden_library', label:'Forbidden Library' },
+    { value:'echoing_chasm',     label:'Echoing Chasm' },
+  ],
+  swamp: [
+    { value:'murk_depths',   label:'Murk Depths' },
+    { value:'crimson_rot',   label:'The Crimson Rot' },
+    { value:'witch_coven',   label:'Witch Coven' },
+    { value:'cursed_hollow', label:'Cursed Hollow' },
+  ],
+  hoarspire: [
+    { value:'sheercold_terrace',    label:'Sheercold Terrace' },
+    { value:'pale_hollow',          label:'Pale Hollow' },
+    { value:'frozen_dragon_grave',  label:'Frozen Dragon Grave' },
+  ],
+  abyss: [
+    { value:'abyss', label:'The Abyss' },
+  ],
+};
+
+function frUpdateSubzoneSelect(zone, selectedSub) {
+  const el = document.getElementById('fr-editor-subzone');
+  if (!el) return;
+  const opts = FR_SUBZONE_OPTIONS[zone] || [];
+  el.innerHTML = opts.map(o =>
+    `<option value="${o.value}" ${o.value === (selectedSub || opts[0]?.value || '') ? 'selected' : ''}>${o.label}</option>`
+  ).join('');
+}
+
+function frChangeEditorZone() {
+  const zoneEl = document.getElementById('fr-editor-zone');
+  const zone = zoneEl ? zoneEl.value : 'fields';
+  const opts = FR_SUBZONE_OPTIONS[zone] || [];
+  const defaultSub = opts[0]?.value || null;
+  frUpdateSubzoneSelect(zone, defaultSub);
+  FREditor.init(zone, defaultSub);
+}
+
+function frSetTool(tool) {
+  if (tool === 'paint') tool = 'route';
+  FREditor.tool = tool;
+  ['route','erase'].forEach(t => {
+    const btn = document.getElementById(`fr-tool-${t}`);
+    if (btn) btn.classList.toggle('active', t === tool);
+  });
+  const hint = document.getElementById('fr-editor-hint');
+  if (hint) {
+    if (tool === 'route') hint.textContent = 'Start at S, then step onto highlighted adjacent tiles only. Path must stay connected.';
+    else hint.textContent = 'Click the last path tile to step back. ERASE removes one tile at a time.';
+    hint.style.color = '';
+  }
+  FREditor.renderGrid();
+}
+
+function frChangeEditorSubzone() {
+  const zoneEl = document.getElementById('fr-editor-zone');
+  const subEl = document.getElementById('fr-editor-subzone');
+  const zone = zoneEl ? zoneEl.value : 'fields';
+  const sub = subEl ? (subEl.value || null) : null;
+  FREditor.init(zone, sub);
+}
+
+function frClearRoute() {
+  FREditor.routePath = [];
+  FREditor.renderGrid();
+  FREditor.updateStats();
+}
+
+function frDeleteEditing() {
+  // Only clears the current unsaved draft in the editor — saved routes deleted via ✕ in the list
+  FREditor.routePath = [];
+  FREditor.editingId = null;
+  FREditor.renderGrid();
+  FREditor.updateStats();
+  const nameEl = document.getElementById('fr-route-name');
+  if (nameEl) nameEl.value = 'My Route';
+}
+
+function frNewRoute() {
+  const zoneEl = document.getElementById('fr-editor-zone');
+  const subEl = document.getElementById('fr-editor-subzone');
+  const zone = zoneEl ? zoneEl.value : 'fields';
+  const opts = FR_SUBZONE_OPTIONS[zone] || [];
+  const sub = subEl ? (subEl.value || opts[0]?.value || null) : (opts[0]?.value || null);
+  FREditor.init(zone, sub);
+  const nameEl = document.getElementById('fr-route-name');
+  if (nameEl) nameEl.value = 'My Route';
+  FREditor.editingId = null;
+}
+
+// Shared route rating formula
+// sRank: if true, can roll S-rank (1% chance, shop only)
+function frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCount, allowSRank) {
+  if (steps === 0) return '—';
+  let score = 0;
+  if (steps >= 4) score++;
+  if (steps >= 8) score++;
+  if (steps >= 12) score++;
+  if (bossCount >= 2) score++;
+  if (bossCount >= 5) score++;
+  if (bossCount >= 8) score++;
+  if (eliteCount >= 2) score++;
+  if (eliteSwarmCount >= 1) score++;
+  if (eliteSwarmCount >= 2) score++;
+  if (fastCount >= 3) score++;
+  const tiers = ['D','C','C+','B','B+','A','A+'];
+  const rating = tiers[Math.min(score, tiers.length - 1)];
+  // 1% S-rank chance for shop routes
+  if (allowSRank && Math.random() < 0.01) return 'S';
+  return rating;
+}
+
+function frSaveRoute() {
+  const path = FREditor.routePath;
+  if (path.length < 2) {
+    log('Farm Route: Need at least 2 tiles in your path before saving.', 'system');
+    return;
+  }
+
+  // If editing an existing confirmed route, block re-save
+  if (FREditor.editingId) {
+    const existing = FarmRoutes.getRoutes().find(r => r.id === FREditor.editingId);
+    if (existing && !existing.blank) {
+      log('This route is already confirmed and cannot be re-edited.', 'system');
+      return;
+    }
+  }
+  const nameEl = document.getElementById('fr-route-name');
+  const name = (nameEl ? nameEl.value.trim() : '') || 'Unnamed Route';
+  const layout = FREditor.getLayout();
+
+  let bossCount = 0, eliteCount = 0, eliteSwarmCount = 0, fastCount = 0;
+  for (const idx of path) {
+    const t = FR_TILE_TYPES[FREditor.gridTiles[idx]] || FR_TILE_TYPES.normal;
+    if (t.bossChance > 0) bossCount++;
+    if (t.forceElite && !t.eliteSwarm) eliteCount++;
+    if (t.eliteSwarm) eliteSwarmCount++;
+    if (t.spawnMult < 1.0 && !t.dead) fastCount++;
+  }
+  const steps = path.length;
+  const rating = frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
+
+  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',abyss:'Abyss'};
+  const subZoneNames = {
+    dusty_outskirts:'Dusty Outskirts', goblin_camp:'Goblin Camp', golem_temple:'Golem Temple', stormwind_fields:'Stormwind Fields',
+    deep_tunnels:'Deep Tunnels', bat_cave:'Bat Cave', forbidden_library:'Forbidden Library', echoing_chasm:'Echoing Chasm',
+    murk_depths:'Murk Depths', crimson_rot:'Crimson Rot', witch_coven:'Witch Coven', cursed_hollow:'Cursed Hollow',
+    sheercold_terrace:'Sheercold Terrace', pale_hollow:'Pale Hollow', frozen_dragon_grave:'Frozen Dragon Grave',
+  };
+
+  const route = {
+    id: FREditor.editingId || `fr_${Date.now()}`,
+    name,
+    zone: FREditor.zone,
+    subZone: FREditor.subZone,
+    path: [...path],
+    gridTiles: [...FREditor.gridTiles],
+    rating,
+    bossCount,
+    eliteCount,
+    eliteSwarmCount,
+    createdAt: Date.now(),
+    maxSteps: frMaxSteps(layout),
+    selfMade: true,  // self-made routes always show rating
+  };
+
+  FREditor.editingId = route.id;
+  FarmRoutes.saveRoute(route);
+  const loc = FREditor.subZone ? `${zoneNames[FREditor.zone]} — ${subZoneNames[FREditor.subZone] || FREditor.subZone}` : zoneNames[FREditor.zone];
+  log(`Farm Route saved: "${name}" · ${loc} · ${steps} steps · Rating ${rating}`, 'system');
+  renderFarmRouteList();
+  frUpdateConfigDisplay();
+  saveGame(false);
+}
+
+// Build tile type palette — label buttons only, no color swatches
+function frBuildPalette() {
+  const pal = document.getElementById('fr-tile-palette');
+  if (!pal) return;
+  pal.innerHTML = '';
+  for (const [id, t] of Object.entries(FR_TILE_TYPES)) {
+    const btn = document.createElement('button');
+    btn.className = 'fr-tile-type-btn' + (id === FREditor.paintType ? ' selected' : '');
+    btn.textContent = t.label;
+    btn.addEventListener('click', () => {
+      FREditor.paintType = id;
+      frBuildPalette();
+      if (FREditor.tool !== 'paint') frSetTool('paint');
+    });
+    pal.appendChild(btn);
+  }
+}
+
+// Render the live mini-grid showing current player position on the equipped route
+function frRenderLiveGrid() {
+  const liveGrid = document.getElementById('fr-live-grid');
+  if (!liveGrid) return;
+  const route = FarmRoutes.getEquipped();
+  if (!route || !route.path || route.path.length === 0) { liveGrid.innerHTML = ''; return; }
+  const layout = frGetLayout(route.zone, route.subZone);
+  const gridTiles = route.gridTiles || layout.tiles;
+  const curStep = FarmRoutes.currentStep();
+  const curTileIdx = route.path[curStep] ?? -1;
+  const startTile = frGetStartTile(route.zone, route.subZone);
+  const CELL = 14, GAP = 1, PAD = 3;
+
+  liveGrid.style.gridTemplateColumns = `repeat(${layout.cols}, ${CELL}px)`;
+  liveGrid.innerHTML = '';
+
+  frDrawZoneBg('fr-live-bg-canvas', route.zone, layout.cols, layout.rows, CELL, GAP, PAD);
+
+  for (let i = 0; i < gridTiles.length; i++) {
+    const tType = gridTiles[i];
+    const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
+    const cell = document.createElement('div');
+    cell.className = 'fr-live-cell';
+    if (tInfo.dead) {
+      cell.classList.add('fr-live-dead');
+    } else if (i === startTile) {
+      cell.classList.add('fr-live-start');
+    }
+    const stepIdx = route.path.indexOf(i);
+    if (stepIdx >= 0 && i !== curTileIdx) {
+      cell.classList.add('fr-live-step');
+      cell.dataset.step = stepIdx + 1;
+    }
+    if (i === curTileIdx) {
+      cell.classList.add('fr-live-player');
+    }
+    liveGrid.appendChild(cell);
+  }
+}
+
+function frEquipRoute(id) {
+  const route = FarmRoutes.getRoutes().find(r => r.id === id);
+  if (!route) return;
+  FarmRoutes.equip(id);
+  // Switch zone to match route
+  if (route.zone && route.zone !== 'town') {
+    setZone(route.zone, false, null);
+  }
+  log(`Farm Route equipped: "${route.name}" — Bot will follow this path in ${route.zone}.`, 'system');
+  renderFarmRouteList();
+  frUpdateConfigDisplay();
+  frUpdateEquippedIndicator();
+  saveGame(false);
+}
+
+function frUnequipRoute() {
+  FarmRoutes.unequip();
+  log('Farm Route unequipped. Bot reverts to zone priority queue.', 'system');
+  renderFarmRouteList();
+  frUpdateConfigDisplay();
+  frUpdateEquippedIndicator();
+  saveGame(false);
+}
+
+function renderFarmRouteList() {
+  const list = document.getElementById('fr-route-list');
+  const noRoutes = document.getElementById('fr-no-routes');
+  if (!list) return;
+  list.innerHTML = '';
+  const routes = FarmRoutes.getRoutes();
+  const equipped = FarmRoutes.get().equippedId;
+  if (routes.length === 0) {
+    if (noRoutes) noRoutes.style.display = 'block';
+    return;
+  }
+  if (noRoutes) noRoutes.style.display = 'none';
+
+  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',abyss:'Abyss'};
+  const subZoneNames = {
+    dusty_outskirts:'Dusty Outskirts', goblin_camp:'Goblin Camp', golem_temple:'Golem Temple', stormwind_fields:'Stormwind Fields',
+    deep_tunnels:'Deep Tunnels', bat_cave:'Bat Cave', forbidden_library:'Forbidden Library', echoing_chasm:'Echoing Chasm',
+    murk_depths:'Murk Depths', crimson_rot:'Crimson Rot', witch_coven:'Witch Coven', cursed_hollow:'Cursed Hollow',
+    sheercold_terrace:'Sheercold Terrace', pale_hollow:'Pale Hollow', frozen_dragon_grave:'Frozen Dragon Grave',
+  };
+  const ratingColors = {'S':'#ffcc44','A+':'#ccaa44','A':'#bbaa44','B+':'#88aa66','B':'#77aa66','C+':'#888','C':'#888','D':'#cc4444'};
+
+  for (const route of routes) {
+    const isEquipped = route.id === equipped;
+    const isEditing = FREditor.editingId === route.id;
+    const card = document.createElement('div');
+    card.className = 'fr-route-card' + (isEquipped ? ' equipped-route' : '');
+    if (isEditing) card.classList.add('active-route');
+
+    const loc = route.subZone
+      ? `${zoneNames[route.zone]} — ${subZoneNames[route.subZone] || route.subZone}`
+      : (zoneNames[route.zone] || route.zone);
+    const equipFn = isEquipped ? 'frUnequipRoute()' : `frEquipRoute('${route.id}')`;
+    const safeId = route.id.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    // Show rating only for self-made routes (always) or any route when equipped
+    const showRating = route.selfMade || isEquipped;
+    const rc = ratingColors[route.rating] || '#888';
+    const ratingBadge = showRating && route.rating && route.rating !== '—'
+      ? `<span style="font-size:9px;color:${rc};font-weight:bold;margin-left:4px;">${route.rating}</span>`
+      : '';
+
+    const isBlank = route.blank;
+    const stepInfo = isBlank
+      ? `<span style="font-size:9px;color:#444;font-style:italic;">Empty — fill in editor</span>`
+      : `<span style="font-size:9px;color:#555;">${(route.path||[]).length} steps</span>`;
+
+    card.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:var(--white);display:flex;align-items:center;gap:4px;">
+          <span>${route.name}</span>
+          ${isEquipped ? '<span style="color:#66cc66;font-size:8px;">▶</span>' : ''}
+          ${ratingBadge}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
+          <span style="font-size:9px;color:#555;">${loc}</span>
+          ${stepInfo}
+        </div>
+      </div>
+      <div class="fr-rc-btns" id="fr-btns-${safeId}">
+        <button class="fr-rc-btn equip-btn ${isEquipped ? 'on' : ''}" onclick="${equipFn}">${isEquipped ? 'UNEQUIP' : 'EQUIP'}</button>
+        <button class="fr-rc-btn del-btn" onclick="frConfirmDelete('${safeId}')">✕</button>
+      </div>
+    `;
+    list.appendChild(card);
+  }
+  frUpdateBlankCount();
+  renderRouteQueue();
+}
+
+// Two-step route deletion — show CONFIRM button, auto-cancel after 3s
+const _frDeleteTimers = {};
+
+function frConfirmDelete(safeId) {
+  const btns = document.getElementById(`fr-btns-${safeId}`);
+  if (!btns) return;
+  const delBtn = btns.querySelector('.del-btn');
+  if (!delBtn) return;
+
+  // If already in confirm mode, treat second click as cancel
+  if (delBtn.dataset.confirming === '1') {
+    _frCancelDelete(safeId, delBtn);
+    return;
+  }
+
+  // Enter confirm state
+  delBtn.dataset.confirming = '1';
+  delBtn.textContent = 'CANCEL';
+  delBtn.style.borderColor = '#555';
+  delBtn.style.color = '#888';
+
+  // Insert CONFIRM button
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'fr-rc-btn del-btn';
+  confirmBtn.id = `del-confirm-${safeId}`;
+  confirmBtn.textContent = 'DELETE';
+  confirmBtn.style.borderColor = 'var(--red)';
+  confirmBtn.style.color = 'var(--red)';
+  confirmBtn.onclick = () => frExecuteDelete(safeId);
+  btns.appendChild(confirmBtn);
+
+  // Auto-cancel after 4 seconds
+  clearTimeout(_frDeleteTimers[safeId]);
+  _frDeleteTimers[safeId] = setTimeout(() => _frCancelDelete(safeId, delBtn), 4000);
+}
+
+function _frCancelDelete(safeId, delBtn) {
+  clearTimeout(_frDeleteTimers[safeId]);
+  if (delBtn) {
+    delBtn.textContent = '✕';
+    delBtn.style.borderColor = '';
+    delBtn.style.color = '';
+    delete delBtn.dataset.confirming;
+  }
+  const confirmBtn = document.getElementById(`del-confirm-${safeId}`);
+  if (confirmBtn) confirmBtn.remove();
+}
+
+function frExecuteDelete(safeId) {
+  // Find route whose id normalises to this safeId
+  const route = FarmRoutes.getRoutes().find(r => r.id.replace(/[^a-zA-Z0-9_]/g, '_') === safeId);
+  if (!route) return;
+  clearTimeout(_frDeleteTimers[safeId]);
+  FarmRoutes.deleteRoute(route.id);
+  renderFarmRouteList();
+  frUpdateConfigDisplay();
+  frUpdateEquippedIndicator();
+  saveGame(false);
+}
+
+function frUpdateEquippedIndicator() {
+  const route = FarmRoutes.getEquipped();
+  const info = document.getElementById('fr-equipped-info');
+  const indicator = document.getElementById('fr-active-indicator');
+
+  if (!route) {
+    if (info) info.style.display = 'none';
+    if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
+    return;
+  }
+
+  const safePath = route.path || [];
+  const pathLen = safePath.length;
+
+  // Hide indicator if blank route (no path yet)
+  if (pathLen === 0) {
+    if (info) info.style.display = 'none';
+    if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
+    return;
+  }
+
+  const curStep = FarmRoutes.currentStep();
+
+  if (info) {
+    info.style.display = 'block';
+    const nameEl = document.getElementById('fr-equipped-name');
+    const stepEl = document.getElementById('fr-bot-current-step');
+    const totalEl = document.getElementById('fr-bot-total-steps');
+    if (nameEl) nameEl.textContent = route.name;
+    if (stepEl) stepEl.textContent = curStep + 1;
+    if (totalEl) totalEl.textContent = pathLen;
+    frRenderLiveGrid();
+  }
+
+  if (FREditor.zone === route.zone && FREditor.subZone === (route.subZone || null)) {
+    FREditor.updatePlayerMarker(curStep);
+  }
+
+  if (indicator) {
+    indicator.style.display = 'inline';
+    indicator.textContent = `▶ Route: "${route.name}" · Step ${curStep+1}/${pathLen}`;
+  }
+}
+
+function frUpdateConfigDisplay() {
+  const el = document.getElementById('fr-config-display');
+  const unequipBtn = document.getElementById('fr-unequip-btn');
+  const route = FarmRoutes.getEquipped();
+  if (!el) return;
+  if (!route) {
+    el.innerHTML = '<div style="font-size:9px;color:#555;">No route equipped. Go to <strong style="color:#888;">Map → Farm Routes</strong> to create or equip one.</div>';
+    if (unequipBtn) unequipBtn.style.display = 'none';
+    return;
+  }
+  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',abyss:'Abyss'};
+  const ratingColors = {'S':'#ffcc44','A+':'#ccaa44','A':'#bbaa44','B+':'#88aa66','B':'#77aa66','C+':'#888','C':'#888','D':'#cc4444'};
+  const rc = ratingColors[route.rating] || '#888';
+  const pathLen = (route.path || []).length;
+  const totalSteps = pathLen || '—';
+  const curStep = pathLen > 0 ? FarmRoutes.currentStep() + 1 : '—';
+  el.innerHTML = `
+    <div class="fr-bot-display">
+      <strong style="color:#aaeaaa;">${route.name}</strong>
+      <span style="color:${rc};font-size:9px;margin-left:6px;">Rating: ${route.rating}</span><br>
+      <span style="color:#555;">${zoneNames[route.zone] || route.zone} · ${totalSteps} steps · Step ${curStep}/${totalSteps}</span>
+    </div>
+  `;
+  if (unequipBtn) unequipBtn.style.display = 'inline';
+}
+
+// Farm Route Shop
+// Pre-written shop route pool — name, zone, subZone, description, character (affects generation bias)
+const FR_SHOP_POOL = [
+  // Fields
+  { name:"Wheat Run",          zone:'fields', subZone:null,                 desc:"A breezy loop through the open plains. Popular with new adventurers.", char:'fast' },
+  { name:"Goblin Circuit",     zone:'fields', subZone:'goblin_camp',        desc:"Cuts straight through the camp. Goblins respawn fast here.", char:'boss' },
+  { name:"Frontier Sweep",     zone:'fields', subZone:'stormwind_fields',   desc:"Traces the storm line. Fast encounter rate, few safe spots.", char:'fast' },
+  { name:"Temple Run",         zone:'fields', subZone:'golem_temple',       desc:"Spirals into the ruins. Golems are slow but hit hard.", char:'elite' },
+  { name:"Dusty Patrol",       zone:'fields', subZone:'dusty_outskirts',    desc:"Back-road route through the outskirts. Banditto territory.", char:'boss' },
+  { name:"Field Patrol",       zone:'fields', subZone:null,                 desc:"Standard perimeter route. Steady kills, minimal downtime.", char:'fast' },
+  { name:"Harvest Circuit",    zone:'fields', subZone:null,                 desc:"Winds through crop rows. Nothing fancy, but it works.", char:'fast' },
+  { name:"Soldier March",      zone:'fields', subZone:'stormwind_fields',   desc:"Military-style route. Constant pressure, no looping back.", char:'elite' },
+
+  // Caves
+  { name:"Tunnel Crawl",       zone:'caves',  subZone:null,                 desc:"Covers the main corridor. Dark, damp, effective.", char:'fast' },
+  { name:"Crystal Walk",       zone:'caves',  subZone:'echoing_chasm',      desc:"Follows the crystal veins deep into the chasm.", char:'elite' },
+  { name:"Bat Run",            zone:'caves',  subZone:'bat_cave',           desc:"High-speed route through the bat nesting tunnels.", char:'fast' },
+  { name:"Librarian's Path",   zone:'caves',  subZone:'forbidden_library',  desc:"Scholars mapped this — every shelf hides something dangerous.", char:'elite' },
+  { name:"Deep March",         zone:'caves',  subZone:'deep_tunnels',       desc:"Push into the lower tunnels where light doesn't reach.", char:'boss' },
+  { name:"Echo Route",         zone:'caves',  subZone:'echoing_chasm',      desc:"The sound of footsteps draws creatures from the dark.", char:'elite' },
+  { name:"Mineshaft Circuit",  zone:'caves',  subZone:null,                 desc:"Old mining route. Ore carts block some paths. Worth it.", char:'fast' },
+  { name:"Stone Path",         zone:'caves',  subZone:'deep_tunnels',       desc:"Slow going over broken rock, but the pickings are good.", char:'boss' },
+
+  // Swamp
+  { name:"Bog Walk",           zone:'swamp',  subZone:null,                 desc:"Standard wade through the shallows. Watch for sinkholes.", char:'fast' },
+  { name:"Mire Circuit",       zone:'swamp',  subZone:'murk_depths',        desc:"Circles the deep murk. You'll need a torch.", char:'elite' },
+  { name:"Rot March",          zone:'swamp',  subZone:'crimson_rot',        desc:"Through the infected zone. Don't touch anything red.", char:'boss' },
+  { name:"Coven Loop",         zone:'swamp',  subZone:'witch_coven',        desc:"The witches use this path. They won't appreciate you on it.", char:'elite' },
+  { name:"Hollow Circuit",     zone:'swamp',  subZone:'cursed_hollow',      desc:"Something cursed this route long ago. Still active.", char:'boss' },
+  { name:"Reed Route",         zone:'swamp',  subZone:null,                 desc:"Quiet path through the reeds. Slow but steady.", char:'fast' },
+  { name:"Fetid Trail",        zone:'swamp',  subZone:'murk_depths',        desc:"Pungent and unpleasant. But monsters cluster here.", char:'boss' },
+  { name:"Bayou Circuit",      zone:'swamp',  subZone:null,                 desc:"Follows the old bayou. Locals avoid it for good reason.", char:'elite' },
+
+  // Hoarspire
+  { name:"Snowfield Sweep",    zone:'hoarspire', subZone:null,                         desc:"Clean coverage of the snowfield. Steady kills.", char:'fast' },
+  { name:"Blizzard Path",      zone:'hoarspire', subZone:'sheercold_terrace',          desc:"Exposed ridge line. Wind cuts. Enemies cluster for warmth.", char:'boss' },
+  { name:"Frost March",        zone:'hoarspire', subZone:'pale_hollow',                desc:"Into the hollow where frost never lifts.", char:'elite' },
+  { name:"Grave Circuit",      zone:'hoarspire', subZone:'frozen_dragon_grave',        desc:"Around the frozen remains. Nothing stays buried forever.", char:'boss' },
+  { name:"Ice Circuit",        zone:'hoarspire', subZone:'sheercold_terrace',          desc:"Traces ice shelf formations. Slippery. Dangerous.", char:'elite' },
+  { name:"Tundra Run",         zone:'hoarspire', subZone:null,                         desc:"Fast loop across the open tundra. No shelter.", char:'fast' },
+  { name:"Pale Walk",          zone:'hoarspire', subZone:'pale_hollow',                desc:"The pale hollow is quiet. That's never a good sign.", char:'elite' },
+  { name:"Glacial Loop",       zone:'hoarspire', subZone:null,                         desc:"Follows a glacier's edge. Chunks break off unpredictably.", char:'fast' },
+
+  // Abyss
+  { name:"Void Walk",          zone:'abyss', subZone:'abyss', desc:"Entry-level abyss route. The darkness watches back.", char:'fast' },
+  { name:"Rift March",         zone:'abyss', subZone:'abyss', desc:"Follows the rift lines. Something tears at the air here.", char:'elite' },
+  { name:"Shadow Loop",        zone:'abyss', subZone:'abyss', desc:"Loops through the shadowed region. Entities are thickest here.", char:'boss' },
+  { name:"Null Path",          zone:'abyss', subZone:'abyss', desc:"A route through dead silence. The void consumes all sound.", char:'elite' },
+  { name:"Endless Trail",      zone:'abyss', subZone:'abyss', desc:"It loops. You won't notice until it's too late.", char:'boss' },
+  { name:"Deep Void Run",      zone:'abyss', subZone:'abyss', desc:"Descend past what maps can show. Not for the faint-hearted.", char:'boss' },
+
+  // Boss-specific names (any zone)
+  { name:"Boss Run",           zone:null, subZone:null, desc:"Someone drew a direct line to the biggest threats. Efficient.", char:'boss' },
+  { name:"Hunting Path",       zone:null, subZone:null, desc:"Built for killing the strongest enemies. Nothing else matters.", char:'boss' },
+  { name:"Execution Trail",    zone:null, subZone:null, desc:"No detours. Every step leads somewhere dangerous.", char:'boss' },
+  { name:"Slayer Route",       zone:null, subZone:null, desc:"Straight to the danger zones. Bring potions.", char:'boss' },
+  { name:"Kill Circuit",       zone:null, subZone:null, desc:"A calculated loop through high-threat territory.", char:'boss' },
+
+  // S-rank names (special)
+  { name:"Apex Circuit",       zone:null, subZone:null, desc:"Whoever made this knew exactly what they were doing.", char:'boss' },
+  { name:"Champion Path",      zone:null, subZone:null, desc:"Every tile is optimised. No wasted movement.", char:'elite' },
+  { name:"Perfect Route",      zone:null, subZone:null, desc:"Flawless pathing. Encountered in wild almost never.", char:'boss' },
+  { name:"Sovereign Trail",    zone:null, subZone:null, desc:"Marked with old sigils. Something powerful walked this before.", char:'elite' },
+  { name:"Pinnacle Run",       zone:null, subZone:null, desc:"As good as it gets. Whoever sold this doesn't know what they had.", char:'boss' },
+];
+
+// Generate a shop route object procedurally from a layout
+function frGenerateShopRoute(zone, subZone, forceS) {
+  const layout = frGetLayout(zone, subZone);
+  const tiles = layout.tiles;
+  const cols = layout.cols;
+  const rows = layout.rows;
+  const startIdx = frGetStartTile(zone, subZone);
+
+  // Pick a pool entry matching zone/subzone (or universal zone:null entries)
+  const poolCandidates = FR_SHOP_POOL.filter(p =>
+    (p.zone === zone || p.zone === null) &&
+    (p.subZone === subZone || p.subZone === null)
+  );
+  const poolEntry = poolCandidates.length
+    ? poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
+    : FR_SHOP_POOL[Math.floor(Math.random() * FR_SHOP_POOL.length)];
+
+  const char = poolEntry.char || 'fast';
+  const wantBoss  = char === 'boss';
+  const wantElite = char === 'elite';
+  const wantFast  = char === 'fast';
+
+  // BFS all reachable walkable tiles
+  const walkable = new Set();
+  const q = [startIdx];
+  walkable.add(startIdx);
+  while (q.length) {
+    const cur = q.shift();
+    const r = Math.floor(cur / cols), c = cur % cols;
+    for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nr=r+dr, nc=c+dc;
+      if (nr<0||nr>=rows||nc<0||nc>=cols) continue;
+      const ni = nr*cols+nc;
+      if (!walkable.has(ni) && tiles[ni] && tiles[ni] !== 'dead') { walkable.add(ni); q.push(ni); }
+    }
+  }
+
+  const maxSteps = Math.max(2, Math.floor(walkable.size / 2));
+
+  // Greedy path biased toward char tile type
+  const path = [startIdx];
+  const visited = new Set([startIdx]);
+  const tileScore = (idx) => {
+    const t = tiles[idx];
+    if (wantBoss)  return t === 'boss' ? 10 : t === 'elite_swarm' ? 4 : t === 'elite' ? 2 : 1;
+    if (wantElite) return t === 'elite_swarm' ? 10 : t === 'elite' ? 6 : t === 'boss' ? 3 : 1;
+    return t === 'fast' ? 10 : t === 'normal' ? 2 : 1;
+  };
+
+  while (path.length < maxSteps) {
+    const last = path[path.length - 1];
+    const r = Math.floor(last / cols), c = last % cols;
+    const candidates = [];
+    for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const nr=r+dr, nc=c+dc;
+      if (nr<0||nr>=rows||nc<0||nc>=cols) continue;
+      const ni=nr*cols+nc;
+      if (!visited.has(ni) && tiles[ni] && tiles[ni] !== 'dead') candidates.push(ni);
+    }
+    if (!candidates.length) break;
+    candidates.sort((a,b) => (tileScore(b)-tileScore(a)) + (Math.random()-0.5)*0.5);
+    path.push(candidates[0]);
+    visited.add(candidates[0]);
+  }
+
+  let bossCount=0, eliteCount=0, eliteSwarmCount=0, fastCount=0;
+  for (const idx of path) {
+    const t = FR_TILE_TYPES[tiles[idx]] || FR_TILE_TYPES.normal;
+    if (t.bossChance > 0) bossCount++;
+    if (t.forceElite && !t.eliteSwarm) eliteCount++;
+    if (t.eliteSwarm) eliteSwarmCount++;
+    if (t.spawnMult < 1.0 && !t.dead) fastCount++;
+  }
+  let rating = frComputeRating(path.length, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
+  let spawnBoost = false;
+  if (forceS || Math.random() < 0.01) { rating = 'S'; spawnBoost = true; }
+
+  // If S-rank, pick a special name/desc
+  let name = poolEntry.name;
+  let desc = poolEntry.desc;
+  if (rating === 'S') {
+    const sEntries = FR_SHOP_POOL.filter(p => ['Apex Circuit','Champion Path','Perfect Route','Sovereign Trail','Pinnacle Run'].includes(p.name));
+    if (sEntries.length) { const se = sEntries[Math.floor(Math.random()*sEntries.length)]; name=se.name; desc=se.desc; }
+  }
+
+  return { name, desc, zone, subZone: subZone||null, path, gridTiles:[...tiles], rating, bossCount, eliteCount, eliteSwarmCount, spawnBoost, maxSteps, fromShop:true, selfMade:false };
+}
+
+function refreshFarmRouteShop(free=false) {
+  const fr = FarmRoutes.ensure();
+  const cost = 50000;
+  if (!free && fr.shopStock && fr.shopStock.length > 0) {
+    if (G.gold < cost) { log('Not enough gold to refresh route shop (50k needed).', 'system'); return; }
+    G.gold -= cost;
+    updateUI();
+  }
+  const allZoneSubs = Object.keys(FR_ZONE_LAYOUTS).map(key => ({ zone:FR_ZONE_LAYOUTS[key].zone, subZone:FR_ZONE_LAYOUTS[key].subZone }));
+  const shuffled = allZoneSubs.sort(() => Math.random()-0.5).slice(0, 3);
+  fr.shopStock = shuffled.map((zs,i) => ({ ...frGenerateShopRoute(zs.zone, zs.subZone, false), stockId:`stock_${Date.now()}_${i}` }));
+  renderFarmRouteShop();
+  updateShopGoldDisplay();
+}
+
+function updateShopGoldDisplay() {
+  const el = document.getElementById('fr-shop-gold');
+  if (el) el.textContent = G.gold.toLocaleString();
+}
+
+function renderFarmRouteShop() {
+  const grid = document.getElementById('fr-shop-grid');
+  if (!grid) return;
+  const fr = FarmRoutes.ensure();
+  if (!fr.shopStock || fr.shopStock.length === 0) {
+    grid.innerHTML = '<div style="font-size:9px;color:#555;padding:8px 0;">No stock. Refresh to see routes.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  const zoneNames = {fields:'The Fields',caves:'Dark Cave',swamp:'Bleakmoor Swamp',hoarspire:'Hoarspire Valley',abyss:'The Abyss'};
+  const subZoneLabels = {
+    dusty_outskirts:'Dusty Outskirts',goblin_camp:'Goblin Camp',golem_temple:'Golem Temple',stormwind_fields:'Stormwind Fields',
+    deep_tunnels:'Deep Tunnels',bat_cave:'Bat Cave',forbidden_library:'Forbidden Library',echoing_chasm:'Echoing Chasm',
+    murk_depths:'Murk Depths',crimson_rot:'Crimson Rot',witch_coven:'Witch Coven',cursed_hollow:'Cursed Hollow',
+    sheercold_terrace:'Sheercold Terrace',pale_hollow:'Pale Hollow',frozen_dragon_grave:'Frozen Dragon Grave',
+  };
+
+  for (const item of fr.shopStock) {
+    if (!item) continue;
+    const card = document.createElement('div');
+    card.className = 'fr-shop-card';
+    if (item.spawnBoost) card.style.cssText += ';border-color:#aa8800;';
+    const loc = item.subZone ? subZoneLabels[item.subZone]||item.subZone : zoneNames[item.zone]||item.zone;
+    const pathLen = (item.path||[]).length;
+    const nameColor = item.spawnBoost ? 'var(--legendary)' : 'var(--white)';
+    card.innerHTML = `
+      <div class="fr-shop-name" style="color:${nameColor};">${item.name}${item.spawnBoost ? ` <span style="color:#aa8800;font-size:8px;">✦</span>` : '' }</div>
+      <div class="fr-shop-zone">${loc} &middot; ${pathLen} steps</div>
+      <div class="fr-shop-desc">${item.desc||''}</div>
+      <div class="fr-shop-price">&#x2B21; 50k</div>
+      <button class="fr-shop-buy-btn" ${G.gold<50000?'disabled':''} onclick="frBuyShopRoute('${item.stockId}')">BUY</button>
+    `;
+    grid.appendChild(card);
+  }
+
+  // Blank route — always shown at 100k
+  const blankCard = document.createElement('div');
+  blankCard.className = 'fr-shop-card';
+  blankCard.style.borderColor = '#2a2a2a';
+  blankCard.innerHTML = `
+    <div class="fr-shop-name" style="color:#888;">Blank Route</div>
+    <div class="fr-shop-zone" style="color:#444;">Any zone</div>
+    <div class="fr-shop-desc" style="color:#444;">An empty route. Draw your own path in the editor.</div>
+    <div class="fr-shop-price">&#x2B21; 100k</div>
+    <button class="fr-shop-buy-btn" ${G.gold<100000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
+  `;
+  grid.appendChild(blankCard);
+  updateShopGoldDisplay();
+}
+
+function frBuyBlankRoute() {
+  const price = 100000;
+  if (G.gold < price) { log('Not enough gold for a blank route (100k needed).', 'system'); return; }
+  G.gold -= price;
+  updateUI();
+  const blankNum = FarmRoutes.getRoutes().filter(r => r.blank).length + 1;
+  FarmRoutes.saveRoute(frMakeBlankRoute(`Blank Route ${blankNum}`));
+  renderFarmRouteList();
+  renderFarmRouteShop();
+  saveGame(false);
+  log('Purchased a blank Farm Route for 100k gold.', 'system');
+}
+
+function frMakeBlankRoute(label) {
+  const defaultLayout = FR_ZONE_LAYOUTS.fields_dusty_outskirts;
+  return {
+    id: `fr_blank_${Date.now()}`,
+    name: label || 'Blank Route',
+    zone: 'fields', subZone: 'dusty_outskirts',
+    path: [],
+    gridTiles: [...defaultLayout.tiles],
+    rating: '—', blank: true, selfMade: true,
+    createdAt: Date.now(),
+    maxSteps: frMaxSteps(defaultLayout),
+  };
+}
+
+function frBuyShopRoute(stockId) {
+  const fr = FarmRoutes.ensure();
+  const item = fr.shopStock.find(s => s.stockId === stockId);
+  if (!item) return;
+  const price = 50000;
+  if (G.gold < price) { log('Not enough gold (50k needed).', 'system'); return; }
+  G.gold -= price;
+  updateUI();
+  FarmRoutes.saveRoute({
+    id:`fr_shop_${Date.now()}`, name:item.name, desc:item.desc,
+    zone:item.zone, subZone:item.subZone||null,
+    path:item.path||[], gridTiles:item.gridTiles||[],
+    rating:item.rating, bossCount:item.bossCount||0,
+    eliteCount:item.eliteCount||0, eliteSwarmCount:item.eliteSwarmCount||0,
+    spawnBoost:item.spawnBoost||false,
+    createdAt:Date.now(), fromShop:true, selfMade:false,
+    maxSteps:item.maxSteps||0,
+  });
+  fr.shopStock = fr.shopStock.filter(s => s.stockId !== stockId);
+  renderFarmRouteShop();
+  renderFarmRouteList();
+  saveGame(false);
+  log(`Purchased route: "${item.name}" (${(item.path||[]).length} steps) for 50k gold`, 'system');
+}
+
+
+// Integrate with spawn system — get tile modifiers for current bot step
+function frGetCurrentTileModifiers() {
+  const route = FarmRoutes.getEquipped();
+  if (!route || !route.path || route.path.length === 0) return null;
+  const step = FarmRoutes.currentStep();
+  const tileIdx = route.path[step];
+  const layout = frGetLayout(route.zone, route.subZone);
+  const tileType = route.gridTiles ? (route.gridTiles[tileIdx] || 'normal') : (layout.tiles[tileIdx] || 'normal');
+  const base = FR_TILE_TYPES[tileType] || FR_TILE_TYPES.normal;
+  // S-rank boost: spawn 25% faster than each tile's default
+  if (route.spawnBoost && !base.dead) {
+    return { ...base, spawnMult: Math.max(0.2, base.spawnMult * 0.75) };
+  }
+  return base;
+}
+
+// Called when a spawn is triggered — advances farm route step
+function frOnSpawn() {
+  const route = FarmRoutes.getEquipped();
+  if (!route || !route.path || route.path.length === 0) return;
+  const prevStep = FarmRoutes.currentStep();
+  FarmRoutes.advanceStep();
+  const newStep = FarmRoutes.currentStep();
+  frUpdateEquippedIndicator();
+  frUpdateConfigDisplay();
+
+  // If we wrapped back to step 0, the route completed a full loop
+  if (newStep === 0 && prevStep > 0) {
+    // Check if queue should advance
+    const fr = frQueueEnsure();
+    if (fr.queue && fr.queue.length > 0) {
+      frQueueAdvance();
+    }
+  }
+}
+
+// Initialize farm routes UI when map tab is opened
+function frToggleEditor() {
+  const body = document.getElementById('fr-editor-body');
+  const chevron = document.getElementById('fr-editor-chevron');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.textContent = open ? '▼' : '▲';
+  // Init grid on first open
+  if (!open) {
+    const zoneEl = document.getElementById('fr-editor-zone');
+    const subEl = document.getElementById('fr-editor-subzone');
+    const zone = zoneEl ? zoneEl.value : 'fields';
+    const opts = FR_SUBZONE_OPTIONS[zone] || [];
+    const sub = subEl ? (subEl.value || opts[0]?.value || null) : (opts[0]?.value || null);
+    FREditor.init(zone, sub);
+  }
+}
+
+function frUpdateBlankCount() {
+  const el = document.getElementById('fr-blank-count-label');
+  if (!el) return;
+  const blanks = FarmRoutes.getRoutes().filter(r => r.blank).length;
+  el.textContent = blanks > 0 ? `${blanks} blank${blanks > 1 ? 's' : ''} available` : 'No blank routes';
+  el.style.color = blanks > 0 ? '#556644' : '#444';
+}
+
+function initFarmRoutesUI() {
+  frSetTool('route');
+  renderFarmRouteList();
+  frUpdateEquippedIndicator();
+  frUpdateBlankCount();
+  renderRouteQueue();
+  frUpdateQueueStatus();
+  const tog = document.getElementById('toggle-fr-queue-loop');
+  const fr = frQueueEnsure();
+  if (tog) tog.classList.toggle('active', fr.queueLoop);
+  // Auto-populate shop if empty
+  if (!fr.shopStock || fr.shopStock.length === 0) refreshFarmRouteShop(true);
+  else renderFarmRouteShop();
+  updateShopGoldDisplay();
+}
+
+// Auto-save farm routes state into G (already in serializeClassState via G.farmRoutes)
+
 // Auto-save every 30 seconds
 setInterval(() => { if (G.started && !G.dead) saveGame(false); }, 30000);
 
@@ -9398,6 +11882,10 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
     renderLogFilterUI(); renderSkillPriority();
     // Re-render merchant with correct gold after full load
     setTimeout(() => renderMerchant(), 50);
+    // Init farm routes
+    FarmRoutes.ensure();
+    frUpdateEquippedIndicator();
+    frUpdateConfigDisplay();
     log(`Save loaded — Lv${G.level} ${G.playerClass.toUpperCase()} | ${G.gold}g | ${G.kills} kills`);
   } else {
     // No save — show class slot screen
