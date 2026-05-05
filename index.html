@@ -94,8 +94,22 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 
 /* EQUIP SLOTS */
 .equip-grid { display:flex; flex-direction:column; gap:3px; }
-.equip-slot { display:grid; grid-template-columns:18px minmax(0, 1fr) 30px; grid-template-rows:auto auto; align-items:center; column-gap:7px; row-gap:1px; background:#000; border:1px solid var(--border); padding:7px 8px; min-height:48px; width:100%; overflow:hidden; }
+.equip-slot { display:grid; grid-template-columns:18px minmax(0, 1fr) 30px; grid-template-rows:auto auto auto; align-items:center; column-gap:7px; row-gap:1px; background:#000; border:1px solid var(--border); padding:7px 8px; min-height:48px; width:100%; overflow:visible; }
 .equip-slot::before { grid-column:1; grid-row:1 / span 2; }
+/* Stat preview panel that appears below an equipped slot on hover/click */
+.equip-stat-preview {
+  display:none;
+  grid-column:1 / -1;
+  padding:6px 0 2px;
+  border-top:1px solid var(--border);
+  margin-top:4px;
+  font-size:9px;
+  line-height:1.5;
+  color:#aaa;
+}
+.equip-slot:hover .equip-stat-preview,
+.equip-slot.stat-pinned .equip-stat-preview { display:block; }
+.equip-slot { cursor:pointer; }
 .equip-slot-name { grid-column:2; grid-row:1; color:var(--muted); font-size:10px; min-width:0; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:0.8px; }
 .equip-item-name { grid-column:2; grid-row:2; font-size:13px; min-width:0; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; overflow-wrap:normal; word-break:normal; }
 .equip-unequip { grid-column:3; grid-row:1 / span 2; width:30px; min-width:30px; max-width:30px; height:26px; padding:0; display:flex; align-items:center; justify-content:center; justify-self:end; background:transparent; border:1px solid var(--border2); color:var(--muted); font-size:11px; cursor:pointer; font-family:inherit; visibility:hidden; }
@@ -970,11 +984,11 @@ canvas {
         <div class="stats-section equipment-section" style="min-width:160px;max-width:220px">
         <div class="section-title">EQUIPMENT</div>
         <div class="equip-grid">
-          <div class="equip-slot" id="slot-helmet" data-slot="helmet"><span class="equip-slot-name">HELMET</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="unequipSlot('helmet')">✕</button></div>
-          <div class="equip-slot" id="slot-armor" data-slot="armor"><span class="equip-slot-name">ARMOR</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="unequipSlot('armor')">✕</button></div>
-          <div class="equip-slot" id="slot-legging" data-slot="legging"><span class="equip-slot-name">LEGGING</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="unequipSlot('legging')">✕</button></div>
-          <div class="equip-slot" id="slot-weapon" data-slot="weapon"><span class="equip-slot-name">WEAPON</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="unequipSlot('weapon')">✕</button></div>
-          <div class="equip-slot" id="slot-offhand" data-slot="offhand"><span class="equip-slot-name">OFF-HAND</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="unequipSlot('offhand')">✕</button></div>
+          <div class="equip-slot" id="slot-helmet" data-slot="helmet" onclick="toggleEquipPin('helmet')"><span class="equip-slot-name">HELMET</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="event.stopPropagation();unequipSlot('helmet')">✕</button><div class="equip-stat-preview" id="slot-helmet-preview"></div></div>
+          <div class="equip-slot" id="slot-armor" data-slot="armor" onclick="toggleEquipPin('armor')"><span class="equip-slot-name">ARMOR</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="event.stopPropagation();unequipSlot('armor')">✕</button><div class="equip-stat-preview" id="slot-armor-preview"></div></div>
+          <div class="equip-slot" id="slot-legging" data-slot="legging" onclick="toggleEquipPin('legging')"><span class="equip-slot-name">LEGGING</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="event.stopPropagation();unequipSlot('legging')">✕</button><div class="equip-stat-preview" id="slot-legging-preview"></div></div>
+          <div class="equip-slot" id="slot-weapon" data-slot="weapon" onclick="toggleEquipPin('weapon')"><span class="equip-slot-name">WEAPON</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="event.stopPropagation();unequipSlot('weapon')">✕</button><div class="equip-stat-preview" id="slot-weapon-preview"></div></div>
+          <div class="equip-slot" id="slot-offhand" data-slot="offhand" onclick="toggleEquipPin('offhand')"><span class="equip-slot-name">OFF-HAND</span><span class="equip-item-name" style="color:var(--muted)">— empty —</span><button class="equip-unequip" onclick="event.stopPropagation();unequipSlot('offhand')">✕</button><div class="equip-stat-preview" id="slot-offhand-preview"></div></div>
         </div>
       </div>
 
@@ -1125,14 +1139,21 @@ canvas {
             <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gamble-ge-display">0</span>
           </div>
           <div style="font-size:9px;color:#666;margin-bottom:8px;line-height:1.5;">Roll a random item. Your class main stat is always guaranteed. Slot and sub stats are random.</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
               <div style="font-size:10px;color:#44bbaa;font-weight:bold;">Gear Roll</div>
-              <div style="font-size:8px;color:#555;">Standard rarity weights · 3 GE per roll</div>
+              <div style="font-size:8px;color:#555;">Class stat guaranteed · 3 GE per roll</div>
             </div>
             <button id="gamble-btn" onclick="doGamble('rough')" style="background:#000;border:1px solid #44bbaa;color:#44bbaa;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL (3 GE)</button>
           </div>
-          <div id="gamble-last" style="margin-top:8px;font-size:9px;color:#555;min-height:16px;"></div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;">
+            <div style="text-align:center;"><div style="font-size:8px;color:#aaaaaa;font-weight:bold;letter-spacing:1px;">COM</div><div style="font-size:10px;color:#aaaaaa;font-weight:bold;">46.3%</div></div>
+            <div style="text-align:center;"><div style="font-size:8px;color:#4488ff;font-weight:bold;letter-spacing:1px;">RARE</div><div style="font-size:10px;color:#4488ff;font-weight:bold;">31.2%</div></div>
+            <div style="text-align:center;"><div style="font-size:8px;color:#aa66ff;font-weight:bold;letter-spacing:1px;">EPIC</div><div style="font-size:10px;color:#aa66ff;font-weight:bold;">12.5%</div></div>
+            <div style="text-align:center;"><div style="font-size:8px;color:var(--legendary);font-weight:bold;letter-spacing:1px;">LEG</div><div style="font-size:10px;color:var(--legendary);font-weight:bold;">7.0%</div></div>
+            <div style="text-align:center;"><div style="font-size:8px;color:var(--unique);font-weight:bold;letter-spacing:1px;">MYT</div><div style="font-size:10px;color:var(--unique);font-weight:bold;">3.0%</div></div>
+          </div>
+          <div id="gamble-last" style="font-size:9px;color:#555;min-height:16px;"></div>
         </div>
         <div class="town-section">
           <div class="town-section-title">BLACKSMITH</div>
@@ -7326,13 +7347,36 @@ function renderStats() {
 }
 
 function renderEquipSlots() {
-  for(const slot of SLOTS){
-    const el=document.getElementById(`slot-${slot}`);
-    const item=G.equipped[slot];
-    const ne=el.querySelector('.equip-item-name');
-    if(item){ne.textContent=item.name;ne.style.color=RC[item.rarity];el.classList.add('filled');}
-    else{ne.textContent='— empty —';ne.style.color='var(--muted)';el.classList.remove('filled');}
+  for (const slot of SLOTS) {
+    const el = document.getElementById(`slot-${slot}`);
+    if (!el) continue;
+    const item = G.equipped[slot];
+    const ne = el.querySelector('.equip-item-name');
+    const preview = document.getElementById(`slot-${slot}-preview`);
+    if (item) {
+      ne.textContent = item.name;
+      ne.style.color = RC[item.rarity] || '#aaa';
+      el.classList.add('filled');
+      if (preview) {
+        const statsHtml = formatItemStats(item) || '<span style="color:#555;">No stats</span>';
+        preview.innerHTML = statsHtml + `<div style="font-size:8px;color:#444;margin-top:2px;">Click to pin · hover to preview</div>`;
+      }
+    } else {
+      ne.textContent = '— empty —';
+      ne.style.color = 'var(--muted)';
+      el.classList.remove('filled');
+      el.classList.remove('stat-pinned');
+      if (preview) preview.innerHTML = '';
+    }
   }
+}
+
+function toggleEquipPin(slot) {
+  const el = document.getElementById(`slot-${slot}`);
+  if (!el) return;
+  const item = G.equipped[slot];
+  if (!item) return;
+  el.classList.toggle('stat-pinned');
 }
 
 function renderPotions() {
@@ -9807,7 +9851,7 @@ function estimateOfflineSurvival(zs, kills, secs, zone, subZone) {
 function calcOfflineProgress(elapsed, zone, subZone) {
   const EFF = 0.5;
   const MAX_SECS = 12 * 3600;
-  const MAX_OFFLINE_ITEMS = 50;
+  const MAX_OFFLINE_ITEMS = 80;
   const secs = Math.min(elapsed, MAX_SECS);
   const zs = getZoneAvgStats(zone, subZone);
   if (!zs) return null;
@@ -9836,10 +9880,23 @@ function calcOfflineProgress(elapsed, zone, subZone) {
     }
   }
 
-  // Items — standard drops only, no special zone bonuses, cap 50
+  // Items — buffed drop rate for offline; scaled so 12hrs always yields at least 20.
+  // Base rate is 0.5 * EFF per kill. We also guarantee a minimum of 20 items at full 12hrs.
+  const MIN_ITEMS_AT_MAX = 20;
+  const baseDropRate = 0.5 * EFF;
+  // Calculate guaranteed minimum rate needed to hit MIN_ITEMS_AT_MAX at max time
+  const guaranteedRate = kills > 0 ? Math.max(baseDropRate, MIN_ITEMS_AT_MAX / kills) : baseDropRate;
+
   const items = [];
   for (let i = 0; i < kills && items.length < MAX_OFFLINE_ITEMS; i++) {
-    if (Math.random() < 0.5 * EFF) {
+    if (Math.random() < guaranteedRate) {
+      items.push(generateItem(null, false));
+    }
+  }
+
+  // Hard guarantee: if fewer than MIN_ITEMS_AT_MAX at full duration, top up
+  if (secs >= MAX_SECS && items.length < MIN_ITEMS_AT_MAX) {
+    while (items.length < MIN_ITEMS_AT_MAX && items.length < MAX_OFFLINE_ITEMS) {
       items.push(generateItem(null, false));
     }
   }
@@ -9900,7 +9957,7 @@ function applyOfflineProgress(result) {
 
   log(`— OFFLINE PROGRESS (${timeStr} away) —`);
   log(`~${kills} kills | +${gold}g | +${exp} EXP${levelsGained > 0 ? ` | +${levelsGained} level${levelsGained > 1 ? 's' : ''}` : ''}`);
-  log(`${potsAdded} potions | ${itemsAdded} items (50% efficiency)`);
+  log(`${potsAdded} potions | ${itemsAdded} items (offline: 20–80 item range)`);
   if (survival) {
     log(`Offline danger estimate: ${fmtNum(survival.totalIncoming)} incoming dmg - ${fmtNum(survival.totalRegen)} HP regen = ${fmtNum(survival.netDamage)} net dmg.`);
     if (survival.wouldDie) {
