@@ -7056,7 +7056,7 @@ function updateInventoryUpgradeDisplay() {
   const btn = document.getElementById('inv-upgrade-btn');
   const costEl = document.getElementById('inv-upgrade-cost');
   if (!btn || !costEl) return;
-  if (G.invMax >= 1000) {
+  if (G.invMax >= 500) {
     btn.textContent = 'MAX';
     btn.disabled = true;
   } else {
@@ -7065,15 +7065,16 @@ function updateInventoryUpgradeDisplay() {
   }
 }
 function upgradeInventory() {
-  if(G.invMax>=1000){log('Inventory at max!');return;}
+  if(G.invMax>=1000){log('Inventory at max capacity (1000 slots)!');return;}
   const cost=invUpgradeCost();
-  if(G.gold<cost){log(`Need ${cost}g to expand.`);return;}
+  if(G.gold<cost){log(`Need ${fmtNum(cost)}g to expand inventory.`);return;}
   G.gold-=cost;
   G.invMax=Math.min(1000,G.invMax+10);
   G.invUpgradeCount++;
-  log(`📦 Inventory expanded to ${G.invMax} slots (${rerollCostPaidText(item,cost)})`);
+  log(`📦 Inventory expanded to ${G.invMax} slots (-${fmtNum(cost)}g)`);
   renderInventory();renderStats();
   updateInventoryUpgradeDisplay();
+  saveGame(false);
 }
 
 // UI
