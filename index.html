@@ -1197,7 +1197,7 @@ canvas {
         <!-- FARM ROUTE SHOP -->
         <div class="town-section" id="fr-shop-section">
           <div class="town-section-title">🗺 FARM ROUTE SHOP</div>
-          <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 1% chance of an S-rank route.</div>
+          <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 2% chance of an S-rank route.</div>
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
             <span style="font-size:9px;color:#888;">Gold: <span id="fr-shop-gold" style="color:var(--yellow);font-weight:bold;">0</span></span>
             <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (20k)</button>
@@ -11085,7 +11085,7 @@ function frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCoun
   const tiers = ['D','C','C+','B','B+','A','A+'];
   const rating = tiers[Math.min(score, tiers.length - 1)];
   // 1% S-rank chance for shop routes
-  if (allowSRank && Math.random() < 0.01) return 'S';
+  if (allowSRank && Math.random() < 0.02) return 'S';
   return rating;
 }
 
@@ -11575,7 +11575,7 @@ function frGenerateShopRoute(zone, subZone, forceS) {
   }
   let rating = frComputeRating(path.length, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
   let spawnBoost = false;
-  if (forceS || Math.random() < 0.01) { rating = 'S'; spawnBoost = true; }
+  if (forceS || Math.random() < 0.02) { rating = 'S'; spawnBoost = true; }
 
   // If S-rank, pick a special name/desc
   let name = poolEntry.name;
@@ -11597,7 +11597,7 @@ function refreshFarmRouteShop(free=false) {
     updateUI();
   }
   const allZoneSubs = Object.keys(FR_ZONE_LAYOUTS).map(key => ({ zone:FR_ZONE_LAYOUTS[key].zone, subZone:FR_ZONE_LAYOUTS[key].subZone }));
-  const shuffled = allZoneSubs.sort(() => Math.random()-0.5).slice(0, 3);
+  const shuffled = allZoneSubs.sort(() => Math.random()-0.5).slice(0, 4);
   fr.shopStock = shuffled.map((zs,i) => ({ ...frGenerateShopRoute(zs.zone, zs.subZone, false), stockId:`stock_${Date.now()}_${i}` }));
   renderFarmRouteShop();
   updateShopGoldDisplay();
@@ -11782,6 +11782,7 @@ function initFarmRoutesUI() {
   renderRouteQueue();
   frUpdateQueueStatus();
   const fr = FarmRoutes.ensure();
+  // Always ensure shop has stock — repopulate free if empty
   if (!fr.shopStock || fr.shopStock.length === 0) refreshFarmRouteShop(true);
   else renderFarmRouteShop();
   updateShopGoldDisplay();
