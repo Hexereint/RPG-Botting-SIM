@@ -59,7 +59,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .panel.active { display:flex; }
 
 /* LOG */
-#log-container { flex-shrink:0; height:160px; background:#000; border-top:1px solid var(--border); display:flex; flex-direction:column; }
+#log-container { flex-shrink:0; height:160px; background:#000; border-top:1px solid var(--border); display:flex; flex-direction:column; position:relative; }
 .log-header { padding:3px 10px; background:var(--bg2); border-bottom:1px solid var(--border); font-size:9px; color:var(--muted); letter-spacing:2px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; text-transform:uppercase; cursor:ns-resize; user-select:none; }
 .log-header * { pointer-events:none; }
 .log-resize { padding:0 6px; color:var(--muted); }
@@ -977,7 +977,7 @@ canvas {
 .fr-shop-buy-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
 /* Combat live route grid */
-.fr-combat-route-panel { flex:0 0 auto; min-width:96px; max-width:150px; padding:5px 6px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.72); box-shadow:inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
+.fr-combat-route-panel { position:absolute; right:8px; top:calc(100% - 136px); z-index:30; width:max-content; min-width:96px; max-width:min(150px, calc(100% - 16px)); padding:5px 6px; border:1px solid rgba(120,180,80,0.30); background:rgba(5,14,4,0.86); box-shadow:0 8px 22px rgba(0,0,0,0.58), inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; pointer-events:none; }
 .fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
 .fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
 .fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
@@ -989,8 +989,8 @@ canvas {
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-panel { min-width:74px; max-width:92px; padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { display:none; } }
+@media (max-width:700px) { .fr-combat-route-panel { right:5px; min-width:74px; max-width:min(92px, calc(100% - 10px)); padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { right:4px; min-width:64px; max-width:min(92px, calc(100% - 8px)); padding:3px; display:block; } .fr-combat-route-title { display:none; } .fr-combat-route-step { font-size:6px; margin-bottom:2px; } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
 .chaos-select-wrap { display:flex; align-items:center; gap:7px; font-size:calc(var(--ui-font-size) * 0.72); color:#cc4444; letter-spacing:1px; text-transform:uppercase; font-weight:bold; }
@@ -1627,7 +1627,7 @@ body.chaos-active #map-panel .subzone-row,
             <span id="cfg-ui-font-size-val" style="font-size:10px;color:var(--muted);min-width:20px;">18</span>
           </div>
           <div class="config-row">
-            <div class="config-label">Live Map Route Size<span class="config-sub">Adjusts the compact route grid shown below combat</span></div>
+            <div class="config-label">Live Map Route Size<span class="config-sub">Adjusts the compact route grid shown below the combat graphics</span></div>
             <input type="range" id="cfg-live-map-size" min="6" max="18" value="15" step="1" style="width:80px;accent-color:#88cc66;" oninput="setLiveMapRouteSize(this.value)">
             <span id="cfg-live-map-size-val" style="font-size:10px;color:var(--muted);min-width:28px;">15px</span>
           </div>
@@ -1799,14 +1799,6 @@ body.chaos-active #map-panel .subzone-row,
           </div>
         </div>
         <div class="combat-versus">AUTO<br>FARM</div>
-        <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
-          <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
-          <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
-          <div class="fr-combat-live-grid-wrap">
-            <canvas id="fr-combat-live-bg-canvas"></canvas>
-            <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
-          </div>
-        </div>
         <div class="combat-side enemy-side">
           <div id="combat-viewport-info" class="combat-card">
             <div id="cvp-name"></div>
@@ -1817,6 +1809,14 @@ body.chaos-active #map-panel .subzone-row,
           <div id="cvp-swarm"></div>
           <div class="sprite-plinth enemy-plinth"><canvas id="monster-canvas" width="64" height="64"></canvas></div>
         </div>
+      </div>
+    </div>
+    <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
+      <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
+      <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
+      <div class="fr-combat-live-grid-wrap">
+        <canvas id="fr-combat-live-bg-canvas"></canvas>
+        <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
       </div>
     </div>
     <div id="log-output"></div>
@@ -11889,18 +11889,29 @@ function frRenderLiveGrid() {
   }
 }
 
+// Render the equipped route as an overlay just below the combat viewport, above the event log entries.
 function frRenderCombatLiveGrid() {
   const panel = document.getElementById('fr-combat-route-panel');
   const liveGrid = document.getElementById('fr-combat-live-grid');
   if (!panel || !liveGrid) return;
   if (G.logFilter?.hideLiveMapGrid === true) { panel.style.display = 'none'; return; }
   const route = (typeof FarmRoutes !== 'undefined') ? FarmRoutes.getEquipped() : null;
-  if (!route || !route.path || route.path.length === 0 || G.zone === 'town' || !G.started || !G.monsters.length) {
+  if (!route || !route.path || route.path.length === 0 || G.zone === 'town' || !G.started) {
     panel.style.display = 'none';
     liveGrid.innerHTML = '';
     return;
   }
   panel.style.display = 'block';
+  // Anchor below the pixel combat graphics, not on top of them. The panel is absolutely
+  // positioned inside #log-container so it overlays the log rather than reserving blank log space.
+  const logContainer = document.getElementById('log-container');
+  const combatViewport = document.getElementById('combat-viewport');
+  if (logContainer && combatViewport) {
+    const logRect = logContainer.getBoundingClientRect();
+    const vpRect = combatViewport.getBoundingClientRect();
+    const top = Math.max(0, Math.round(vpRect.bottom - logRect.top + 6));
+    panel.style.top = top + 'px';
+  }
   const layout = frGetLayout(route.zone, route.subZone);
   const gridTiles = route.gridTiles || layout.tiles;
   const curStep = FarmRoutes.currentStep();
