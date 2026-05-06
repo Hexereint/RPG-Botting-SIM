@@ -1992,7 +1992,18 @@ function totalEquipSubStat(sub) {
   }
   return t;
 }
-function effStat(s) { return G.stats[s] + totalEquipStat(s); }
+function effStat(s) {
+  const base = G.stats[s] + totalEquipStat(s);
+  // Ascension: dmgpct and skilldmgpct boost the primary class stat by %
+  if (typeof totalAscendPrimaryStatBonus === 'function') {
+    const primary = getAscendPrimaryStat ? getAscendPrimaryStat() : null;
+    if (s === primary) {
+      const bonus = totalAscendPrimaryStatBonus();
+      if (bonus > 0) return Math.round(base * (1 + bonus / 100));
+    }
+  }
+  return base;
+}
 
 function calcMaxHp() {
   const vit = effStat('vit');
@@ -2024,6 +2035,13 @@ function calcMpRegen() {
   r += totalEquipSubStat('mpregen');
   return +r.toFixed(2);
 }
+// Ascension: get the player's primary class stat name
+function getAscendPrimaryStat() {
+  if (G.playerClass === 'warrior') return 'str';
+  if (G.playerClass === 'rogue') return 'agi';
+  return 'int'; // wizard
+}
+
 // Sum a specific ascension stat key across all equipped items
 function totalAscendStat(key) {
   let total = 0;
@@ -2034,6 +2052,11 @@ function totalAscendStat(key) {
     }
   }
   return total;
+}
+
+// Total ascension bonus to the player's primary stat (dmgpct + skilldmgpct both boost it)
+function totalAscendPrimaryStatBonus() {
+  return totalAscendStat('dmgpct') + totalAscendStat('skilldmgpct');
 }
 
 function calcBaseDamage() {
@@ -2053,9 +2076,6 @@ function isWarCryActive(now=performance.now()) {
 function calcDamage() {
   let d = calcBaseDamage();
   if (isWarCryActive()) d = Math.round(d * (1 + (G.combat.warCryPct || 0) / 100));
-  // Ascension bonus: dmgpct
-  const dmgBonus = totalAscendStat('dmgpct');
-  if (dmgBonus > 0) d = Math.round(d * (1 + dmgBonus / 100));
   return Math.max(1, Math.round(d));
 }
 function calcBattleHardenedReductionPct() {
@@ -5568,9 +5588,6 @@ function gameTick(ts) {
         }
 
         if(skillDmg > 0){
-          // Ascension bonus: skilldmgpct
-          const skillAscBonus = totalAscendStat('skilldmgpct');
-          if (skillAscBonus > 0) skillDmg = Math.round(skillDmg * (1 + skillAscBonus / 100));
           // Overload bonus damage
           if (overloadActive) {
             const overloadBonus = 1 + (Math.floor(G.level/2) / 100);
@@ -6520,16 +6537,23 @@ const ASCEND_COLOR = '#cc7733';
 
 // The four possible ascension bonus stats
 const ASCEND_STATS = [
-  { key:'dmgpct',     label:'Damage',      fmt: v => `+${v}% Damage`,      min:3,  max:5,  float:true  },
-  { key:'skilldmgpct',label:'Skill Damage',fmt: v => `+${v}% Skill Dmg`,   min:3,  max:5,  float:true  },
-  { key:'ascmaxhp',   label:'Max HP',      fmt: v => `+${v}% Max HP`,       min:5,  max:10, float:true  },
-  { key:'ascmaxmp',   label:'Max MP',      fmt: v => `+${v}% Max MP`,       min:5,  max:10, float:true  },
+  { key:'dmgpct',     label:'Primary Stat',  fmt: v => `+${v}% Primary Stat`,  min:3,  max:5,  float:true  },
+  { key:'skilldmgpct',label:'Primary Stat',  fmt: v => `+${v}% Primary Stat`,  min:3,  max:5,  float:true  },
+  { key:'ascmaxhp',   label:'Max HP',        fmt: v => `+${v}% Max HP`,         min:5,  max:10, float:true  },
+  { key:'ascmaxmp',   label:'Max MP',        fmt: v => `+${v}% Max MP`,         min:5,  max:10, float:true  },
 ];
 
 function rollAscendStat() {
   const def = ASCEND_STATS[Math.floor(Math.random() * ASCEND_STATS.length)];
   const val = parseFloat((def.min + Math.random() * (def.max - def.min)).toFixed(1));
   return { key: def.key, val };
+}
+
+// Value-only reroll — keep the current stat type, just re-randomise the value
+function rollAscendStatValueOnly(currentKey) {
+  const def = ASCEND_STATS.find(d => d.key === currentKey) || ASCEND_STATS[0];
+  const val = parseFloat((def.min + Math.random() * (def.max - def.min)).toFixed(1));
+  return { key: currentKey, val };
 }
 
 let upgradeSelectedItemId = null;
@@ -6643,9 +6667,9 @@ function doAscendReroll() {
   G.gold -= ASCEND_REROLL_COST;
   G.legendaryEssence -= 1;
   const oldDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
-  item.ascendStat = rollAscendStat();
-  const newDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
-  log(`⬆ Ascension reroll: ${oldDef?.label} → ${newDef?.fmt(item.ascendStat.val)} (-${fmtNum(ASCEND_REROLL_COST)}g, -1 LE)`, 'system');
+  const oldVal = item.ascendStat.val;
+  item.ascendStat = rollAscendStatValueOnly(item.ascendStat.key);
+  log(`⬆ Ascension reroll: ${oldDef?.label} ${oldVal}% → ${item.ascendStat.val}% (-${fmtNum(ASCEND_REROLL_COST)}g, -1 LE)`, 'system');
 
   updateDerived();
   renderEquipSlots();
