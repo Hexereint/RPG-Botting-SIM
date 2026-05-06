@@ -5504,9 +5504,16 @@ function gameTick(ts) {
             log(`Reflect charged (${target.reflectBasicHits % 3}/3)`, 'muted');
           }
         }
-        // Bloodsoaked Brandish: restore HP = 10% of damage dealt
+        // Bloodsoaked Brandish: restore HP = 10% of damage dealt.
+        // It only applies when a basic attack actually damages monster HP.
         if (hasMythicMod('bloodsoaked')) {
-          G.hp = Math.min(G.maxHp, G.hp + dmg * 0.10);
+          const bsBeforeHp = G.hp;
+          const bsHeal = dmg * 0.10;
+          G.hp = Math.min(G.maxHp, G.hp + bsHeal);
+          const bsRestored = Math.max(0, G.hp - bsBeforeHp);
+          if (bsRestored > 0) {
+            log(`Bloodsoaked Brandish lifesteals ${fmtNum(bsRestored)} HP`, 'basicattack');
+          }
         }
         // Shadowstep (Rogue) — chance to hit twice
         if (G.playerClass==='rogue' && G.passives?.shadowstep?.enabled) {
