@@ -1329,12 +1329,6 @@ canvas {
             </div>
             <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
             <div id="upgrade-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No legendary items available to ascend.</div>
-            <div id="upgrade-reroll-panel" style="display:none;margin-top:12px;padding:10px;background:#0a0600;border:1px solid #664422;">
-              <div style="font-size:9px;color:#cc7733;margin-bottom:6px;font-weight:bold;" id="upgrade-reroll-label">Reroll Ascension Bonus</div>
-              <div style="font-size:8px;color:#666;margin-bottom:8px;">Costs <span style="color:var(--yellow);">50,000g</span> per reroll.</div>
-              <div style="margin-bottom:8px;" id="upgrade-stat-display"></div>
-              <button onclick="doAscendReroll()" style="width:100%;background:#000;border:1px solid #cc7733;color:#cc7733;font-family:inherit;font-size:9px;padding:5px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">REROLL BONUS (50k)</button>
-            </div>
           </div>
         </div>
 
@@ -6550,7 +6544,7 @@ function renderUpgradeList() {
   if (led) led.textContent = G.legendaryEssence || 0;
   if (!list) return;
   list.innerHTML = '';
-  panel.style.display = 'none';
+  if (panel) panel.style.display = 'none';
   upgradeSelectedItemId = null;
 
   const legends = G.inventory.filter(i =>
@@ -6578,9 +6572,9 @@ function renderUpgradeList() {
         <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()}</div>
         ${ascLabel}
       </div>
-      <button style="background:#000;border:1px solid ${alreadyAscended ? '#664422' : 'var(--legendary)'};color:${alreadyAscended ? ASCEND_COLOR : 'var(--legendary)'};font-family:inherit;font-size:8px;padding:3px 9px;cursor:pointer;letter-spacing:1px;white-space:nowrap;"
-        onclick="event.stopPropagation();${alreadyAscended ? `selectAscendedItem(${item.id})` : `doAscension(${item.id})`}">
-        ${alreadyAscended ? 'REROLL' : 'ASCEND'}
+      <button style="background:#000;border:1px solid ${alreadyAscended ? '#664422' : 'var(--legendary)'};color:${alreadyAscended ? '#cc7733' : 'var(--legendary)'};font-family:inherit;font-size:8px;padding:3px 9px;cursor:${alreadyAscended ? 'default' : 'pointer'};letter-spacing:1px;white-space:nowrap;"
+        ${alreadyAscended ? '' : `onclick="event.stopPropagation();doAscension(${item.id})"`} ${alreadyAscended ? 'disabled' : ''}>
+        ${alreadyAscended ? 'ASCENDED' : 'ASCEND'}
       </button>
     `;
     list.appendChild(row);
@@ -6639,21 +6633,26 @@ function selectAscendedItem(itemId) {
 }
 
 function doAscendReroll() {
-  if (!upgradeSelectedItemId) return;
-  const item = G.inventory.find(i => i.id === upgradeSelectedItemId);
+  const itemId = upgradeSelectedItemId || (essenceSelectedItem?.id);
+  if (!itemId) return;
+  const item = G.inventory.find(i => i.id === itemId);
   if (!item || !item.ascendStat) return;
   if (G.gold < ASCEND_REROLL_COST) { log(`Need ${fmtNum(ASCEND_REROLL_COST)}g to reroll ascension bonus.`, 'system'); return; }
+  if ((G.legendaryEssence || 0) < 1) { log('Need 1 Legendary Essence to reroll ascension bonus.', 'system'); return; }
 
   G.gold -= ASCEND_REROLL_COST;
+  G.legendaryEssence -= 1;
   const oldDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
   item.ascendStat = rollAscendStat();
   const newDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
-  log(`⬆ Ascension reroll: ${oldDef?.label} → ${newDef?.fmt(item.ascendStat.val)}`, 'system');
+  log(`⬆ Ascension reroll: ${oldDef?.label} → ${newDef?.fmt(item.ascendStat.val)} (-${fmtNum(ASCEND_REROLL_COST)}g, -1 LE)`, 'system');
 
   updateDerived();
   renderEquipSlots();
   renderInventory();
-  selectAscendedItem(upgradeSelectedItemId);
+  if (document.getElementById('town-screen-upgrade')?.classList.contains('active')) {
+    renderUpgradeList();
+  }
   const gd = document.getElementById('upgrade-gold-display');
   if (gd) gd.textContent = fmtNum(G.gold);
 }
@@ -6882,7 +6881,7 @@ function buildBsRerollList() {
   }
   if (empty) empty.style.display='none';
 
-  const isEssenceRarity = (rarity) => rarity === 'mythic' || rarity === 'legendary';
+  const isEssenceRarity = (rarity) => rarity === 'mythic' || rarity === 'legendary' || rarity === 'ascended';
 
   for (const item of rerollable) {
     if (!item || !item.rarity || !item.name) continue;
@@ -7005,7 +7004,8 @@ function bsUnifiedSelectItem(itemId) {
   });
 
   // Route to the right state variables
-  const isEssence = item && (item.rarity === 'mythic' || item.rarity === 'legendary');
+  // ascended uses essence path (requires LE + gold)
+  const isEssence = item && (item.rarity === 'mythic' || item.rarity === 'legendary' || item.rarity === 'ascended');
   if (isEssence) {
     essenceSelectedItem = item;
     essenceSelectedStat = null;
@@ -7086,6 +7086,25 @@ function updateUnifiedRerollPanel() {
     };
     statDiv.appendChild(b);
   }
+  // Ascended bonus line — selectable for reroll
+  if (item.ascendStat && item.rarity === 'ascended') {
+    const def = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
+    const label = def ? def.fmt(item.ascendStat.val) : item.ascendStat.key;
+    const b = document.createElement('button');
+    b.className = 'bs-stat-btn';
+    b.innerHTML = `<span style="color:#cc7733;">✦ ${label}</span> <span style="font-size:8px;color:#666;">(ascension)</span>`;
+    b.setAttribute('data-stat', '__ascend__');
+    b.setAttribute('data-type', 'ascend');
+    b.style.borderColor = '#664422';
+    b.onclick = () => {
+      statDiv.querySelectorAll('.bs-stat-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      essenceSelectedStat = '__ascend__';
+      essenceSelectedStatType = 'ascend';
+      updateUnifiedCost();
+    };
+    statDiv.appendChild(b);
+  }
   updateUnifiedCost();
 }
 
@@ -7105,6 +7124,20 @@ function updateUnifiedCost() {
     valBtn.disabled = typeBtn.disabled = true;
     if (valCostEl) valCostEl.textContent = 'Cost: —';
     if (typeCostEl) typeCostEl.textContent = 'Cost: —';
+    return;
+  }
+
+  // Ascend bonus reroll — flat 50k, value-only (no type change)
+  if (statType === 'ascend') {
+    const ascCost = ASCEND_REROLL_COST;
+    if (valCostEl) valCostEl.textContent = `Cost: ${fmtNum(ascCost)}g + 1 LE`;
+    if (typeCostEl) typeCostEl.textContent = 'N/A';
+    valBtn.disabled = G.gold < ascCost || (G.legendaryEssence || 0) < 1;
+    typeBtn.disabled = true;
+    valBtn.style.borderColor = '#cc7733';
+    valBtn.style.color = '#cc7733';
+    typeBtn.style.borderColor = '';
+    typeBtn.style.color = '';
     return;
   }
 
@@ -7134,10 +7167,20 @@ function updateUnifiedCost() {
 }
 
 function doUnifiedReroll(mode) {
+  // Ascend bonus line selected — reroll the ascend stat
+  const statType = essenceSelectedItem ? essenceSelectedStatType : G.bsSelectedStatType;
+  if (statType === 'ascend' && mode === 'value') {
+    const item = essenceSelectedItem;
+    if (!item || !item.ascendStat) return;
+    upgradeSelectedItemId = item.id;
+    doAscendReroll();
+    // Refresh panel
+    setTimeout(() => { bsUnifiedSelectItem(item.id); }, 30);
+    return;
+  }
   const isEssence = essenceSelectedItem != null;
   if (isEssence) {
     doEssenceReroll(mode);
-    // Refresh panel to show results
     setTimeout(() => updateUnifiedRerollPanel(), 20);
   } else {
     doReroll(mode);
@@ -7472,9 +7515,15 @@ function updateUI() {
     return;
   }
   if(G.config.paused){
-    ci.innerHTML=`<span style="color:var(--yellow);cursor:pointer;text-decoration:underline dotted;" onclick="togglePause()" title="Click to resume">⏸ PAUSED — click to resume</span>`;
+    ci.innerHTML=`<span style="color:var(--yellow);">⏸ PAUSED — click to resume</span>`;
+    ci.style.cursor = 'pointer';
+    ci.style.textDecoration = 'underline dotted';
+    ci.onclick = togglePause;
     return;
   }
+  ci.style.cursor = '';
+  ci.style.textDecoration = '';
+  ci.onclick = null;
   if(G.zone==='town'){
     ci.innerHTML=`IRONHAVEN TOWN — HP:${Math.floor(G.hp)}/${G.maxHp} MP:${Math.floor(G.mp)}/${G.maxMp}`;
   }else if(G.monsters.length>0){
