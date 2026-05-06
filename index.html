@@ -150,6 +150,10 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .achievement-row[data-zone]::after { content:attr(data-zone); display:none; position:absolute; left:0; bottom:auto; top:calc(100% + 6px); transform:none; min-width:120px; width:max-content; max-width:min(260px, calc(100vw - 24px)); padding:6px 8px; background:#050505; border:1px solid var(--yellow); color:#fff; font-size:10px; line-height:1.35; text-align:left; z-index:99999; box-shadow:0 8px 20px rgba(0,0,0,0.85); white-space:normal; pointer-events:none; }
 .achievement-row[data-zone]:hover::after { display:block; }
 .achievement-icon { width:26px; height:26px; flex:0 0 26px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.10); background:#0c0c0c; font-size:16px; line-height:1; box-shadow:inset 0 0 9px rgba(255,255,255,0.03); }
+.achievement-row.chaos-kill { border-color:rgba(204,68,68,0.58); background:radial-gradient(circle at 50% 36%, rgba(204,68,68,0.20), #050505 62%); box-shadow:0 0 10px rgba(204,68,68,0.34), inset 0 0 12px rgba(204,68,68,0.10); }
+.achievement-row.chaos-kill:hover { border-color:#ff6666; background:radial-gradient(circle at 50% 36%, rgba(255,80,80,0.26), #090202 64%); box-shadow:0 0 16px rgba(255,80,80,0.50), inset 0 0 14px rgba(204,68,68,0.16); }
+.achievement-row.chaos-kill .achievement-icon { border-color:rgba(255,85,85,0.72); color:#ff7777; text-shadow:0 0 6px rgba(255,70,70,0.95), 0 0 12px rgba(204,68,68,0.75); box-shadow:0 0 11px rgba(255,55,55,0.58), inset 0 0 12px rgba(204,68,68,0.22); background:radial-gradient(circle at 50% 45%, rgba(90,0,0,0.82), #0c0c0c 72%); }
+.achievement-row.chaos-kill .achievement-count { color:#ff7777; text-shadow:0 0 5px rgba(204,68,68,0.85); }
 .achievement-name { display:none; }
 .achievement-count { color:var(--yellow); font-weight:bold; white-space:nowrap; font-size:8px; line-height:1; }
 .achievement-empty { font-size:9px; color:#444; padding:6px 0; grid-column:1 / -1; }
@@ -166,6 +170,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
   .achievement-list { grid-template-columns:repeat(auto-fill, minmax(34px, 34px)); gap:4px; }
   .achievement-row { width:34px; min-width:34px; min-height:42px; padding:3px 2px; }
   .achievement-icon { width:23px; height:23px; flex-basis:23px; font-size:14px; }
+  .achievement-row.chaos-kill .achievement-icon { box-shadow:0 0 9px rgba(255,55,55,0.56), inset 0 0 10px rgba(204,68,68,0.22); }
   .achievement-count { font-size:7px; }
   .achievement-row[data-zone]::after { left:0; right:auto; top:calc(100% + 6px); bottom:auto; transform:none; max-width:calc(100vw - 18px); }
   .stat-allocation-card { flex:0 0 auto; }
@@ -999,6 +1004,18 @@ canvas {
 .chaos-select:focus { outline:none; border-color:#ff7777; box-shadow:0 0 14px rgba(204,68,68,0.34), inset 0 0 12px rgba(204,68,68,0.10); }
 .chaos-select-wrap.chaos-disabled { opacity:0.42; }
 .chaos-select:disabled { color:#777; border-color:#442222; cursor:not-allowed; box-shadow:none; }
+.chaos-select-wrap.chaos-normal { color:var(--muted); }
+.chaos-select.chaos-normal {
+  background:#000;
+  border-color:var(--border2);
+  color:var(--white);
+  box-shadow:none;
+}
+.chaos-select.chaos-normal:focus {
+  border-color:var(--white);
+  box-shadow:0 0 10px rgba(255,255,255,0.10);
+}
+.chaos-select.chaos-normal option { background:#050505; color:var(--white); }
 body.chaos-active .map-zone,
 body.chaos-active #map-panel .map-zone,
 #map-panel.chaos-active .map-zone {
@@ -2096,6 +2113,8 @@ function applyChaosToMonster(monster) {
     monster.expMin = Math.max(1, Math.round((monster.expMin || 1) * rMult));
     monster.expMax = Math.max(monster.expMin, Math.round((monster.expMax || monster.expMin || 1) * rMult));
     monster.chaosDropMult = rMult;
+    monster.chaosLevel = getChaosLevelForZone(zone);
+    monster.chaosLabel = getChaosLabel(zone);
     monster.chaosScaled = true;
   }
   return monster;
@@ -2119,6 +2138,10 @@ function syncChaosVisualState() {
   if (document.body) document.body.classList.toggle('chaos-active', active);
   const mapPanel = document.getElementById('map-panel');
   if (mapPanel) mapPanel.classList.toggle('chaos-active', active);
+  const chaosSel = document.getElementById('chaos-difficulty');
+  const chaosWrap = chaosSel?.closest('.chaos-select-wrap');
+  if (chaosSel) chaosSel.classList.toggle('chaos-normal', !active);
+  if (chaosWrap) chaosWrap.classList.toggle('chaos-normal', !active);
 }
 function syncChaosDifficultyUI() {
   const sel = document.getElementById('chaos-difficulty');
@@ -2171,22 +2194,19 @@ function totalAscendStat(key) {
   return total;
 }
 
-// Total ascension bonus to the player's primary stat (dmgpct + skilldmgpct both boost it)
-function totalAscendPrimaryStatBonus() {
-  return totalAscendStat('dmgpct') + totalAscendStat('skilldmgpct');
+// Ascension damage affixes
+function ascendDamageMultiplier() {
+  return 1 + (totalAscendStat('dmgpct') / 100);
+}
+function ascendSkillDamageMultiplier() {
+  return 1 + (totalAscendStat('skilldmgpct') / 100);
+}
+function applyAscendSkillDamage(baseDmg) {
+  return Math.max(0, Math.round((baseDmg || 0) * ascendSkillDamageMultiplier()));
 }
 
 function effStat(s) {
-  const base = G.stats[s] + totalEquipStat(s);
-  // Ascension: dmgpct and skilldmgpct boost the primary class stat by %
-  if (typeof totalAscendPrimaryStatBonus === 'function') {
-    const primary = getAscendPrimaryStat ? getAscendPrimaryStat() : null;
-    if (s === primary) {
-      const bonus = totalAscendPrimaryStatBonus();
-      if (bonus > 0) return Math.round(base * (1 + bonus / 100));
-    }
-  }
-  return base;
+  return G.stats[s] + totalEquipStat(s);
 }
 
 function calcMaxHp() {
@@ -2236,6 +2256,7 @@ function isWarCryActive(now=performance.now()) {
 }
 function calcDamage() {
   let d = calcBaseDamage();
+  d = Math.round(d * ascendDamageMultiplier());
   if (isWarCryActive()) d = Math.round(d * (1 + (G.combat.warCryPct || 0) / 100));
   return Math.max(1, Math.round(d));
 }
@@ -2271,11 +2292,12 @@ function ensureMonsterShieldFields(monster) {
   if (monster.shield == null) monster.shield = 0;
 }
 function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
+  const ascendedSkillDmg = applyAscendSkillDamage(baseDmg);
   if (isSandwormUnderground(monster, now)) {
-    return { attempted:Math.max(0, Math.round(baseDmg||0)), dealt:0, shieldAbsorbed:0, arcaneBlocked:false, burrowBlocked:true, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
+    return { attempted:Math.max(0, Math.round(ascendedSkillDmg||0)), dealt:0, shieldAbsorbed:0, arcaneBlocked:false, burrowBlocked:true, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
   }
   ensureMonsterShieldFields(monster);
-  const attempted = applyTargetDamageMods(monster, baseDmg, now);
+  const attempted = applyTargetDamageMods(monster, ascendedSkillDmg, now);
   if (getArcaneShield(monster) > 0) {
     return { attempted, dealt:0, shieldAbsorbed:0, arcaneBlocked:true, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
   }
@@ -6183,6 +6205,15 @@ function recordUniqueBossKill(m) {
   entry.firstKilledAt = entry.firstKilledAt || now;
   entry.lastKilledAt = now;
   entry.playerLevel = Math.max(entry.playerLevel || 0, G.level || 1);
+  const chaosLevel = Math.max(0, Math.min(4, parseInt(m.chaosLevel || getChaosLevelForZone(m.zone || G.zone), 10) || 0));
+  if (chaosLevel > 0) {
+    entry.chaosKills = (entry.chaosKills || 0) + 1;
+    entry.highestChaosLevel = Math.max(entry.highestChaosLevel || 0, chaosLevel);
+    entry.lastChaosLevel = chaosLevel;
+    entry.lastChaosLabel = chaosLevelName(chaosLevel);
+    entry.firstChaosKilledAt = entry.firstChaosKilledAt || now;
+    entry.lastChaosKilledAt = now;
+  }
   G.achievements.uniqueBossKills[key] = entry;
   if (entry.count === 1) log('<span style="color:var(--yellow)">Achievement unlocked: ' + entry.name + ' defeated!</span>', 'system');
 }
@@ -6197,6 +6228,11 @@ function formatAchievementDate(ts) {
 
 function escapeHtml(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function chaosLevelName(level) {
+  const n = Math.max(0, Math.min(4, parseInt(level || 0, 10) || 0));
+  return ['Normal','Chaos I','Chaos II','Chaos III','Chaos IV'][n] || 'Normal';
 }
 
 function renderUniqueBossLog() {
@@ -6220,8 +6256,14 @@ function renderUniqueBossLog() {
     const count = entry.count || 0;
     const first = escapeHtml(formatAchievementDate(entry.firstKilledAt));
     const last = escapeHtml(formatAchievementDate(entry.lastKilledAt));
-    const tip = zone + ' · First killed ' + first + ' · Last killed ' + last;
-    return '<div class="achievement-row" data-zone="' + tip + '" title="' + tip + '">' +
+    const chaosKills = entry.chaosKills || 0;
+    const highestChaosLevel = Math.max(entry.highestChaosLevel || 0, entry.lastChaosLevel || 0);
+    const lastChaosLevel = entry.lastChaosLevel || highestChaosLevel;
+    const lastChaos = escapeHtml(formatAchievementDate(entry.lastChaosKilledAt));
+    const chaosTip = chaosKills > 0 ? ' · Chaos kills x' + chaosKills + ' · Highest ' + chaosLevelName(highestChaosLevel) + ' · Last chaos ' + chaosLevelName(lastChaosLevel) + ' at ' + lastChaos : '';
+    const tip = zone + ' · First killed ' + first + ' · Last killed ' + last + chaosTip;
+    const chaosClass = chaosKills > 0 ? ' chaos-kill' : '';
+    return '<div class="achievement-row' + chaosClass + '" data-zone="' + tip + '" title="' + tip + '">' +
       '<div class="achievement-icon" aria-label="' + name + '">' + icon + '</div>' +
       '<div class="achievement-name">' + name + '</div>' +
       '<div class="achievement-count">x' + count + '</div>' +
@@ -6763,10 +6805,10 @@ const ASCEND_COLOR = '#cc7733';
 
 // The four possible ascension bonus stats
 const ASCEND_STATS = [
-  { key:'dmgpct',     label:'Primary Stat',  fmt: v => `+${v}% Primary Stat`,  min:3,  max:5,  float:true  },
-  { key:'skilldmgpct',label:'Primary Stat',  fmt: v => `+${v}% Primary Stat`,  min:3,  max:5,  float:true  },
-  { key:'ascmaxhp',   label:'Max HP',        fmt: v => `+${v}% Max HP`,         min:5,  max:10, float:true  },
-  { key:'ascmaxmp',   label:'Max MP',        fmt: v => `+${v}% Max MP`,         min:5,  max:10, float:true  },
+  { key:'dmgpct',      label:'Damage',       fmt: v => `+${v}% Damage`,        min:3,  max:5,  float:true  },
+  { key:'skilldmgpct', label:'Skill Damage', fmt: v => `+${v}% Skill Damage`,  min:3,  max:5,  float:true  },
+  { key:'ascmaxhp',    label:'Max HP',       fmt: v => `+${v}% Max HP`,        min:5,  max:10, float:true  },
+  { key:'ascmaxmp',    label:'Max MP',       fmt: v => `+${v}% Max MP`,        min:5,  max:10, float:true  },
 ];
 
 function rollAscendStat() {
@@ -6779,7 +6821,16 @@ function rollAscendStat() {
 function rollAscendStatValueOnly(currentKey) {
   const def = ASCEND_STATS.find(d => d.key === currentKey) || ASCEND_STATS[0];
   const val = parseFloat((def.min + Math.random() * (def.max - def.min)).toFixed(1));
-  return { key: currentKey, val };
+  return { key: def.key, val };
+}
+
+// Type reroll — change the ascended bonus type and roll a fresh value for that type
+function rollAscendStatTypeOnly(currentKey) {
+  let pool = ASCEND_STATS.filter(d => d.key !== currentKey);
+  if (!pool.length) pool = ASCEND_STATS;
+  const def = pool[Math.floor(Math.random() * pool.length)];
+  const val = parseFloat((def.min + Math.random() * (def.max - def.min)).toFixed(1));
+  return { key: def.key, val };
 }
 
 let upgradeSelectedItemId = null;
@@ -6882,7 +6933,7 @@ function selectAscendedItem(itemId) {
   }
 }
 
-function doAscendReroll() {
+function doAscendReroll(mode = 'value') {
   const itemId = upgradeSelectedItemId || (essenceSelectedItem?.id);
   if (!itemId) return;
   const item = G.inventory.find(i => i.id === itemId);
@@ -6894,8 +6945,23 @@ function doAscendReroll() {
   G.legendaryEssence -= 1;
   const oldDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
   const oldVal = item.ascendStat.val;
-  item.ascendStat = rollAscendStatValueOnly(item.ascendStat.key);
-  log(`⬆ Ascension reroll: ${oldDef?.label} ${oldVal}% → ${item.ascendStat.val}% (-${fmtNum(ASCEND_REROLL_COST)}g, -1 LE)`, 'system');
+  const oldLine = oldDef ? oldDef.fmt(oldVal) : `${item.ascendStat.key} ${oldVal}`;
+  item.ascendStat = mode === 'type'
+    ? rollAscendStatTypeOnly(item.ascendStat.key)
+    : rollAscendStatValueOnly(item.ascendStat.key);
+  const newDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
+  const newLine = newDef ? newDef.fmt(item.ascendStat.val) : `${item.ascendStat.key} ${item.ascendStat.val}`;
+
+  G.lastEssenceRerollResult = {
+    itemId:item.id,
+    targetStat:'__ascend__',
+    targetType:'ascend',
+    oldLine,
+    newLine,
+    tag: mode === 'type' ? 'TYPE' : 'VALUE'
+  };
+
+  log(`⬆ Ascension ${mode} reroll: ${oldLine} → ${newLine} (-${fmtNum(ASCEND_REROLL_COST)}g, -1 LE)`, 'system');
 
   updateDerived();
   renderEquipSlots();
@@ -7343,6 +7409,7 @@ function updateUnifiedRerollPanel() {
     const b = document.createElement('button');
     b.className = 'bs-stat-btn';
     b.innerHTML = `<span style="color:#cc7733;">✦ ${label}</span> <span style="font-size:8px;color:#666;">(ascension)</span>`;
+    applyRerollResultToButton(b, item, '__ascend__', 'ascend', source);
     b.setAttribute('data-stat', '__ascend__');
     b.setAttribute('data-type', 'ascend');
     b.style.borderColor = '#664422';
@@ -7377,17 +7444,18 @@ function updateUnifiedCost() {
     return;
   }
 
-  // Ascend bonus reroll — flat 50k, value-only (no type change)
+  // Ascend bonus reroll — flat 50k. Value rerolls the number; type changes the bonus stat.
   if (statType === 'ascend') {
     const ascCost = ASCEND_REROLL_COST;
+    const canPayAscend = G.gold >= ascCost && (G.legendaryEssence || 0) >= 1;
     if (valCostEl) valCostEl.textContent = `Cost: ${fmtNum(ascCost)}g + 1 LE`;
-    if (typeCostEl) typeCostEl.textContent = 'N/A';
-    valBtn.disabled = G.gold < ascCost || (G.legendaryEssence || 0) < 1;
-    typeBtn.disabled = true;
-    valBtn.style.borderColor = '#cc7733';
-    valBtn.style.color = '#cc7733';
-    typeBtn.style.borderColor = '';
-    typeBtn.style.color = '';
+    if (typeCostEl) typeCostEl.textContent = `Cost: ${fmtNum(ascCost)}g + 1 LE`;
+    valBtn.disabled = !canPayAscend;
+    typeBtn.disabled = !canPayAscend;
+    [valBtn, typeBtn].forEach(btn => {
+      btn.style.borderColor = '#cc7733';
+      btn.style.color = '#cc7733';
+    });
     return;
   }
 
@@ -7417,13 +7485,13 @@ function updateUnifiedCost() {
 }
 
 function doUnifiedReroll(mode) {
-  // Ascend bonus line selected — reroll the ascend stat
+  // Ascend bonus line selected — value rerolls the number, type changes the ascended bonus stat
   const statType = essenceSelectedItem ? essenceSelectedStatType : G.bsSelectedStatType;
-  if (statType === 'ascend' && mode === 'value') {
+  if (statType === 'ascend' && (mode === 'value' || mode === 'type')) {
     const item = essenceSelectedItem;
     if (!item || !item.ascendStat) return;
     upgradeSelectedItemId = item.id;
-    doAscendReroll();
+    doAscendReroll(mode);
     // Refresh panel
     setTimeout(() => { bsUnifiedSelectItem(item.id); }, 30);
     return;
@@ -8072,14 +8140,26 @@ function renderPotions() {
         const typeCls = ' potion-' + type;
         const selectHint = selected === type ? 'Selected main potion · double-click to use manually' : 'Click to set as main potion';
         const cellStyle = `color:${p.color || '#77dd77'};border-color:${p.color || '#183818'};`;
-        html += `<button type="button" class="potion-cell${typeCls}${selectedCls}${depletedCls}" data-potion-type="${type}" style="${cellStyle}" onclick="selectPotion('${type}')" ondblclick="event.preventDefault(); manualUsePotionType('${type}')" title="${selectHint}: ${p.name} — ${p.desc} · ${count}/${POTION_MAX}" aria-label="${selectHint}: ${p.name}, ${count} of ${POTION_MAX}"><span class="potion-icon">${p.icon}</span><span class="pot-qty">${count}</span></button>`;
+        html += `<button type="button" class="potion-cell${typeCls}${selectedCls}${depletedCls}" data-potion-type="${type}" style="${cellStyle}" title="${selectHint}: ${p.name} — ${p.desc} · ${count}/${POTION_MAX}" aria-label="${selectHint}: ${p.name}, ${count} of ${POTION_MAX}"><span class="potion-icon">${p.icon}</span><span class="pot-qty">${count}</span></button>`;
       }
       grid.innerHTML = html;
       grid.querySelectorAll('[data-potion-type]').forEach(cell => {
+        const potionType = () => cell.dataset.potionType || 'healing';
+        cell.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          selectPotion(potionType());
+        });
+        cell.addEventListener('dblclick', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          manualUsePotionType(potionType());
+        });
         cell.addEventListener('keydown', e => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            selectPotion(cell.dataset.potionType || 'healing');
+            e.stopPropagation();
+            selectPotion(potionType());
           }
         });
       });
