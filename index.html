@@ -188,6 +188,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .inv-item.rarity-epic { border-left:2px solid var(--epic); }
 .inv-item.rarity-legendary { border-left:2px solid var(--legendary); }
 .inv-item.rarity-unique { border-left:2px solid var(--unique); }
+.inv-item.rarity-ascended { border-left:2px solid #cc7733; }
 .item-rarity { font-size:10px; letter-spacing:1px; margin-bottom:4px; text-transform:uppercase; font-weight:bold; }
 .item-name { font-size:14px; font-weight:bold; margin-bottom:4px; color:var(--white); line-height:1.25; overflow-wrap:break-word; word-break:normal; hyphens:none; }
 .item-slot-type { font-size:11px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; overflow-wrap:normal; word-break:normal; }
@@ -270,6 +271,67 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .town-content.visible { display:flex; }
 .town-section { background:var(--bg2); border:1px solid var(--border); padding:10px; }
 .town-section-title { font-size:9px; color:var(--muted); letter-spacing:2px; margin-bottom:6px; padding-bottom:3px; border-bottom:1px solid var(--border); text-transform:uppercase; font-weight:bold; }
+
+/* Town hub navigation */
+.town-hub { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:4px 0 8px; }
+.town-hub-btn {
+  background:#000;
+  border:1px solid var(--border2);
+  color:var(--muted);
+  font-family:inherit;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:16px 8px;
+  transition:border-color 0.12s, background 0.12s, color 0.12s;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.town-hub-btn:hover { border-color:var(--white); color:var(--white); background:#0a0a0a; }
+.town-hub-btn .thb-icon { font-size:22px; line-height:1; }
+.town-hub-btn .thb-label { font-size:9px; font-weight:bold; }
+.town-hub-btn .thb-sub { font-size:7px; color:#444; letter-spacing:0.5px; text-transform:none; }
+.town-hub-btn:hover .thb-sub { color:#666; }
+
+/* Town sub-screen */
+.town-sub { display:none; }
+.town-sub.active { display:block; }
+.town-back-btn {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:transparent;
+  border:none;
+  color:#555;
+  font-family:inherit;
+  font-size:9px;
+  cursor:pointer;
+  padding:0 0 8px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+  margin-bottom:10px;
+  width:100%;
+}
+.town-back-btn:hover { color:var(--white); }
+
+/* Merchant sub-tabs */
+.merchant-subtab {
+  background:#000;
+  border:1px solid var(--border2);
+  border-bottom:none;
+  color:var(--muted);
+  font-family:inherit;
+  font-size:8px;
+  padding:4px 12px;
+  cursor:pointer;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.merchant-subtab.active { border-color:var(--white); color:var(--white); background:#0a0a0a; }
 .merchant-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)); gap:6px; align-items:stretch; }
 .shop-item { background:#000; border:1px solid var(--border); padding:8px; min-width:0; max-width:none; width:100%; overflow-wrap:break-word; word-break:normal; }
 .shop-item-name { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--white); }
@@ -761,7 +823,7 @@ canvas {
 .reroll-row.reroll-selected .reroll-stats { display:block; }
 .reroll-essence-tag { font-size:8px; color:var(--legendary); margin-left:4px; }
 
-/* ===================== FARM ROUTES ===================== */
+/* ===================== MAPS ===================== */
 .farm-routes-section { margin-top:6px; }
 .fr-title { font-size:9px; color:var(--muted); letter-spacing:2px; padding-bottom:4px; border-bottom:1px solid var(--border); text-transform:uppercase; margin-bottom:6px; }
 
@@ -1126,82 +1188,154 @@ canvas {
       </div>
 
       <div class="town-content" id="town-content">
-        <div class="town-section">
-          <div class="town-section-title">⚔ MERCHANT</div>
-          <button class="refresh-btn" onclick="refreshMerchant()">↺ Refresh Stock</button>
-          <div class="merchant-grid" id="merchant-grid"></div>
-        </div>
-        <div class="town-section">
-          <div class="town-section-title">GEAR GAMBLE</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-            <span style="font-size:9px;color:#888;">Gear Essence:</span>
-            <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gamble-ge-display">0</span>
+
+        <!-- ── HUB: main menu of square buttons ── -->
+        <div id="town-hub-screen">
+          <div class="town-hub">
+            <button class="town-hub-btn" onclick="openTownScreen('merchant')">
+              <span class="thb-icon">⚔</span>
+              <span class="thb-label">Merchant</span>
+              <span class="thb-sub">Buy gear &amp; routes</span>
+            </button>
+            <button class="town-hub-btn" onclick="openTownScreen('gamble')">
+              <span class="thb-icon">🎲</span>
+              <span class="thb-label">Gear Gamble</span>
+              <span class="thb-sub">Roll random equipment</span>
+            </button>
+            <button class="town-hub-btn" onclick="openTownScreen('reroll')">
+              <span class="thb-icon">🔁</span>
+              <span class="thb-label">Reroll</span>
+              <span class="thb-sub">Re-stat your gear</span>
+            </button>
+            <button class="town-hub-btn" onclick="openTownScreen('salvage')">
+              <span class="thb-icon">⚗</span>
+              <span class="thb-label">Salvage</span>
+              <span class="thb-sub">Break down for essence</span>
+            </button>
+            <button class="town-hub-btn" onclick="openTownScreen('upgrade')" style="border-color:#664422;">
+              <span class="thb-icon">⬆</span>
+              <span class="thb-label" style="color:#cc7733;">Upgrade</span>
+              <span class="thb-sub">Ascend legendary gear</span>
+            </button>
           </div>
-          <div style="font-size:9px;color:#666;margin-bottom:8px;line-height:1.5;">Roll a random item. Your class main stat is always guaranteed. Slot and sub stats are random.</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-            <div>
-              <div style="font-size:10px;color:#44bbaa;font-weight:bold;">Gear Roll</div>
-              <div style="font-size:8px;color:#555;">Class stat guaranteed · 3 GE per roll</div>
+        </div>
+
+        <!-- ── MERCHANT sub-screen ── -->
+        <div id="town-screen-merchant" class="town-sub">
+          <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
+          <!-- Merchant sub-tabs: Gear Shop / Maps -->
+          <div style="display:flex;gap:0;margin-bottom:0;">
+            <button class="merchant-subtab active" id="mtab-gear" onclick="setMerchantTab('gear')">GEAR SHOP</button>
+            <button class="merchant-subtab" id="mtab-routes" onclick="setMerchantTab('routes')">MAPS</button>
+          </div>
+          <div style="border:1px solid var(--white);border-top:none;padding:10px;">
+            <div id="mtab-body-gear">
+              <button class="refresh-btn" onclick="refreshMerchant()">↺ Refresh Stock</button>
+              <div class="merchant-grid" id="merchant-grid"></div>
             </div>
-            <button id="gamble-btn" onclick="doGamble('rough')" style="background:#000;border:1px solid #44bbaa;color:#44bbaa;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL (3 GE)</button>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;">
-            <div style="text-align:center;"><div style="font-size:8px;color:#aaaaaa;font-weight:bold;letter-spacing:1px;">COM</div><div style="font-size:10px;color:#aaaaaa;font-weight:bold;">46.3%</div></div>
-            <div style="text-align:center;"><div style="font-size:8px;color:#4488ff;font-weight:bold;letter-spacing:1px;">RARE</div><div style="font-size:10px;color:#4488ff;font-weight:bold;">31.2%</div></div>
-            <div style="text-align:center;"><div style="font-size:8px;color:#aa66ff;font-weight:bold;letter-spacing:1px;">EPIC</div><div style="font-size:10px;color:#aa66ff;font-weight:bold;">12.5%</div></div>
-            <div style="text-align:center;"><div style="font-size:8px;color:var(--legendary);font-weight:bold;letter-spacing:1px;">LEG</div><div style="font-size:10px;color:var(--legendary);font-weight:bold;">7.0%</div></div>
-            <div style="text-align:center;"><div style="font-size:8px;color:var(--unique);font-weight:bold;letter-spacing:1px;">MYT</div><div style="font-size:10px;color:var(--unique);font-weight:bold;">3.0%</div></div>
-          </div>
-          <div id="gamble-last" style="font-size:9px;color:#555;min-height:16px;"></div>
-        </div>
-        <div class="town-section">
-          <div class="town-section-title">BLACKSMITH</div>
-          <div style="display:flex;gap:12px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
-            <span style="font-size:9px;color:#888;">Legendary Essence:</span>
-            <span style="font-size:11px;color:var(--legendary);font-weight:bold;" id="essence-display">0</span>
-            <span style="font-size:9px;color:#888;">Gear Essence:</span>
-            <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gear-essence-display">0</span>
-          </div>
-
-          <div style="font-size:9px;color:#888;margin-bottom:4px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">— Reroll —</div>
-          <div style="font-size:8px;color:#555;margin-bottom:6px;">Hover or click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
-          <div id="bs-reroll-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
-          <div id="bs-reroll-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No rerollable items.</div>
-
-          <!-- Selected item stat picker + reroll buttons — shown when an item is selected -->
-          <div id="bs-reroll-panel" style="display:none;margin-top:8px;">
-            <div style="font-size:8px;color:#777;margin-bottom:4px;" id="bs-reroll-item-label"></div>
-            <div style="font-size:9px;color:#aaa;margin-bottom:3px;">Select stat line:</div>
-            <div class="bs-stat-select" id="bs-stat-select"></div>
-            <div style="display:flex;gap:6px;margin-top:6px;">
-              <div style="flex:1;">
-                <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Value</div>
-                <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-val-cost-display">Cost: —</div>
-                <button class="bs-reroll-btn" id="bs-reroll-val-btn" onclick="doUnifiedReroll('value')" disabled>REROLL VALUE</button>
+            <div id="mtab-body-routes" style="display:none;">
+              <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 2% chance of an S-rank route.</div>
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+                <span style="font-size:9px;color:#888;">Gold: <span id="fr-shop-gold" style="color:var(--yellow);font-weight:bold;">0</span></span>
+                <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (20k)</button>
               </div>
-              <div style="flex:1;">
-                <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Type</div>
-                <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-type-cost-display">Cost: —</div>
-                <button class="bs-reroll-btn" id="bs-reroll-type-btn" onclick="doUnifiedReroll('type')" disabled>REROLL TYPE</button>
-              </div>
+              <div class="fr-shop-grid" id="fr-shop-grid"></div>
             </div>
           </div>
-
-          <div style="font-size:9px;color:#888;margin:10px 0 4px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;border-top:1px solid var(--border);padding-top:8px;">— Salvage —</div>
-          <div style="font-size:8px;color:#555;margin-bottom:5px;">All rarities. Equipped or locked items cannot be salvaged.</div>
-          <div id="salvage-list" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
-          <div id="salvage-empty" style="font-size:9px;color:#444;display:none;">No items available to salvage</div>
         </div>
 
-        <!-- FARM ROUTE SHOP -->
-        <div class="town-section" id="fr-shop-section">
-          <div class="town-section-title">🗺 FARM ROUTE SHOP</div>
-          <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 2% chance of an S-rank route.</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
-            <span style="font-size:9px;color:#888;">Gold: <span id="fr-shop-gold" style="color:var(--yellow);font-weight:bold;">0</span></span>
-            <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (20k)</button>
+        <!-- ── GEAR GAMBLE sub-screen ── -->
+        <div id="town-screen-gamble" class="town-sub">
+          <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
+          <div class="town-section">
+            <div class="town-section-title">GEAR GAMBLE</div>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+              <span style="font-size:9px;color:#888;">Gear Essence:</span>
+              <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gamble-ge-display">0</span>
+            </div>
+            <div style="font-size:9px;color:#666;margin-bottom:8px;line-height:1.5;">Roll a random item. Your class main stat is always guaranteed. Slot and sub stats are random.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+              <div>
+                <div style="font-size:10px;color:#44bbaa;font-weight:bold;">Gear Roll</div>
+                <div style="font-size:8px;color:#555;">Class stat guaranteed · 3 GE per roll</div>
+              </div>
+              <button id="gamble-btn" onclick="doGamble('rough')" style="background:#000;border:1px solid #44bbaa;color:#44bbaa;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL (3 GE)</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;">
+              <div style="text-align:center;"><div style="font-size:8px;color:#aaaaaa;font-weight:bold;letter-spacing:1px;">COM</div><div style="font-size:10px;color:#aaaaaa;font-weight:bold;">46.3%</div></div>
+              <div style="text-align:center;"><div style="font-size:8px;color:#4488ff;font-weight:bold;letter-spacing:1px;">RARE</div><div style="font-size:10px;color:#4488ff;font-weight:bold;">31.2%</div></div>
+              <div style="text-align:center;"><div style="font-size:8px;color:#aa66ff;font-weight:bold;letter-spacing:1px;">EPIC</div><div style="font-size:10px;color:#aa66ff;font-weight:bold;">12.5%</div></div>
+              <div style="text-align:center;"><div style="font-size:8px;color:var(--legendary);font-weight:bold;letter-spacing:1px;">LEG</div><div style="font-size:10px;color:var(--legendary);font-weight:bold;">7.0%</div></div>
+              <div style="text-align:center;"><div style="font-size:8px;color:var(--unique);font-weight:bold;letter-spacing:1px;">MYT</div><div style="font-size:10px;color:var(--unique);font-weight:bold;">3.0%</div></div>
+            </div>
+            <div id="gamble-last" style="font-size:9px;color:#555;min-height:16px;"></div>
           </div>
-          <div class="fr-shop-grid" id="fr-shop-grid"></div>
+        </div>
+
+        <!-- ── REROLL sub-screen ── -->
+        <div id="town-screen-reroll" class="town-sub">
+          <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
+          <div class="town-section">
+            <div class="town-section-title">REROLL</div>
+            <div style="display:flex;gap:12px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
+              <span style="font-size:9px;color:#888;">Legendary Essence:</span>
+              <span style="font-size:11px;color:var(--legendary);font-weight:bold;" id="essence-display">0</span>
+              <span style="font-size:9px;color:#888;">Gear Essence:</span>
+              <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gear-essence-display">0</span>
+            </div>
+            <div style="font-size:8px;color:#555;margin-bottom:6px;">Hover or click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
+            <div id="bs-reroll-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="bs-reroll-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No rerollable items.</div>
+            <div id="bs-reroll-panel" style="display:none;margin-top:8px;">
+              <div style="font-size:8px;color:#777;margin-bottom:4px;" id="bs-reroll-item-label"></div>
+              <div style="font-size:9px;color:#aaa;margin-bottom:3px;">Select stat line:</div>
+              <div class="bs-stat-select" id="bs-stat-select"></div>
+              <div style="display:flex;gap:6px;margin-top:6px;">
+                <div style="flex:1;">
+                  <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Value</div>
+                  <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-val-cost-display">Cost: —</div>
+                  <button class="bs-reroll-btn" id="bs-reroll-val-btn" onclick="doUnifiedReroll('value')" disabled>REROLL VALUE</button>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:8px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:1px;">Reroll Type</div>
+                  <div style="font-size:9px;color:#aaaaaa;margin-bottom:3px;" id="bs-type-cost-display">Cost: —</div>
+                  <button class="bs-reroll-btn" id="bs-reroll-type-btn" onclick="doUnifiedReroll('type')" disabled>REROLL TYPE</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SALVAGE sub-screen ── -->
+        <div id="town-screen-salvage" class="town-sub">
+          <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
+          <div class="town-section">
+            <div class="town-section-title">SALVAGE</div>
+            <div style="font-size:8px;color:#555;margin-bottom:5px;">All rarities. Equipped or locked items cannot be salvaged.</div>
+            <div id="salvage-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="salvage-empty" style="font-size:9px;color:#444;display:none;">No items available to salvage</div>
+          </div>
+        </div>
+
+        <!-- ── UPGRADE sub-screen ── -->
+        <div id="town-screen-upgrade" class="town-sub">
+          <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
+          <div class="town-section" style="border-color:#664422;">
+            <div class="town-section-title" style="color:#cc7733;">⬆ GEAR UPGRADE — ASCENSION</div>
+            <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Ascend a Legendary item to unlock a powerful bonus sub stat and upgrade its stats to Ascended tier. One ascension per item.<br>Cost: <span style="color:var(--yellow);">200,000g</span> + <span style="color:var(--legendary);">5 Legendary Essence</span></div>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+              <span style="font-size:9px;color:#888;">Gold: <span id="upgrade-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
+              <span style="font-size:9px;color:#888;">Legendary Essence: <span id="upgrade-le-display" style="color:var(--legendary);font-weight:bold;">0</span></span>
+            </div>
+            <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+            <div id="upgrade-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No legendary items available to ascend.</div>
+            <div id="upgrade-reroll-panel" style="display:none;margin-top:12px;padding:10px;background:#0a0600;border:1px solid #664422;">
+              <div style="font-size:9px;color:#cc7733;margin-bottom:6px;font-weight:bold;" id="upgrade-reroll-label">Reroll Ascension Bonus</div>
+              <div style="font-size:8px;color:#666;margin-bottom:8px;">Costs <span style="color:var(--yellow);">50,000g</span> per reroll.</div>
+              <div style="margin-bottom:8px;" id="upgrade-stat-display"></div>
+              <button onclick="doAscendReroll()" style="width:100%;background:#000;border:1px solid #cc7733;color:#cc7733;font-family:inherit;font-size:9px;padding:5px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">REROLL BONUS (50k)</button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -1332,7 +1466,7 @@ canvas {
         </div>
 
         <div class="config-section">
-          <div class="config-title">FARM ROUTE QUEUE</div>
+          <div class="config-title">MAP QUEUE</div>
           <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.45;">Queue routes in order. The bot loops through them continuously. A single route in the queue repeats indefinitely.</div>
 
           <div id="fr-queue-rows" style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;"></div>
@@ -1348,7 +1482,7 @@ canvas {
         </div>
 
         <div class="config-section" style="border-color:rgba(100,180,100,0.2);background:rgba(50,100,50,0.04);">
-          <div class="config-title" style="color:#77aa77;">FARM ROUTES</div>
+          <div class="config-title" style="color:#77aa77;">MAPS</div>
           <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.45;">Draw a connected path from the start tile. The bot follows it tile by tile per kill. Equip to override queue.</div>
 
           <!-- Saved routes list -->
@@ -1367,10 +1501,10 @@ canvas {
           <!-- Unequip button -->
           <div id="fr-config-display" style="margin-bottom:6px;"></div>
 
-          <!-- Collapsible Route Editor -->
+          <!-- Collapsible Map Editor -->
           <div style="border:1px solid #2a3a1a;background:#060e04;padding:0;margin-top:6px;">
             <button onclick="frToggleEditor()" style="width:100%;background:#0a1a06;border:none;border-bottom:1px solid #2a3a1a;padding:7px 10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;" id="fr-editor-toggle-btn">
-              <span style="font-size:10px;color:#88cc66;letter-spacing:2px;text-transform:uppercase;font-weight:bold;">✎ Route Editor</span>
+              <span style="font-size:10px;color:#88cc66;letter-spacing:2px;text-transform:uppercase;font-weight:bold;">✎ Map Editor</span>
               <span style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:8px;color:#446633;" id="fr-blank-count-label"></span>
                 <span style="font-size:11px;color:#446633;" id="fr-editor-chevron">▼</span>
@@ -1871,13 +2005,19 @@ function calcMaxHp() {
   let hp = 10 + Math.floor(vit/3)*10;
   if (G.playerClass==='warrior') hp += Math.floor(effStat('str')/3);
   hp += totalEquipSubStat('maxhp');
+  // Ascension bonus: ascmaxhp (percentage)
+  const ascHpPct = totalAscendStat('ascmaxhp');
+  if (ascHpPct > 0) hp = Math.round(hp * (1 + ascHpPct / 100));
   return Math.max(10, Math.round(hp));
 }
 function calcMaxMp() {
   const int_ = effStat('int');
-  let mp = 10 + int_; // universal: +1 Max MP per INT
-  if (G.playerClass==='wizard') mp += Math.floor(int_/3)*5; // wizard bonus: +5 per 3 INT
+  let mp = 10 + int_;
+  if (G.playerClass==='wizard') mp += Math.floor(int_/3)*5;
   mp += totalEquipSubStat('maxmp');
+  // Ascension bonus: ascmaxmp (percentage)
+  const ascMpPct = totalAscendStat('ascmaxmp');
+  if (ascMpPct > 0) mp = Math.round(mp * (1 + ascMpPct / 100));
   return Math.max(10, Math.round(mp));
 }
 function calcHpRegen() {
@@ -1890,6 +2030,18 @@ function calcMpRegen() {
   r += totalEquipSubStat('mpregen');
   return +r.toFixed(2);
 }
+// Sum a specific ascension stat key across all equipped items
+function totalAscendStat(key) {
+  let total = 0;
+  for (const slot of SLOTS) {
+    const item = G.equipped[slot];
+    if (item && item.ascendStat && item.ascendStat.key === key) {
+      total += item.ascendStat.val || 0;
+    }
+  }
+  return total;
+}
+
 function calcBaseDamage() {
   const str = effStat('str');
   const agi = effStat('agi');
@@ -1907,6 +2059,9 @@ function isWarCryActive(now=performance.now()) {
 function calcDamage() {
   let d = calcBaseDamage();
   if (isWarCryActive()) d = Math.round(d * (1 + (G.combat.warCryPct || 0) / 100));
+  // Ascension bonus: dmgpct
+  const dmgBonus = totalAscendStat('dmgpct');
+  if (dmgBonus > 0) d = Math.round(d * (1 + dmgBonus / 100));
   return Math.max(1, Math.round(d));
 }
 function calcBattleHardenedReductionPct() {
@@ -4021,13 +4176,13 @@ const RARITIES=['common','rare','epic','legendary','mythic'];
 const RARITY_WEIGHTS=[50,33.7,13.5,2,0.8];
 const MAIN_STATS=['str','agi','int','vit'];
 const SUB_STATS=['maxhp','maxmp','hpregen','mpregen','critchance','critdamage','cdr'];
-const RC={common:'var(--common)',rare:'var(--rare)',epic:'var(--epic)',legendary:'var(--legendary)',mythic:'var(--unique)'};
+const RC={common:'var(--common)',rare:'var(--rare)',epic:'var(--epic)',legendary:'var(--legendary)',mythic:'var(--unique)',ascended:'#cc7733'};
 function maxHpSubRangeForRarity(rarity) {
-  if (rarity === 'rare') return [25, 69];
-  if (rarity === 'epic') return [50, 138];
-  if (rarity === 'legendary') return [133, 367];
-  if (rarity === 'mythic') return [200, 550];
-  return [25, 69];
+  if (rarity === 'rare')                          return [20, 160];
+  if (rarity === 'epic')                          return [50, 190];
+  if (rarity === 'legendary')                     return [133, 367];
+  if (rarity === 'mythic' || rarity === 'ascended') return [200, 550];
+  return [20, 160];
 }
 
 function rollSubStatValue(stat, rarity, slot) {
@@ -4042,7 +4197,10 @@ function rollSubStatValue(stat, rarity, slot) {
   }
   if (stat === 'maxhp') {
     const [mn, mx] = maxHpSubRangeForRarity(rarity);
-    return randi(mn, mx);
+    // Always snap to nearest 10
+    const mnR = Math.ceil(mn / 10) * 10;
+    const mxR = Math.floor(mx / 10) * 10;
+    return randi(mnR / 10, mxR / 10) * 10;
   }
   if (stat === 'maxmp') {
     if (rarity === 'mythic') return randi(15, 40);
@@ -4059,6 +4217,25 @@ function rollSubStatValue(stat, rarity, slot) {
     return randf(1.5, 4.0);
   }
   return 0;
+}
+
+// For rerolls: 15 possible maxhp values, multiples of 10, evenly spread across rarity range.
+// Excludes current value so rerolling always produces a change.
+function rollConstrainedMaxHp(rarity, currentVal) {
+  const [mn, mx] = maxHpSubRangeForRarity(rarity);
+  const mnR = Math.ceil(mn / 10) * 10;
+  const mxR = Math.floor(mx / 10) * 10;
+  const POOL_SIZE = 15;
+  // Build pool: 15 evenly spaced multiples of 10 from mnR to mxR
+  const pool = [];
+  for (let i = 0; i < POOL_SIZE; i++) {
+    const raw = mnR + Math.round((mxR - mnR) * i / (POOL_SIZE - 1));
+    pool.push(Math.round(raw / 10) * 10);
+  }
+  // Deduplicate and exclude current value
+  const candidates = [...new Set(pool)].filter(v => v !== currentVal);
+  if (!candidates.length) return currentVal; // fallback — shouldn't happen
+  return candidates[randi(0, candidates.length - 1)];
 }
 
 // MYTHIC ITEMS — tweak values here
@@ -4886,7 +5063,7 @@ function gameTick(ts) {
     }
   }
 
-  // Farm Route Queue: step-down on low HP — move to next queued route
+  // Map Queue: step-down on low HP — move to next queued route
   const fleeThreshold = G.config.fleeThreshold;
   if (fleeThreshold > 0 && G.hp / G.maxHp * 100 <= fleeThreshold && G.zone !== 'town') {
     const fr = frQueueEnsure ? frQueueEnsure() : null;
@@ -5397,6 +5574,9 @@ function gameTick(ts) {
         }
 
         if(skillDmg > 0){
+          // Ascension bonus: skilldmgpct
+          const skillAscBonus = totalAscendStat('skilldmgpct');
+          if (skillAscBonus > 0) skillDmg = Math.round(skillDmg * (1 + skillAscBonus / 100));
           // Overload bonus damage
           if (overloadActive) {
             const overloadBonus = 1 + (Math.floor(G.level/2) / 100);
@@ -6319,6 +6499,183 @@ function unequipSlot(slot) {
 }
 
 // TOWN
+// ── TOWN HUB NAVIGATION ──────────────────────────────────────────────────────
+const TOWN_SCREENS = ['merchant','gamble','reroll','salvage','upgrade'];
+
+function openTownScreen(name) {
+  document.getElementById('town-hub-screen').style.display = 'none';
+  TOWN_SCREENS.forEach(s => {
+    const el = document.getElementById(`town-screen-${s}`);
+    if (el) el.classList.toggle('active', s === name);
+  });
+  if (name === 'merchant') { renderMerchant(); updateShopGoldDisplay(); }
+  if (name === 'reroll')   { buildBsRerollList(); }
+  if (name === 'salvage')  { buildSalvageSelect(); }
+  if (name === 'gamble')   {
+    const ge = document.getElementById('gamble-ge-display');
+    if (ge) ge.textContent = G.gearEssence || 0;
+  }
+  if (name === 'upgrade')  { renderUpgradeList(); }
+}
+
+// ── GEAR ASCENSION ───────────────────────────────────────────────────────────
+const ASCEND_COST_GOLD = 200000;
+const ASCEND_COST_LE   = 5;
+const ASCEND_REROLL_COST = 50000;
+const ASCEND_COLOR = '#cc7733';
+
+// The four possible ascension bonus stats
+const ASCEND_STATS = [
+  { key:'dmgpct',     label:'Damage',      fmt: v => `+${v}% Damage`,      min:3,  max:5,  float:true  },
+  { key:'skilldmgpct',label:'Skill Damage',fmt: v => `+${v}% Skill Dmg`,   min:3,  max:5,  float:true  },
+  { key:'ascmaxhp',   label:'Max HP',      fmt: v => `+${v}% Max HP`,       min:5,  max:10, float:true  },
+  { key:'ascmaxmp',   label:'Max MP',      fmt: v => `+${v}% Max MP`,       min:5,  max:10, float:true  },
+];
+
+function rollAscendStat() {
+  const def = ASCEND_STATS[Math.floor(Math.random() * ASCEND_STATS.length)];
+  const val = parseFloat((def.min + Math.random() * (def.max - def.min)).toFixed(1));
+  return { key: def.key, val };
+}
+
+let upgradeSelectedItemId = null;
+
+function renderUpgradeList() {
+  const list   = document.getElementById('upgrade-item-list');
+  const empty  = document.getElementById('upgrade-empty');
+  const panel  = document.getElementById('upgrade-reroll-panel');
+  const gd     = document.getElementById('upgrade-gold-display');
+  const led    = document.getElementById('upgrade-le-display');
+  if (gd)  gd.textContent  = fmtNum(G.gold);
+  if (led) led.textContent = G.legendaryEssence || 0;
+  if (!list) return;
+  list.innerHTML = '';
+  panel.style.display = 'none';
+  upgradeSelectedItemId = null;
+
+  const legends = G.inventory.filter(i =>
+    (i.rarity === 'legendary' || i.rarity === 'ascended') && !i.locked
+  );
+  if (!legends.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  for (const item of legends) {
+    const alreadyAscended = item.rarity === 'ascended';
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border:1px solid ${alreadyAscended ? '#664422' : 'var(--border2)'};cursor:pointer;`;
+
+    const statDef = alreadyAscended ? ASCEND_STATS.find(d => d.key === item.ascendStat?.key) : null;
+    const ascLabel = alreadyAscended && statDef
+      ? `<span style="font-size:8px;color:${ASCEND_COLOR};">✦ ${statDef.fmt(item.ascendStat.val)}</span>`
+      : '';
+
+    row.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}</div>
+        <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()}</div>
+        ${ascLabel}
+      </div>
+      <button style="background:#000;border:1px solid ${alreadyAscended ? '#664422' : 'var(--legendary)'};color:${alreadyAscended ? ASCEND_COLOR : 'var(--legendary)'};font-family:inherit;font-size:8px;padding:3px 9px;cursor:pointer;letter-spacing:1px;white-space:nowrap;"
+        onclick="event.stopPropagation();${alreadyAscended ? `selectAscendedItem(${item.id})` : `doAscension(${item.id})`}">
+        ${alreadyAscended ? 'REROLL' : 'ASCEND'}
+      </button>
+    `;
+    list.appendChild(row);
+  }
+}
+
+function doAscension(itemId) {
+  const item = G.inventory.find(i => i.id === itemId);
+  if (!item || item.rarity !== 'legendary') return;
+  if (item.ascendStat) { log('This item is already ascended.', 'system'); return; }
+  if (G.gold < ASCEND_COST_GOLD) { log(`Need ${fmtNum(ASCEND_COST_GOLD)}g to ascend.`, 'system'); return; }
+  if ((G.legendaryEssence || 0) < ASCEND_COST_LE) { log(`Need ${ASCEND_COST_LE} Legendary Essence to ascend.`, 'system'); return; }
+
+  G.gold -= ASCEND_COST_GOLD;
+  G.legendaryEssence -= ASCEND_COST_LE;
+
+  // Change rarity to ascended (orange), keep the item name unchanged
+  item.rarity = 'ascended';
+  item.ascended = true;
+
+  // Boost main stats to mythic range (randi(20, 35) per stat, like mythic gamble items)
+  for (const s of Object.keys(item.mainStats || {})) {
+    item.mainStats[s] = randi(20, 35);
+  }
+  // Reroll sub stats at mythic tier
+  for (const s of Object.keys(item.subStats || {})) {
+    item.subStats[s] = rollSubStatValue(s, 'mythic', item.slot);
+  }
+
+  item.ascendStat = rollAscendStat();
+
+  // Recalculate gold value
+  item.goldVal = calcItemGold(item);
+
+  log(`⬆ Ascension: "${item.name}" is now [ASCENDED] — ${ASCEND_STATS.find(d=>d.key===item.ascendStat.key)?.fmt(item.ascendStat.val)}`, 'system');
+  updateDerived();
+  renderEquipSlots();
+  renderInventory();
+  renderUpgradeList();
+}
+
+function selectAscendedItem(itemId) {
+  const item = G.inventory.find(i => i.id === itemId);
+  if (!item || !item.ascendStat) return;
+  upgradeSelectedItemId = itemId;
+  const panel = document.getElementById('upgrade-reroll-panel');
+  const label = document.getElementById('upgrade-reroll-label');
+  const disp  = document.getElementById('upgrade-stat-display');
+  const def   = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
+  panel.style.display = 'block';
+  if (label) label.textContent = `Reroll: ${item.name}`;
+  if (disp && def) {
+    disp.innerHTML = `<div style="font-size:10px;color:${ASCEND_COLOR};">Current bonus: <strong>${def.fmt(item.ascendStat.val)}</strong></div>
+      <div style="font-size:8px;color:#555;margin-top:2px;">Possible: ${ASCEND_STATS.map(d=>d.label).join(' / ')}</div>`;
+  }
+}
+
+function doAscendReroll() {
+  if (!upgradeSelectedItemId) return;
+  const item = G.inventory.find(i => i.id === upgradeSelectedItemId);
+  if (!item || !item.ascendStat) return;
+  if (G.gold < ASCEND_REROLL_COST) { log(`Need ${fmtNum(ASCEND_REROLL_COST)}g to reroll ascension bonus.`, 'system'); return; }
+
+  G.gold -= ASCEND_REROLL_COST;
+  const oldDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
+  item.ascendStat = rollAscendStat();
+  const newDef = ASCEND_STATS.find(d => d.key === item.ascendStat.key);
+  log(`⬆ Ascension reroll: ${oldDef?.label} → ${newDef?.fmt(item.ascendStat.val)}`, 'system');
+
+  updateDerived();
+  renderEquipSlots();
+  renderInventory();
+  selectAscendedItem(upgradeSelectedItemId);
+  const gd = document.getElementById('upgrade-gold-display');
+  if (gd) gd.textContent = fmtNum(G.gold);
+}
+
+function closeTownScreen() {
+  TOWN_SCREENS.forEach(s => {
+    const el = document.getElementById(`town-screen-${s}`);
+    if (el) el.classList.remove('active');
+  });
+  document.getElementById('town-hub-screen').style.display = '';
+}
+
+function setMerchantTab(tab) {
+  ['gear','routes'].forEach(t => {
+    const btn = document.getElementById(`mtab-${t}`);
+    const body = document.getElementById(`mtab-body-${t}`);
+    if (btn) btn.classList.toggle('active', t === tab);
+    if (body) body.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'routes') { renderFarmRouteShop(); updateShopGoldDisplay(); }
+}
+
 function refreshMerchant() {
   const stock=[];
   for(let i=0;i<5;i++){
@@ -6856,7 +7213,7 @@ function rerollCostPctFor(item, stat, type) {
   return Math.round(pct * 100);
 }
 function rerollRequiresLegendaryEssence(item) {
-  return !!item && (item.rarity === 'legendary' || item.rarity === 'mythic');
+  return !!item && (item.rarity === 'legendary' || item.rarity === 'mythic' || item.rarity === 'ascended');
 }
 function formatRerollCostText(item, goldCost, stat, type) {
   const pct = rerollCostPctFor(item, stat, type);
@@ -6877,22 +7234,24 @@ function rerollCostPaidText(item, goldCost) {
 }
 
 function getStatRange(stat, rarity, slot) {
+  const r = rarity === 'ascended' ? 'mythic' : rarity;  // ascended uses mythic ranges
   const isWeapon = slot==='weapon'||slot==='offhand';
   if (stat==='critchance') return isWeapon ? [5,15] : [3,9];
-  if (stat==='critdamage') return isWeapon ? [15,50] : [10,30];
-  if (stat==='maxhp') return maxHpSubRangeForRarity(rarity);
-  if (stat==='maxmp') return rarity==='mythic' ? [15,40] : (rarity==='rare' ? [5,15] : [10,30]);
-  if (stat==='hpregen'||stat==='mpregen') return rarity==='rare' ? [0.2,1.0] : [0.5,2.0];
+  if (stat==='critdamage') return isWeapon ? [r==='mythic'?25:15, r==='mythic'?60:50] : [r==='mythic'?20:10, r==='mythic'?40:30];
+  if (stat==='maxhp') return maxHpSubRangeForRarity(r);
+  if (stat==='maxmp') return r==='mythic' ? [15,40] : (r==='rare' ? [5,15] : [10,30]);
+  if (stat==='hpregen'||stat==='mpregen') return r==='rare' ? [0.2,1.0] : [0.5,2.0];
   if (stat==='cdr') {
-    if (rarity==='rare') return [0.3,0.5];
-    if (rarity==='epic') return [0.5,1.0];
-    return [1.0,3.0];
+    if (r==='rare') return [0.3,0.5];
+    if (r==='epic') return [0.5,1.0];
+    return [1.0,4.0];
   }
   // main stats
-  if (rarity==='common') return [1,3];
-  if (rarity==='rare') return [3,5];
-  if (rarity==='epic') return [5,10];
-  if (rarity==='legendary') return [15,25];
+  if (r==='common') return [1,3];
+  if (r==='rare') return [3,5];
+  if (r==='epic') return [5,10];
+  if (r==='legendary') return [15,25];
+  if (r==='mythic') return [20,35];
   return [1,35];
 }
 
@@ -6971,7 +7330,12 @@ function doReroll(mode) {
       log(`Blacksmith: [${stat.toUpperCase()}] ${fmt1(old)} → ${fmt1(newVal)}${minMaxTag(newVal,range)} (${rerollCostPaidText(item,cost)})`);
     } else {
       const old=item.subStats[stat];
-            item.subStats[stat] = rollSubStatValue(stat, item.rarity, item.slot);
+      // maxhp: 15 possible values, multiples of 10, evenly distributed in range
+      if (stat === 'maxhp') {
+        item.subStats[stat] = rollConstrainedMaxHp(item.rarity, old);
+      } else {
+        item.subStats[stat] = rollSubStatValue(stat, item.rarity, item.slot);
+      }
       const nv=item.subStats[stat];
       const range=getStatRange(stat,item.rarity,item.slot);
       const tagText = minMaxTag(typeof nv==='number'?nv:0,range).replace(/<[^>]+>/g,'').trim();
@@ -7447,6 +7811,11 @@ function formatItemStats(item) {
     else if(k==='hpregen') parts.push(`<span style="color:#668844">+${fmt1(v)} HP/s${rerollIcon}${tag}</span>`);
     else if(k==='mpregen') parts.push(`<span style="color:#4466aa">+${fmt1(v)} MP/s${rerollIcon}${tag}</span>`);
     else if(k==='cdr') parts.push(`<span style="color:#888844">-${fmt1(v)}s CDR${rerollIcon}${tag}</span>`);
+  }
+  if (item.ascendStat) {
+    const def = ASCEND_STATS ? ASCEND_STATS.find(d => d.key === item.ascendStat.key) : null;
+    const label = def ? def.fmt(item.ascendStat.val) : `+${item.ascendStat.val}% ${item.ascendStat.key}`;
+    parts.push(`<span style="color:${ASCEND_COLOR || '#cc7733'};font-weight:bold;">✦ ${label} (Ascension)</span>`);
   }
   if (item.rarity === 'mythic' && item.mythicMod) {
     const liveDef = item.mythicMod ? getMythicDefByMod(item.mythicMod, item.mythicClass || G.playerClass, item.slot) : null;
@@ -8133,6 +8502,7 @@ function updateZoneUI() {
   });
   const tc=document.getElementById('town-content');
   tc.classList.toggle('visible', G.zone==='town' && !G.uiTownCollapsed);
+  if (G.zone === 'town') closeTownScreen();
   updateAbyssFloor();
 }
 
@@ -8208,7 +8578,7 @@ function togglePause() {
   }else{
     G.nextSpawnAt=performance.now()+1000;
     lastTick=performance.now();
-    // If a farm route is equipped, ensure the bot is in the right zone
+    // If a map is equipped, ensure the bot is in the right zone
     const equippedRoute = FarmRoutes.getEquipped();
     if(equippedRoute && equippedRoute.zone && equippedRoute.zone !== 'town' && G.zone !== equippedRoute.zone){
       setZone(equippedRoute.zone, true, equippedRoute.subZone);
@@ -8351,7 +8721,7 @@ function initClassUI() {
   renderInventory(); renderPotions(); updateZoneUI(); updateAbyssFloor();
 }
 
-// ── FARM ROUTE QUEUE ─────────────────────────────────────────────────────────
+// ── MAP QUEUE ─────────────────────────────────────────────────────────
 // Queue state lives in G.farmRoutes.queue (array of {routeId, repeat} items)
 // and G.farmRoutes.queueLoop (bool), G.farmRoutes.queueIdx (current position)
 
@@ -8407,7 +8777,7 @@ function frQueueAdvance() {
     if (next && next.path && next.path.length > 0) {
       FarmRoutes.equip(next.id);
       if (next.zone && next.zone !== 'town') setZone(next.zone, false, next.subZone);
-      if (fr.queue.length > 1) log(`Farm Route Queue: now running "${next.name}"`, 'system');
+      if (fr.queue.length > 1) log(`Map Queue: now running "${next.name}"`, 'system');
     }
   }
   frUpdateQueueStatus();
@@ -8494,7 +8864,7 @@ function renderRouteQueue() {
 // Legacy stub — kept so any remaining calls don't crash
 function renderPriorityQueue() { renderRouteQueue(); }
 function setPrioritySlot(idx, val) {
-  // Legacy: no-op, queue replaced by farm route queue
+  // Legacy: no-op, queue replaced by map queue
 }
 
 function updateAbyssFloor() {
@@ -9569,7 +9939,7 @@ function createClassSlot(slotIdx, cls) {
   // Give 3 blank starter routes
   FarmRoutes.ensure();
   for (let i = 1; i <= 3; i++) {
-    FarmRoutes.saveRoute({ ...frMakeBlankRoute(`Blank Route ${i}`), id: `fr_starter_${i}_${Date.now()}` });
+    FarmRoutes.saveRoute({ ...frMakeBlankRoute(`Blank Map ${i}`), id: `fr_starter_${i}_${Date.now()}` });
   }
   document.getElementById('class-select-screen').style.cssText = 'display:none';
   initClassUI();
@@ -9855,12 +10225,13 @@ function calcOfflineProgress(elapsed, zone, subZone) {
     }
   }
 
-  // Items — buffed drop rate for offline; scaled so 12hrs always yields at least 20.
-  // Base rate is 0.5 * EFF per kill. We also guarantee a minimum of 20 items at full 12hrs.
+  // Items — drop rate scales with time. Minimum guarantees scale linearly.
+  // At 12hrs: min 20, max 80. At 8hrs: min ~13. At 1hr: min ~2.
   const MIN_ITEMS_AT_MAX = 20;
+  const timeRatio = secs / MAX_SECS;  // 0..1
+  const minItemsForThisSession = Math.max(1, Math.floor(MIN_ITEMS_AT_MAX * timeRatio));
   const baseDropRate = 0.5 * EFF;
-  // Calculate guaranteed minimum rate needed to hit MIN_ITEMS_AT_MAX at max time
-  const guaranteedRate = kills > 0 ? Math.max(baseDropRate, MIN_ITEMS_AT_MAX / kills) : baseDropRate;
+  const guaranteedRate = kills > 0 ? Math.max(baseDropRate, minItemsForThisSession / kills) : baseDropRate;
 
   const items = [];
   for (let i = 0; i < kills && items.length < MAX_OFFLINE_ITEMS; i++) {
@@ -9869,11 +10240,9 @@ function calcOfflineProgress(elapsed, zone, subZone) {
     }
   }
 
-  // Hard guarantee: if fewer than MIN_ITEMS_AT_MAX at full duration, top up
-  if (secs >= MAX_SECS && items.length < MIN_ITEMS_AT_MAX) {
-    while (items.length < MIN_ITEMS_AT_MAX && items.length < MAX_OFFLINE_ITEMS) {
-      items.push(generateItem(null, false));
-    }
+  // Hard guarantee: always yield at least minItemsForThisSession items
+  while (items.length < minItemsForThisSession && items.length < MAX_OFFLINE_ITEMS) {
+    items.push(generateItem(null, false));
   }
 
   const survival = estimateOfflineSurvival(zs, kills, secs, zone, subZone);
@@ -9932,7 +10301,7 @@ function applyOfflineProgress(result) {
 
   log(`— OFFLINE PROGRESS (${timeStr} away) —`);
   log(`~${kills} kills | +${gold}g | +${exp} EXP${levelsGained > 0 ? ` | +${levelsGained} level${levelsGained > 1 ? 's' : ''}` : ''}`);
-  log(`${potsAdded} potions | ${itemsAdded} items (offline: 20–80 item range)`);
+  log(`${potsAdded} potions | ${itemsAdded} items`);
   if (survival) {
     log(`Offline danger estimate: ${fmtNum(survival.totalIncoming)} incoming dmg - ${fmtNum(survival.totalRegen)} HP regen = ${fmtNum(survival.netDamage)} net dmg.`);
     if (survival.wouldDie) {
@@ -9959,7 +10328,7 @@ function applyOfflineProgress(result) {
 }
 
 // =====================================================================
-// FARM ROUTES SYSTEM
+// MAPS SYSTEM
 // =====================================================================
 
 // Tile types: internal stats hidden from player. No colors exposed in UI.
@@ -10302,7 +10671,7 @@ function frAdjacentWalkable(idx, layout) {
 }
 
 // Farm route shop pool — pre-made routes with varying quality
-// Farm Route state manager
+// Map state manager
 const FarmRoutes = {
   // G.farmRoutes = { routes:[], equippedId:null, botStep:0, shopRefreshCost:50, shopStock:[] }
   ensure() {
@@ -11010,7 +11379,7 @@ const FR_SUBZONE_OPTIONS = {
     { value:'pale_hollow',          label:'Pale Hollow' },
     { value:'frozen_dragon_grave',  label:'Frozen Dragon Grave' },
   ],
-  // Abyss has no farm routes — removed from editor
+  // Abyss has no maps — removed from editor
 };
 
 function frUpdateSubzoneSelect(zone, selectedSub) {
@@ -11108,7 +11477,7 @@ function frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCoun
 function frSaveRoute() {
   const path = FREditor.routePath;
   if (path.length < 2) {
-    log('Farm Route: Need at least 2 tiles in your path before saving.', 'system');
+    log('Map: Need at least 2 tiles in your path before saving.', 'system');
     return;
   }
 
@@ -11162,7 +11531,7 @@ function frSaveRoute() {
   FREditor.editingId = route.id;
   FarmRoutes.saveRoute(route);
   const loc = FREditor.subZone ? `${zoneNames[FREditor.zone]} — ${subZoneNames[FREditor.subZone] || FREditor.subZone}` : zoneNames[FREditor.zone];
-  log(`Farm Route saved: "${name}" · ${loc} · ${steps} steps · Rating ${rating}`, 'system');
+  log(`Map saved: "${name}" · ${loc} · ${steps} steps · Rating ${rating}`, 'system');
   renderFarmRouteList();
   frUpdateConfigDisplay();
   saveGame(false);
@@ -11234,7 +11603,7 @@ function frEquipRoute(id) {
   if (route.zone && route.zone !== 'town') {
     setZone(route.zone, false, null);
   }
-  log(`Farm Route equipped: "${route.name}" — Bot will follow this path in ${route.zone}.`, 'system');
+  log(`Map equipped: "${route.name}" — Bot will follow this path in ${route.zone}.`, 'system');
   renderFarmRouteList();
   frUpdateConfigDisplay();
   frUpdateEquippedIndicator();
@@ -11243,7 +11612,7 @@ function frEquipRoute(id) {
 
 function frUnequipRoute() {
   FarmRoutes.unequip();
-  log('Farm Route unequipped. Bot reverts to zone priority queue.', 'system');
+  log('Map unequipped. Bot reverts to zone priority queue.', 'system');
   renderFarmRouteList();
   frUpdateConfigDisplay();
   frUpdateEquippedIndicator();
@@ -11285,8 +11654,8 @@ function renderFarmRouteList() {
     const equipFn = isEquipped ? 'frUnequipRoute()' : `frEquipRoute('${route.id}')`;
     const safeId = route.id.replace(/[^a-zA-Z0-9_]/g, '_');
 
-    // Show rating only for self-made routes (always) or any route when equipped
-    const showRating = route.selfMade || isEquipped;
+    // Show rating for all routes in the player's own list
+    const showRating = true;
     const rc = ratingColors[route.rating] || '#888';
     const ratingBadge = showRating && route.rating && route.rating !== '—'
       ? `<span style="font-size:9px;color:${rc};font-weight:bold;margin-left:4px;">${route.rating}</span>`
@@ -11394,7 +11763,7 @@ function frUpdateEquippedIndicator() {
   const safePath = route.path || [];
   const pathLen = safePath.length;
 
-  // Hide indicator if blank route (no path yet)
+  // Hide indicator if blank map (no path yet)
   if (pathLen === 0) {
     if (info) info.style.display = 'none';
     if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
@@ -11430,7 +11799,7 @@ function frUpdateConfigDisplay() {
   const route = FarmRoutes.getEquipped();
   if (!el) return;
   if (!route) {
-    el.innerHTML = '<div style="font-size:9px;color:#555;">No route equipped. Go to <strong style="color:#888;">Map → Farm Routes</strong> to create or equip one.</div>';
+    el.innerHTML = '<div style="font-size:9px;color:#555;">No route equipped. Go to <strong style="color:#888;">Map → Maps</strong> to create or equip one.</div>';
     if (unequipBtn) unequipBtn.style.display = 'none';
     return;
   }
@@ -11450,7 +11819,7 @@ function frUpdateConfigDisplay() {
   if (unequipBtn) unequipBtn.style.display = 'inline';
 }
 
-// Farm Route Shop
+// Map Shop
 // Pre-written shop route pool — name, zone, subZone, description, character (affects generation bias)
 const FR_SHOP_POOL = [
   // Fields
@@ -11659,12 +12028,12 @@ function renderFarmRouteShop() {
     grid.appendChild(card);
   }
 
-  // Blank route — always shown at 100k
+  // Blank map — always shown at 100k
   const blankCard = document.createElement('div');
   blankCard.className = 'fr-shop-card';
   blankCard.style.borderColor = '#2a2a2a';
   blankCard.innerHTML = `
-    <div class="fr-shop-name" style="color:#888;">Blank Route</div>
+    <div class="fr-shop-name" style="color:#888;">Blank Map</div>
     <div class="fr-shop-zone" style="color:#444;">Any zone</div>
     <div class="fr-shop-desc" style="color:#444;">An empty route. Draw your own path in the editor.</div>
     <div class="fr-shop-price">&#x2B21; 50k</div>
@@ -11676,22 +12045,22 @@ function renderFarmRouteShop() {
 
 function frBuyBlankRoute() {
   const price = 50000;
-  if (G.gold < price) { log('Not enough gold for a blank route (50k needed).', 'system'); return; }
+  if (G.gold < price) { log('Not enough gold for a blank map (50k needed).', 'system'); return; }
   G.gold -= price;
   updateUI();
   const blankNum = FarmRoutes.getRoutes().filter(r => r.blank).length + 1;
-  FarmRoutes.saveRoute(frMakeBlankRoute(`Blank Route ${blankNum}`));
+  FarmRoutes.saveRoute(frMakeBlankRoute(`Blank Map ${blankNum}`));
   renderFarmRouteList();
   renderFarmRouteShop();
   saveGame(false);
-  log('Purchased a blank Farm Route for 50k gold.', 'system');
+  log('Purchased a blank Map for 50k gold.', 'system');
 }
 
 function frMakeBlankRoute(label) {
   const defaultLayout = FR_ZONE_LAYOUTS.fields_dusty_outskirts;
   return {
     id: `fr_blank_${Date.now()}`,
-    name: label || 'Blank Route',
+    name: label || 'Blank Map',
     zone: 'fields', subZone: 'dusty_outskirts',
     path: [],
     gridTiles: [...defaultLayout.tiles],
@@ -11749,7 +12118,7 @@ function frGetCurrentTileModifiers() {
   return base;
 }
 
-// Called when a spawn is triggered — advances farm route step
+// Called when a spawn is triggered — advances map step
 function frOnSpawn() {
   const route = FarmRoutes.getEquipped();
   if (!route || !route.path || route.path.length === 0) return;
@@ -11769,7 +12138,7 @@ function frOnSpawn() {
   }
 }
 
-// Initialize farm routes UI when map tab is opened
+// Initialize maps UI when map tab is opened
 function frToggleEditor() {
   const body = document.getElementById('fr-editor-body');
   const chevron = document.getElementById('fr-editor-chevron');
@@ -11792,7 +12161,7 @@ function frUpdateBlankCount() {
   const el = document.getElementById('fr-blank-count-label');
   if (!el) return;
   const blanks = FarmRoutes.getRoutes().filter(r => r.blank).length;
-  el.textContent = blanks > 0 ? `${blanks} blank${blanks > 1 ? 's' : ''} available` : 'No blank routes';
+  el.textContent = blanks > 0 ? `${blanks} blank${blanks > 1 ? 's' : ''} available` : 'No blank maps';
   el.style.color = blanks > 0 ? '#556644' : '#444';
 }
 
@@ -11810,7 +12179,7 @@ function initFarmRoutesUI() {
   updateShopGoldDisplay();
 }
 
-// Auto-save farm routes state into G (already in serializeClassState via G.farmRoutes)
+// Auto-save maps state into G (already in serializeClassState via G.farmRoutes)
 
 // Auto-save every 30 seconds
 setInterval(() => { if (G.started && !G.dead) saveGame(false); }, 30000);
@@ -11917,7 +12286,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
     renderLogFilterUI(); renderSkillPriority();
     // Re-render merchant with correct gold after full load
     setTimeout(() => renderMerchant(), 50);
-    // Init farm routes
+    // Init maps
     FarmRoutes.ensure();
     frUpdateEquippedIndicator();
     frUpdateConfigDisplay();
