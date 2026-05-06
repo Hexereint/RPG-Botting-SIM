@@ -977,28 +977,58 @@ canvas {
 .fr-shop-buy-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
 /* Combat live route grid */
-#log-container { position:relative; }
-.fr-combat-route-panel { position:absolute; top:146px; right:8px; z-index:12; pointer-events:none; min-width:120px; max-width:min(360px, 48vw); padding:6px 7px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.82); box-shadow:0 8px 22px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
+.fr-combat-route-panel { flex:0 0 auto; min-width:96px; max-width:150px; padding:5px 6px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.72); box-shadow:inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
 .fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
 .fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
 .fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
 #fr-combat-live-bg-canvas { position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
 .fr-combat-live-grid { display:inline-grid; gap:1px; pointer-events:none; position:relative; z-index:1; }
-.fr-combat-live-cell { width:var(--combat-live-map-cell, 15px); height:var(--combat-live-map-cell, 15px); background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
+.fr-combat-live-cell { width:7px; height:7px; background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
 .fr-combat-live-cell.fr-combat-live-dead { background:rgba(0,0,0,0.70); border-color:rgba(0,0,0,0.5); }
 .fr-combat-live-cell.fr-combat-live-start { background:rgba(30,60,20,0.48); border-color:rgba(80,160,60,0.36); }
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-panel { top:132px; right:6px; min-width:92px; max-width:min(260px, 60vw); padding:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { top:124px; right:5px; min-width:86px; max-width:min(230px, 62vw); padding:4px; } }
+@media (max-width:700px) { .fr-combat-route-panel { min-width:74px; max-width:92px; padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { display:none; } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
-.chaos-select-wrap { display:flex; align-items:center; gap:5px; font-size:8px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
-.chaos-select { background:#000; border:1px solid var(--border2); color:var(--white); font-family:inherit; font-size:9px; padding:3px 6px; }
-.chaos-select:focus { outline:none; border-color:var(--yellow); }
+.chaos-select-wrap { display:flex; align-items:center; gap:7px; font-size:calc(var(--ui-font-size) * 0.72); color:#cc4444; letter-spacing:1px; text-transform:uppercase; font-weight:bold; }
+.chaos-select { background:#080000; border:2px solid #cc4444; color:#ff6666; font-family:inherit; font-size:calc(var(--ui-font-size) * 0.92); padding:6px 12px; min-height:calc(var(--ui-font-size) * 2.05); min-width:132px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; box-shadow:0 0 10px rgba(204,68,68,0.14), inset 0 0 10px rgba(204,68,68,0.06); }
+.chaos-select option { background:#050000; color:#ff7777; }
+.chaos-select:focus { outline:none; border-color:#ff7777; box-shadow:0 0 14px rgba(204,68,68,0.34), inset 0 0 12px rgba(204,68,68,0.10); }
 .chaos-select-wrap.chaos-disabled { opacity:0.42; }
-.chaos-select:disabled { color:#666; border-color:#222; cursor:not-allowed; }
+.chaos-select:disabled { color:#777; border-color:#442222; cursor:not-allowed; box-shadow:none; }
+body.chaos-active .map-zone,
+body.chaos-active #map-panel .map-zone,
+#map-panel.chaos-active .map-zone {
+  border:2px solid #cc4444 !important;
+  outline:1px solid rgba(255,102,102,0.35) !important;
+  outline-offset:-4px;
+  box-shadow:0 0 0 1px rgba(204,68,68,0.34), 0 0 14px rgba(204,68,68,0.15), inset 0 0 16px rgba(204,68,68,0.07) !important;
+}
+body.chaos-active .map-zone.active-zone,
+body.chaos-active #map-panel .map-zone.active-zone,
+#map-panel.chaos-active .map-zone.active-zone {
+  border-color:#ff6666 !important;
+  outline-color:rgba(255,140,140,0.52) !important;
+  box-shadow:0 0 0 1px rgba(255,102,102,0.46), 0 0 18px rgba(204,68,68,0.22), inset 0 0 18px rgba(204,68,68,0.11) !important;
+}
+body.chaos-active #map-panel .subzone-row,
+#map-panel.chaos-active .subzone-row {
+  border-left-color:#cc4444 !important;
+  border-right-color:#cc4444 !important;
+  border-bottom-color:#cc4444 !important;
+}
+@media (max-width:700px) {
+  body.chaos-active #map-panel .map-zone,
+  #map-panel.chaos-active .map-zone {
+    border:2px solid #ff5555 !important;
+    outline:1px solid rgba(255,130,130,0.45) !important;
+    outline-offset:-4px;
+    box-shadow:0 0 0 1px rgba(255,85,85,0.45), 0 0 16px rgba(204,68,68,0.22), inset 0 0 16px rgba(204,68,68,0.10) !important;
+  }
+}
 /* Active route indicator in combat status bar */
 #fr-active-indicator { font-size:9px; color:#77aa66; }
 
@@ -1597,9 +1627,9 @@ canvas {
             <span id="cfg-ui-font-size-val" style="font-size:10px;color:var(--muted);min-width:20px;">18</span>
           </div>
           <div class="config-row">
-            <div class="config-label">Live Map Route Size<span class="config-sub">Adjusts the sticky combat route grid cell size</span></div>
-            <input type="range" id="cfg-live-map-route-size" min="6" max="18" value="15" step="1" style="width:100px;accent-color:#88cc66;" oninput="setLiveMapRouteSize(this.value)">
-            <span id="cfg-live-map-route-size-val" style="font-size:10px;color:var(--muted);min-width:28px;">15px</span>
+            <div class="config-label">Live Map Route Size<span class="config-sub">Adjusts the compact route grid shown below combat</span></div>
+            <input type="range" id="cfg-live-map-size" min="6" max="18" value="15" step="1" style="width:80px;accent-color:#88cc66;" oninput="setLiveMapRouteSize(this.value)">
+            <span id="cfg-live-map-size-val" style="font-size:10px;color:var(--muted);min-width:28px;">15px</span>
           </div>
         </div>
 
@@ -1769,6 +1799,14 @@ canvas {
           </div>
         </div>
         <div class="combat-versus">AUTO<br>FARM</div>
+        <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
+          <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
+          <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
+          <div class="fr-combat-live-grid-wrap">
+            <canvas id="fr-combat-live-bg-canvas"></canvas>
+            <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
+          </div>
+        </div>
         <div class="combat-side enemy-side">
           <div id="combat-viewport-info" class="combat-card">
             <div id="cvp-name"></div>
@@ -1779,14 +1817,6 @@ canvas {
           <div id="cvp-swarm"></div>
           <div class="sprite-plinth enemy-plinth"><canvas id="monster-canvas" width="64" height="64"></canvas></div>
         </div>
-      </div>
-    </div>
-    <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
-      <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
-      <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
-      <div class="fr-combat-live-grid-wrap">
-        <canvas id="fr-combat-live-bg-canvas"></canvas>
-        <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
       </div>
     </div>
     <div id="log-output"></div>
@@ -1921,6 +1951,7 @@ const G = {
     healThreshold: 40, potionPref: 'healing',
     fleeThreshold: 20,
     chaosDifficulty: 0,
+    liveMapRouteSize: 15,
     equipRules: {
       priorityStat: 'total',
       secondaryStat: 'none',
@@ -1960,8 +1991,7 @@ const G = {
     ],
     rarityFilter: { common:true, rare:true, epic:true, legendary:true, mythic:true },
     autosellFilter: { common:true, rare:false, epic:false, legendary:false, mythic:false },
-    townRunFilter: { common:true, rare:true, epic:false, legendary:false, mythic:false },
-    liveMapRouteSize: 15
+    townRunFilter: { common:true, rare:true, epic:false, legendary:false, mythic:false }
   },
   logFilter: {
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true, itemdrop:true,
@@ -2042,30 +2072,6 @@ function getChaosRewardMult(zone=G.zone) {
   const lv = getChaosLevelForZone(zone);
   return lv > 0 ? lv + 1 : 1; // Chaos I-IV: 2x, 3x, 4x, 5x EXP and item drop amount only (rarity weights unchanged)
 }
-function isHighChaos(zone=G.zone) {
-  return getChaosLevelForZone(zone) >= 3; // Chaos III/IV extra rules
-}
-function getChaosEliteTileChance(zone=G.zone) {
-  const lv = getChaosLevelForZone(zone);
-  if (lv >= 4) return 0.40;
-  if (lv >= 3) return 0.25;
-  return 0;
-}
-function applyHighChaosAttackInterval(monster, zone=G.zone) {
-  if (!monster || !isHighChaos(zone)) return monster;
-  const currentMin = monster.atkMin || monster.atkMax || 2000;
-  const currentMax = monster.atkMax || currentMin;
-  const boss = !!(monster.isBoss || monster.isAbyssBoss || monster.isRouteBoss);
-  const tags = Array.isArray(monster.tags) ? monster.tags : [];
-  const eliteLikeBoss = boss && (monster.isElite || tags.includes('FAST') || currentMax <= 2000);
-  if (!boss || eliteLikeBoss) {
-    // Chaos III/IV: most monsters attack at a 1.5s cadence. Keep naturally faster monsters fast.
-    monster.atkMin = Math.min(currentMin, 1500);
-    monster.atkMax = Math.min(Math.max(currentMax, monster.atkMin), 1500);
-    monster.chaosAtkIntervalScaled = true;
-  }
-  return monster;
-}
 function getChaosLabel(zone=G.zone) {
   if (!isChaosEligibleZone(zone)) return 'Abyss Scaling';
   return ['Normal','Chaos I','Chaos II','Chaos III','Chaos IV'][getChaosLevel()] || 'Normal';
@@ -2090,7 +2096,6 @@ function applyChaosToMonster(monster) {
     monster.expMin = Math.max(1, Math.round((monster.expMin || 1) * rMult));
     monster.expMax = Math.max(monster.expMin, Math.round((monster.expMax || monster.expMin || 1) * rMult));
     monster.chaosDropMult = rMult;
-    applyHighChaosAttackInterval(monster, zone);
     monster.chaosScaled = true;
   }
   return monster;
@@ -2104,13 +2109,21 @@ function setChaosDifficulty(value) {
   G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(value || 0, 10) || 0));
   const sel = document.getElementById('chaos-difficulty');
   if (sel) sel.value = String(G.config.chaosDifficulty);
+  syncChaosVisualState();
   log(`Difficulty set to ${getChaosLabel()}.`, 'system');
   updateUI();
   if (G.started) saveGame(false);
 }
+function syncChaosVisualState() {
+  const active = getChaosLevel() > 0;
+  if (document.body) document.body.classList.toggle('chaos-active', active);
+  const mapPanel = document.getElementById('map-panel');
+  if (mapPanel) mapPanel.classList.toggle('chaos-active', active);
+}
 function syncChaosDifficultyUI() {
   const sel = document.getElementById('chaos-difficulty');
   if (sel) sel.value = String(getChaosLevel());
+  syncChaosVisualState();
 }
 function chaosRollAttempts(mult, baseChance=0.5) {
   const target = Math.max(0, (baseChance || 0) * Math.max(1, mult || 1));
@@ -2241,8 +2254,6 @@ function applyBattleHardenedReduction(mdmg) {
 function targetDamageMultiplier(target, now=performance.now()) {
   let mult = 1;
   if (target && (target.markTargetUntil || 0) > now) mult *= 1 + ((target.markTargetPct || 0) / 100);
-  // Illusion elites are unstable: they take 50% more incoming damage from all player attacks/skills.
-  if (target && target.isIllusion) mult *= 1.5;
   return mult;
 }
 function applyTargetDamageMods(target, dmg, now=performance.now()) {
@@ -3360,10 +3371,10 @@ const PREFIXES = [
   { name:'Elder',  weight:10, hpMult:2.2,  dmgMult:1.4,  expMult:1.45 }
 ];
 
-const ELITE_TAGS = ['FAST','FREEZING','PLAGUED','ARCANE_SHIELDED','SHIELDED','REFLECT','ILLUSORY'];
+const ELITE_TAGS = ['FAST','FREEZING','PLAGUED','ARCANE_SHIELDED','SHIELDED','REFLECT'];
 const TAG_COLORS = {
   ELITE:'#ffaa00', FAST:'#44dddd', FREEZING:'#88bbff',
-  PLAGUED:'#55cc55', ARCANE_SHIELDED:'#aaaaff', SHIELDING:'#aaaaff', SHIELDED:'#d7c06a', REFLECT:'#dd8833', ILLUSORY:'#ff77dd', ILLUSION:'#dd99ff'
+  PLAGUED:'#55cc55', ARCANE_SHIELDED:'#aaaaff', SHIELDING:'#aaaaff', SHIELDED:'#d7c06a', REFLECT:'#dd8833'
 };
 
 function rollPrefix(canBeElite) {
@@ -3375,11 +3386,6 @@ function rollPrefix(canBeElite) {
 
 function rollEliteTags(maxTags, forceMax=false) {
   const pool = [...ELITE_TAGS];
-  // Chaos I-IV: every elite rolls exactly 3 unique tags, ignoring normal zone tag limits.
-  if (getChaosLevelForZone(G.zone) > 0) {
-    maxTags = 3;
-    forceMax = true;
-  }
   if (forceMax) {
     maxTags = Math.max(0, Math.min(maxTags || 1, pool.length));
     const tags = [];
@@ -3408,9 +3414,7 @@ function tagLabel(t) {
     FAST:'FAST',
     FREEZING:'FREEZING',
     PLAGUED:'PLAGUED',
-    REFLECT:'REFLECT',
-    ILLUSORY:'Illusory',
-    ILLUSION:'Illusion'
+    REFLECT:'REFLECT'
   })[t] || t;
 }
 
@@ -3464,43 +3468,6 @@ function spawnSingleMonster(zc) {
     lastAttack: performance.now()
   };
   return applyChaosToMonster(m);
-}
-
-
-function spawnIllusionElites(source, count=2) {
-  if (!source || source.isIllusion || !source.isElite || source.isBoss || !Array.isArray(G.monsters)) return 0;
-  const currentIllusions = G.monsters.filter(m => m && m.isIllusion && m.illusionSourceId === source.id).length;
-  const maxIllusionsPerSource = 8;
-  const allowed = Math.max(0, Math.min(count, maxIllusionsPerSource - currentIllusions));
-  if (allowed <= 0) return 0;
-  const sourceTags = Array.isArray(source.tags) ? source.tags.filter(t => t !== 'ILLUSORY' && t !== 'ILLUSION') : [];
-  for (let i=0; i<allowed; i++) {
-    const hpRatio = Math.max(0.1, Math.min(1, (source.hp || source.maxHp || 1) / Math.max(1, source.maxHp || 1)));
-    const maxHp = Math.max(1, Math.round(source.maxHp || source.hp || 1));
-    const tags = [...sourceTags, 'ILLUSION'];
-    G.monsters.push({
-      ...source,
-      id:Date.now()+Math.random(),
-      name:formatMonsterName(null, source.baseName || 'Illusion', true, tags),
-      maxHp,
-      hp:Math.max(1, Math.round(maxHp * hpRatio)),
-      shield:0,
-      arcaneShield:0,
-      dmgMin:Math.max(0, Math.round((source.dmgMin || 0) * 0.5)),
-      dmgMax:Math.max(0, Math.round((source.dmgMax || source.dmgMin || 1) * 0.5)),
-      expMin:0,
-      expMax:0,
-      isBoss:false,
-      isElite:true,
-      isIllusion:true,
-      noRewards:true,
-      tags,
-      illusionSourceId:source.id,
-      lastAttack:performance.now() + randi(250, 900)
-    });
-  }
-  log(`<span style="color:${TAG_COLORS.ILLUSORY}">Illusory split — ${source.baseName || 'elite'} creates ${allowed} illusion elite${allowed>1?'s':''}!</span>`, 'system');
-  return allowed;
 }
 
 
@@ -4090,9 +4057,9 @@ function spawnMonsters() {
     return;
   }
 
-  // ELITE SWARM TILE — force 3-5 elites, upgraded to 5-8 elites in Chaos III/IV
+  // ELITE SWARM TILE — force 3-5 elites
   if (frTile && frTile.eliteSwarm) {
-    const swarmCount = isHighChaos(G.zone) ? randi(5, 8) : randi(3, 5);
+    const swarmCount = randi(3, 5);
     const maxEliteTags = zc.maxEliteTags || 1;
     const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
     for (let i = 0; i < swarmCount; i++) {
@@ -4124,10 +4091,8 @@ function spawnMonsters() {
     return;
   }
 
-  // ELITE TILE — force a single elite (guaranteed, overrides normal roll).
-  // Chaos III/IV also adds a chance for ordinary route tiles to turn into elite encounters.
-  const chaosTileElite = frTile && !frTile.eliteSwarm && !frTile.forceElite && !frTile.bossChance && frTile.chaosForceEliteChance > 0 && Math.random() < frTile.chaosForceEliteChance;
-  const forceElite = (frTile && frTile.forceElite && !frTile.eliteSwarm) || chaosTileElite;
+  // ELITE TILE — force a single elite (guaranteed, overrides normal roll)
+  const forceElite = frTile && frTile.forceElite && !frTile.eliteSwarm;
 
   const isSwarm = zc.swarmChance > 0 && Math.random() < zc.swarmChance;
   const count = isSwarm ? randi(zc.swarmSize[0], zc.swarmSize[1]) : 1;
@@ -5190,7 +5155,7 @@ function renderLogFilterUI() {
   hideMapRow.className = 'config-row';
   hideMapRow.style.cssText = 'align-items:center;gap:6px;';
   hideMapRow.innerHTML = `
-    <div class="config-label" style="flex:1;">Hide Live Map Grid<span class="config-sub">Hides the compact route grid beside the combat pixel graphics</span></div>
+    <div class="config-label" style="flex:1;">Hide Live Map Grid<span class="config-sub">Hides the compact route grid overlay below combat</span></div>
     <div class="toggle-switch ${hideMapOn?'on':''}" id="toggle-hide-live-map-grid" style="flex-shrink:0;"></div>
   `;
   hideMapRow.querySelector('#toggle-hide-live-map-grid').addEventListener('click', () => toggleLogFilter('hideLiveMapGrid'));
@@ -5839,11 +5804,7 @@ function gameTick(ts) {
       const interval = randi(m.atkMin||2000, m.atkMax||5000) + (hasMythicMod('pale_furisode') ? 700 : 0) + frostNovaSlow;
       if (ts - m.lastAttack >= interval) {
         m.lastAttack = ts;
-        if (m.tags && m.tags.includes('ILLUSORY') && !m.isIllusion && !m.isBoss && Math.random() < 0.30) {
-          spawnIllusionElites(m, 2);
-        }
         let mdmg = randi(m.dmgMin||0, m.dmgMax||1);
-        if (m.isIllusion) mdmg = Math.max(0, Math.round(mdmg * 0.5));
         if (m.isAislong) {
           const hpPct = (m.hp / Math.max(1, m.maxHp)) * 100;
           if (!m.aislongWarn80 && hpPct <= 80) {
@@ -6229,22 +6190,6 @@ function renderUniqueBossLog() {
 
 function killMonster(m, ts) {
   visualKillBurst(m);
-  if (m && m.isIllusion) {
-    const idx = G.monsters.indexOf(m);
-    if (idx > -1) G.monsters.splice(idx, 1);
-    log(`Illusion dissipates: <span class="log-monster">${m.baseName || m.name}</span>`, 'system');
-    if (G.monsters.length === 0) {
-      G.combat.nextLightning = null;
-      G.combat.echoTimer = null;
-      G.combat.overlordDeathAt = 0;
-      G.combat.overlordDeathAnnounced = false;
-      G.combat.sandwormMissUntil = 0;
-      G.combat.sandwormBurrowTickAt = 0;
-      G.combat.everlastingWinterAttacks = 0;
-      G.nextSpawnAt = ts + spawnDelay(G.zone);
-    }
-    return;
-  }
   G.kills++;
   G.currentKills = (G.currentKills||0) + 1;
   if (m.isElite) G.eliteKills = (G.eliteKills || 0) + 1;
@@ -8832,6 +8777,7 @@ function updateZoneUI() {
     chaosSel.title = G.zone === 'abyss' ? 'Chaos difficulty does not affect The Abyss.' : '';
   }
   if (chaosWrap) chaosWrap.classList.toggle('chaos-disabled', G.zone === 'abyss');
+  syncChaosVisualState();
   updateAbyssFloor();
 }
 
@@ -9523,7 +9469,6 @@ function loadConfigUI() {
   if (sm) sm.value = er.minSecondaryStat || 0;
   if (ss) ss.value = er.minSubStat || 'none';
   if (ms) ms.value = er.minSubStatVal || 0;
-  applyLiveMapRouteSize();
 }
 
 function switchCfgTab(tab) {
@@ -9734,6 +9679,8 @@ function setUiFontSize(val) {
     .bs-cost, #bs-val-cost-display, #bs-type-cost-display, #essence-val-cost-display, #essence-type-cost-display { font-size:${px(0.78, 10)}px !important; line-height:1.45 !important; }
 
     .config-input, select.config-input { font-size:${px(0.88, 10)}px !important; padding:${Math.max(5, Math.round(val * 0.26))}px ${Math.max(7, Math.round(val * 0.36))}px !important; min-height:${Math.max(30, Math.round(val * 1.6))}px !important; }
+    .chaos-select-wrap { font-size:${px(0.82, 12)}px !important; gap:${Math.max(7, Math.round(val * 0.38))}px !important; }
+    .chaos-select { font-size:${px(1.00, 14)}px !important; padding:${Math.max(6, Math.round(val * 0.34))}px ${Math.max(12, Math.round(val * 0.66))}px !important; min-height:${Math.max(38, Math.round(val * 2.10))}px !important; min-width:${Math.max(132, Math.round(val * 7.5))}px !important; border-width:${Math.max(2, Math.round(val * 0.10))}px !important; }
     .config-row { gap:${Math.max(8, Math.round(val * 0.44))}px !important; padding:${Math.max(6, Math.round(val * 0.34))}px 0 !important; }
 
     .item-name { font-size: ${px(1.08, 12)}px !important; line-height:1.25 !important; }
@@ -9779,28 +9726,19 @@ function setUiFontSize(val) {
   if (input) input.value = val;
   const label = document.getElementById('cfg-ui-font-size-val');
   if (label) label.textContent = val;
-  const liveSize = document.getElementById('cfg-live-map-route-size');
-  if (liveSize) applyLiveMapRouteSize();
   if (G?.started) saveGame(false);
 }
+
 
 function setLiveMapRouteSize(val) {
   val = Math.max(6, Math.min(18, parseInt(val, 10) || 15));
   if (G && G.config) G.config.liveMapRouteSize = val;
-  const input = document.getElementById('cfg-live-map-route-size');
+  const input = document.getElementById('cfg-live-map-size');
   if (input) input.value = val;
-  const label = document.getElementById('cfg-live-map-route-size-val');
+  const label = document.getElementById('cfg-live-map-size-val');
   if (label) label.textContent = val + 'px';
-  const cssVal = (window.matchMedia && window.matchMedia('(max-width: 430px) and (orientation: portrait)').matches)
-    ? Math.max(6, Math.round(val * 0.82))
-    : val;
-  document.documentElement.style.setProperty('--combat-live-map-cell', cssVal + 'px');
   frRenderCombatLiveGrid();
   if (G?.started) saveGame(false);
-}
-
-function applyLiveMapRouteSize() {
-  setLiveMapRouteSize(G?.config?.liveMapRouteSize ?? 15);
 }
 
 function toggleLogFilter(key) {
@@ -10119,6 +10057,7 @@ function applyClassData(data) {
   const DEFAULT_CONFIG = {
     paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
     uiFontSize:18,
+    liveMapRouteSize:15,
     chaosDifficulty:0,
     healThreshold:40, potionPref:'healing', fleeThreshold:20,
     equipRules:{ priorityStat:'total', secondaryStat:'none', rarityPriority:'none', minMainStat:0, minSecondaryStat:0, minSubStat:'none', minSubStatVal:0 },
@@ -10136,14 +10075,14 @@ function applyClassData(data) {
     priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}],
     rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true},
     autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false},
-    townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false},
-    liveMapRouteSize:15
+    townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false}
   };
   G.config = Object.assign(DEFAULT_CONFIG, data.config||{});
   if (data.config?.equipRules) G.config.equipRules = Object.assign(DEFAULT_CONFIG.equipRules, data.config.equipRules);
   if (data.config?.skillConditions) G.config.skillConditions = Object.assign(DEFAULT_CONFIG.skillConditions, data.config.skillConditions);
   if (data.config?.skillPriority) G.config.skillPriority = Array.isArray(data.config.skillPriority) ? data.config.skillPriority.slice() : DEFAULT_CONFIG.skillPriority.slice();
   G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(G.config.chaosDifficulty || 0, 10) || 0));
+  G.config.liveMapRouteSize = Math.max(6, Math.min(18, parseInt(G.config.liveMapRouteSize || 15, 10) || 15));
   G.config.paused = false;
   G.logColors = data.logColors || {};
   G.logFilter = Object.assign({
@@ -10151,7 +10090,6 @@ function applyClassData(data) {
     itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   }, data.logFilter||{});
   updateDerived();
-  G.config.liveMapRouteSize = Math.max(6, Math.min(18, parseInt(G.config.liveMapRouteSize ?? 15, 10) || 15));
   G.hp = data.hp!==undefined ? Math.min(data.hp,G.maxHp) : G.maxHp;
   G.mp = data.mp!==undefined ? Math.min(data.mp,G.maxMp) : G.maxMp;
 }
@@ -11968,10 +11906,9 @@ function frRenderCombatLiveGrid() {
   const curStep = FarmRoutes.currentStep();
   const curTileIdx = route.path[curStep] ?? -1;
   const startTile = frGetStartTile(route.zone, route.subZone);
-  const configuredCell = Math.max(6, Math.min(18, parseInt(G.config?.liveMapRouteSize ?? 15, 10) || 15));
-  const compact = window.matchMedia && window.matchMedia('(max-width: 430px) and (orientation: portrait)').matches;
-  const CELL = compact ? Math.max(6, Math.round(configuredCell * 0.82)) : configuredCell, GAP = 1, PAD = 2;
-  document.documentElement.style.setProperty('--combat-live-map-cell', CELL + 'px');
+  const compact = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
+  const baseCell = Math.max(6, Math.min(18, parseInt(G.config?.liveMapRouteSize || 15, 10) || 15));
+  const CELL = compact ? Math.max(5, Math.round(baseCell * 0.78)) : baseCell, GAP = 1, PAD = 2;
   const title = document.getElementById('fr-combat-route-title');
   const step = document.getElementById('fr-combat-route-step');
   if (title) title.textContent = route.name || 'Map Route';
@@ -11984,6 +11921,8 @@ function frRenderCombatLiveGrid() {
     const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
     const cell = document.createElement('div');
     cell.className = 'fr-combat-live-cell';
+    cell.style.width = CELL + 'px';
+    cell.style.height = CELL + 'px';
     if (tInfo.dead) cell.classList.add('fr-combat-live-dead');
     else if (i === startTile) cell.classList.add('fr-combat-live-start');
     const stepIdx = route.path.indexOf(i);
@@ -12505,8 +12444,6 @@ function frGetCurrentTileModifiers() {
   const layout = frGetLayout(route.zone, route.subZone);
   const tileType = route.gridTiles ? (route.gridTiles[tileIdx] || 'normal') : (layout.tiles[tileIdx] || 'normal');
   const base = FR_TILE_TYPES[tileType] || FR_TILE_TYPES.normal;
-  const chaosEliteChance = getChaosEliteTileChance(route.zone);
-  const canChaosUpgradeToElite = chaosEliteChance > 0 && !base.dead && !base.forceElite && !base.eliteSwarm && !(base.bossChance > 0);
   if (route.spawnBoost && !base.dead) {
     // S-rank: spawn 50% faster than tile default, boss chance doubled, elite chance guaranteed where applicable
     return {
@@ -12515,13 +12452,9 @@ function frGetCurrentTileModifiers() {
       bossChance: Math.min(0.80, base.bossChance > 0 ? base.bossChance * 2.0 : 0),
       forceElite: base.forceElite,   // elite tiles still guarantee elites
       eliteSwarm: base.eliteSwarm,   // elite swarm tiles still swarm
-      chaosForceEliteChance: canChaosUpgradeToElite ? chaosEliteChance : 0,
     };
   }
-  return {
-    ...base,
-    chaosForceEliteChance: canChaosUpgradeToElite ? chaosEliteChance : 0,
-  };
+  return base;
 }
 
 // Called when a spawn is triggered — advances map step
@@ -12707,6 +12640,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
 
 requestAnimationFrame(gameTick);
 setUiFontSize(G?.config?.uiFontSize || 18);
+setLiveMapRouteSize(G?.config?.liveMapRouteSize || 15);
 setLogFontSize(10);
 </script>
 </body>
