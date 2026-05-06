@@ -977,7 +977,8 @@ canvas {
 .fr-shop-buy-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
 /* Combat live route grid */
-.fr-combat-route-panel { flex:0 0 auto; min-width:96px; max-width:150px; padding:5px 6px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.72); box-shadow:inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
+#log-container { position:relative; }
+.fr-combat-route-panel { position:absolute; top:146px; right:8px; z-index:12; pointer-events:none; min-width:120px; max-width:220px; padding:6px 7px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.82); box-shadow:0 8px 22px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
 .fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
 .fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
 .fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
@@ -989,8 +990,8 @@ canvas {
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-panel { min-width:74px; max-width:92px; padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { display:none; } }
+@media (max-width:700px) { .fr-combat-route-panel { top:132px; right:6px; min-width:92px; max-width:140px; padding:5px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { top:124px; right:5px; min-width:86px; max-width:128px; padding:4px; } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
 .chaos-select-wrap { display:flex; align-items:center; gap:5px; font-size:8px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
@@ -1763,14 +1764,6 @@ canvas {
           </div>
         </div>
         <div class="combat-versus">AUTO<br>FARM</div>
-        <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
-          <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
-          <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
-          <div class="fr-combat-live-grid-wrap">
-            <canvas id="fr-combat-live-bg-canvas"></canvas>
-            <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
-          </div>
-        </div>
         <div class="combat-side enemy-side">
           <div id="combat-viewport-info" class="combat-card">
             <div id="cvp-name"></div>
@@ -1781,6 +1774,14 @@ canvas {
           <div id="cvp-swarm"></div>
           <div class="sprite-plinth enemy-plinth"><canvas id="monster-canvas" width="64" height="64"></canvas></div>
         </div>
+      </div>
+    </div>
+    <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
+      <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
+      <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
+      <div class="fr-combat-live-grid-wrap">
+        <canvas id="fr-combat-live-bg-canvas"></canvas>
+        <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
       </div>
     </div>
     <div id="log-output"></div>
