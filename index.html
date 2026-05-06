@@ -976,8 +976,10 @@ canvas {
 .fr-shop-buy-btn:hover { border-color:var(--yellow); color:var(--yellow); }
 .fr-shop-buy-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
-/* Combat live route grid */
-.fr-combat-route-panel { flex:0 0 auto; min-width:96px; max-width:150px; padding:5px 6px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.72); box-shadow:inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
+/* Combat live route grid: sticky panel below the right side of the pixel combat stage */
+.fr-combat-route-sticky-row { display:none; justify-content:flex-end; align-items:flex-start; padding:4px 8px 0; background:#000; position:sticky; top:0; z-index:8; flex-shrink:0; pointer-events:none; }
+.fr-combat-route-sticky-row.visible { display:flex; }
+.fr-combat-route-panel { width:max-content; max-width:min(170px, 46vw); padding:5px 6px; border:1px solid rgba(120,180,80,0.34); background:rgba(5,14,4,0.94); box-shadow:0 6px 14px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.06); overflow:hidden; pointer-events:none; }
 .fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
 .fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
 .fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
@@ -989,15 +991,18 @@ canvas {
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-panel { min-width:74px; max-width:92px; padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { display:none; } }
-.map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
+@media (max-width:700px) { .fr-combat-route-sticky-row { padding:3px 6px 0; } .fr-combat-route-panel { max-width:min(128px, 58vw); padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { max-width:112px; } .fr-combat-live-cell { width:4px; height:4px; } }
+.map-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:5px; border-bottom:1px solid var(--border); margin-bottom:4px; flex-wrap:wrap; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
-.chaos-select-wrap { display:flex; align-items:center; gap:5px; font-size:8px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
-.chaos-select { background:#000; border:1px solid var(--border2); color:var(--white); font-family:inherit; font-size:9px; padding:3px 6px; }
-.chaos-select:focus { outline:none; border-color:var(--yellow); }
+.chaos-select-wrap { display:flex; align-items:center; gap:7px; font-size:calc(var(--ui-font-size) * 0.72); color:#cc4444; letter-spacing:1px; text-transform:uppercase; font-weight:bold; }
+.chaos-select { background:#080000; border:2px solid #cc4444; color:#ff6666; font-family:inherit; font-size:calc(var(--ui-font-size) * 0.92); padding:6px 12px; min-height:calc(var(--ui-font-size) * 2.05); min-width:132px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; box-shadow:0 0 10px rgba(204,68,68,0.14), inset 0 0 10px rgba(204,68,68,0.06); }
+.chaos-select option { background:#050000; color:#ff7777; }
+.chaos-select:focus { outline:none; border-color:#ff7777; box-shadow:0 0 14px rgba(204,68,68,0.34), inset 0 0 12px rgba(204,68,68,0.10); }
 .chaos-select-wrap.chaos-disabled { opacity:0.42; }
-.chaos-select:disabled { color:#666; border-color:#222; cursor:not-allowed; }
+.chaos-select:disabled { color:#777; border-color:#442222; cursor:not-allowed; box-shadow:none; }
+body.chaos-active .map-zone { border-color:#cc4444; box-shadow:0 0 0 1px rgba(204,68,68,0.28), inset 0 0 16px rgba(204,68,68,0.06); }
+body.chaos-active .map-zone.active-zone { border-color:#ff6666; box-shadow:0 0 0 1px rgba(255,102,102,0.42), 0 0 16px rgba(204,68,68,0.16), inset 0 0 18px rgba(204,68,68,0.09); }
 /* Active route indicator in combat status bar */
 #fr-active-indicator { font-size:9px; color:#77aa66; }
 
@@ -1763,14 +1768,6 @@ canvas {
           </div>
         </div>
         <div class="combat-versus">AUTO<br>FARM</div>
-        <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
-          <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
-          <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
-          <div class="fr-combat-live-grid-wrap">
-            <canvas id="fr-combat-live-bg-canvas"></canvas>
-            <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
-          </div>
-        </div>
         <div class="combat-side enemy-side">
           <div id="combat-viewport-info" class="combat-card">
             <div id="cvp-name"></div>
@@ -1780,6 +1777,16 @@ canvas {
           </div>
           <div id="cvp-swarm"></div>
           <div class="sprite-plinth enemy-plinth"><canvas id="monster-canvas" width="64" height="64"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div id="fr-combat-route-sticky-row" class="fr-combat-route-sticky-row">
+      <div id="fr-combat-route-panel" class="fr-combat-route-panel">
+        <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
+        <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
+        <div class="fr-combat-live-grid-wrap">
+          <canvas id="fr-combat-live-bg-canvas"></canvas>
+          <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
         </div>
       </div>
     </div>
@@ -2079,6 +2086,7 @@ function setChaosDifficulty(value) {
 function syncChaosDifficultyUI() {
   const sel = document.getElementById('chaos-difficulty');
   if (sel) sel.value = String(getChaosLevel());
+  document.body?.classList.toggle('chaos-active', getChaosLevel() > 0);
 }
 function chaosRollAttempts(mult, baseChance=0.5) {
   const target = Math.max(0, (baseChance || 0) * Math.max(1, mult || 1));
@@ -8732,6 +8740,7 @@ function updateZoneUI() {
     chaosSel.title = G.zone === 'abyss' ? 'Chaos difficulty does not affect The Abyss.' : '';
   }
   if (chaosWrap) chaosWrap.classList.toggle('chaos-disabled', G.zone === 'abyss');
+  document.body?.classList.toggle('chaos-active', getChaosLevel() > 0);
   updateAbyssFloor();
 }
 
@@ -9607,7 +9616,8 @@ function setUiFontSize(val) {
     .bs-reroll-select, .bs-type-cost-display, .points-left,
     .skill-cond-row, .skill-cond-name, .skill-cond-label, .skill-cond-input,
     .skill-cond-unit, .skill-cond-help, .skill-priority-row, .skill-priority-name,
-    .skill-priority-sub, .skill-priority-rank, .skill-priority-btn, .skill-priority-help
+    .skill-priority-sub, .skill-priority-rank, .skill-priority-btn, .skill-priority-help,
+    .chaos-select-wrap
     { font-size: ${px(0.88, 10)}px !important; }
 
     .section-title, .config-title, .inv-title, .map-title, .town-section-title
@@ -9633,6 +9643,8 @@ function setUiFontSize(val) {
     .bs-cost, #bs-val-cost-display, #bs-type-cost-display, #essence-val-cost-display, #essence-type-cost-display { font-size:${px(0.78, 10)}px !important; line-height:1.45 !important; }
 
     .config-input, select.config-input { font-size:${px(0.88, 10)}px !important; padding:${Math.max(5, Math.round(val * 0.26))}px ${Math.max(7, Math.round(val * 0.36))}px !important; min-height:${Math.max(30, Math.round(val * 1.6))}px !important; }
+    .chaos-select-wrap { font-size:${px(0.82, 12)}px !important; gap:${Math.max(7, Math.round(val * 0.38))}px !important; }
+    .chaos-select { font-size:${px(1.00, 14)}px !important; padding:${Math.max(6, Math.round(val * 0.34))}px ${Math.max(12, Math.round(val * 0.66))}px !important; min-height:${Math.max(38, Math.round(val * 2.10))}px !important; min-width:${Math.max(132, Math.round(val * 7.5))}px !important; border-width:${Math.max(2, Math.round(val * 0.10))}px !important; }
     .config-row { gap:${Math.max(8, Math.round(val * 0.44))}px !important; padding:${Math.max(6, Math.round(val * 0.34))}px 0 !important; }
 
     .item-name { font-size: ${px(1.08, 12)}px !important; line-height:1.25 !important; }
@@ -11829,16 +11841,17 @@ function frRenderLiveGrid() {
 
 function frRenderCombatLiveGrid() {
   const panel = document.getElementById('fr-combat-route-panel');
+  const row = document.getElementById('fr-combat-route-sticky-row');
   const liveGrid = document.getElementById('fr-combat-live-grid');
-  if (!panel || !liveGrid) return;
-  if (G.logFilter?.hideLiveMapGrid === true) { panel.style.display = 'none'; return; }
+  if (!panel || !row || !liveGrid) return;
+  if (G.logFilter?.hideLiveMapGrid === true) { row.classList.remove('visible'); return; }
   const route = (typeof FarmRoutes !== 'undefined') ? FarmRoutes.getEquipped() : null;
   if (!route || !route.path || route.path.length === 0 || G.zone === 'town' || !G.started || !G.monsters.length) {
-    panel.style.display = 'none';
+    row.classList.remove('visible');
     liveGrid.innerHTML = '';
     return;
   }
-  panel.style.display = 'block';
+  row.classList.add('visible');
   const layout = frGetLayout(route.zone, route.subZone);
   const gridTiles = route.gridTiles || layout.tiles;
   const curStep = FarmRoutes.currentStep();
@@ -12028,7 +12041,7 @@ function frUpdateEquippedIndicator() {
 
   if (!route) {
     if (info) info.style.display = 'none';
-    const cp = document.getElementById('fr-combat-route-panel'); if (cp) cp.style.display = 'none';
+    const cr = document.getElementById('fr-combat-route-sticky-row'); if (cr) cr.classList.remove('visible');
     if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
     return;
   }
@@ -12039,7 +12052,7 @@ function frUpdateEquippedIndicator() {
   // Hide indicator if blank map (no path yet)
   if (pathLen === 0) {
     if (info) info.style.display = 'none';
-    const cp = document.getElementById('fr-combat-route-panel'); if (cp) cp.style.display = 'none';
+    const cr = document.getElementById('fr-combat-route-sticky-row'); if (cr) cr.classList.remove('visible');
     if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
     return;
   }
