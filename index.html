@@ -154,6 +154,8 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .achievement-row.chaos-kill:hover { border-color:#ff6666; background:radial-gradient(circle at 50% 36%, rgba(255,80,80,0.26), #090202 64%); box-shadow:0 0 16px rgba(255,80,80,0.50), inset 0 0 14px rgba(204,68,68,0.16); }
 .achievement-row.chaos-kill .achievement-icon { border-color:rgba(255,85,85,0.72); color:#ff7777; text-shadow:0 0 6px rgba(255,70,70,0.95), 0 0 12px rgba(204,68,68,0.75); box-shadow:0 0 11px rgba(255,55,55,0.58), inset 0 0 12px rgba(204,68,68,0.22); background:radial-gradient(circle at 50% 45%, rgba(90,0,0,0.82), #0c0c0c 72%); }
 .achievement-row.chaos-kill .achievement-count { color:#ff7777; text-shadow:0 0 5px rgba(204,68,68,0.85); }
+.achievement-chaos-badge { position:absolute; right:-4px; top:-5px; padding:1px 4px; background:#240000; border:1px solid rgba(255,90,90,0.78); color:#ff7777; font-size:7px; line-height:1.15; font-weight:bold; letter-spacing:0.5px; text-shadow:0 0 5px rgba(255,55,55,0.85); box-shadow:0 0 8px rgba(204,68,68,0.45); pointer-events:none; }
+
 .achievement-name { display:none; }
 .achievement-count { color:var(--yellow); font-weight:bold; white-space:nowrap; font-size:8px; line-height:1; }
 .achievement-empty { font-size:9px; color:#444; padding:6px 0; grid-column:1 / -1; }
@@ -6260,10 +6262,14 @@ function renderUniqueBossLog() {
     const highestChaosLevel = Math.max(entry.highestChaosLevel || 0, entry.lastChaosLevel || 0);
     const lastChaosLevel = entry.lastChaosLevel || highestChaosLevel;
     const lastChaos = escapeHtml(formatAchievementDate(entry.lastChaosKilledAt));
-    const chaosTip = chaosKills > 0 ? ' · Chaos kills x' + chaosKills + ' · Highest ' + chaosLevelName(highestChaosLevel) + ' · Last chaos ' + chaosLevelName(lastChaosLevel) + ' at ' + lastChaos : '';
+    const highestChaosLabel = chaosLevelName(highestChaosLevel);
+    const lastChaosLabel = chaosLevelName(lastChaosLevel);
+    const chaosTip = chaosKills > 0 ? ' · Chaos Level: ' + highestChaosLabel + ' · Chaos kills x' + chaosKills + ' · Last chaos kill: ' + lastChaosLabel + ' at ' + lastChaos : '';
     const tip = zone + ' · First killed ' + first + ' · Last killed ' + last + chaosTip;
     const chaosClass = chaosKills > 0 ? ' chaos-kill' : '';
+    const chaosBadge = chaosKills > 0 ? '<div class="achievement-chaos-badge">' + escapeHtml(highestChaosLabel.replace('Chaos ', 'C')) + '</div>' : '';
     return '<div class="achievement-row' + chaosClass + '" data-zone="' + tip + '" title="' + tip + '">' +
+      chaosBadge +
       '<div class="achievement-icon" aria-label="' + name + '">' + icon + '</div>' +
       '<div class="achievement-name">' + name + '</div>' +
       '<div class="achievement-count">x' + count + '</div>' +
@@ -8203,7 +8209,7 @@ function formatItemStats(item) {
   if (item.ascendStat) {
     const def = ASCEND_STATS ? ASCEND_STATS.find(d => d.key === item.ascendStat.key) : null;
     const label = def ? def.fmt(item.ascendStat.val) : `+${item.ascendStat.val}% ${item.ascendStat.key}`;
-    parts.push(`<span style="color:${ASCEND_COLOR || '#cc7733'};font-weight:bold;">✦ ${label} (Ascension)</span>`);
+    parts.push(`<span style="color:${ASCEND_COLOR || '#cc7733'};font-weight:bold;">✦ ${label}</span>`);
   }
   if (item.rarity === 'mythic' && item.mythicMod) {
     const liveDef = item.mythicMod ? getMythicDefByMod(item.mythicMod, item.mythicClass || G.playerClass, item.slot) : null;
