@@ -978,20 +978,20 @@ canvas {
 
 /* Combat live route grid */
 #log-container { position:relative; }
-.fr-combat-route-panel { position:absolute; top:146px; right:8px; z-index:12; pointer-events:none; min-width:120px; max-width:220px; padding:6px 7px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.82); box-shadow:0 8px 22px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
+.fr-combat-route-panel { position:absolute; top:146px; right:8px; z-index:12; pointer-events:none; min-width:120px; max-width:min(360px, 48vw); padding:6px 7px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.82); box-shadow:0 8px 22px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
 .fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
 .fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
 .fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
 #fr-combat-live-bg-canvas { position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
 .fr-combat-live-grid { display:inline-grid; gap:1px; pointer-events:none; position:relative; z-index:1; }
-.fr-combat-live-cell { width:7px; height:7px; background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
+.fr-combat-live-cell { width:var(--combat-live-map-cell, 15px); height:var(--combat-live-map-cell, 15px); background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
 .fr-combat-live-cell.fr-combat-live-dead { background:rgba(0,0,0,0.70); border-color:rgba(0,0,0,0.5); }
 .fr-combat-live-cell.fr-combat-live-start { background:rgba(30,60,20,0.48); border-color:rgba(80,160,60,0.36); }
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-panel { top:132px; right:6px; min-width:92px; max-width:140px; padding:5px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { top:124px; right:5px; min-width:86px; max-width:128px; padding:4px; } }
+@media (max-width:700px) { .fr-combat-route-panel { top:132px; right:6px; min-width:92px; max-width:min(260px, 60vw); padding:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { top:124px; right:5px; min-width:86px; max-width:min(230px, 62vw); padding:4px; } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
 .chaos-select-wrap { display:flex; align-items:center; gap:5px; font-size:8px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
@@ -1596,6 +1596,11 @@ canvas {
             <input type="range" id="cfg-ui-font-size" min="11" max="30" value="18" step="1" style="width:80px;accent-color:var(--white);" oninput="setUiFontSize(this.value)">
             <span id="cfg-ui-font-size-val" style="font-size:10px;color:var(--muted);min-width:20px;">18</span>
           </div>
+          <div class="config-row">
+            <div class="config-label">Live Map Route Size<span class="config-sub">Adjusts the sticky combat route grid cell size</span></div>
+            <input type="range" id="cfg-live-map-route-size" min="6" max="18" value="15" step="1" style="width:100px;accent-color:#88cc66;" oninput="setLiveMapRouteSize(this.value)">
+            <span id="cfg-live-map-route-size-val" style="font-size:10px;color:var(--muted);min-width:28px;">15px</span>
+          </div>
         </div>
 
         <div class="config-section" style="border-color:#1a2a1a;">
@@ -1955,7 +1960,8 @@ const G = {
     ],
     rarityFilter: { common:true, rare:true, epic:true, legendary:true, mythic:true },
     autosellFilter: { common:true, rare:false, epic:false, legendary:false, mythic:false },
-    townRunFilter: { common:true, rare:true, epic:false, legendary:false, mythic:false }
+    townRunFilter: { common:true, rare:true, epic:false, legendary:false, mythic:false },
+    liveMapRouteSize: 15
   },
   logFilter: {
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true, itemdrop:true,
@@ -9517,6 +9523,7 @@ function loadConfigUI() {
   if (sm) sm.value = er.minSecondaryStat || 0;
   if (ss) ss.value = er.minSubStat || 'none';
   if (ms) ms.value = er.minSubStatVal || 0;
+  applyLiveMapRouteSize();
 }
 
 function switchCfgTab(tab) {
@@ -9772,7 +9779,28 @@ function setUiFontSize(val) {
   if (input) input.value = val;
   const label = document.getElementById('cfg-ui-font-size-val');
   if (label) label.textContent = val;
+  const liveSize = document.getElementById('cfg-live-map-route-size');
+  if (liveSize) applyLiveMapRouteSize();
   if (G?.started) saveGame(false);
+}
+
+function setLiveMapRouteSize(val) {
+  val = Math.max(6, Math.min(18, parseInt(val, 10) || 15));
+  if (G && G.config) G.config.liveMapRouteSize = val;
+  const input = document.getElementById('cfg-live-map-route-size');
+  if (input) input.value = val;
+  const label = document.getElementById('cfg-live-map-route-size-val');
+  if (label) label.textContent = val + 'px';
+  const cssVal = (window.matchMedia && window.matchMedia('(max-width: 430px) and (orientation: portrait)').matches)
+    ? Math.max(6, Math.round(val * 0.82))
+    : val;
+  document.documentElement.style.setProperty('--combat-live-map-cell', cssVal + 'px');
+  frRenderCombatLiveGrid();
+  if (G?.started) saveGame(false);
+}
+
+function applyLiveMapRouteSize() {
+  setLiveMapRouteSize(G?.config?.liveMapRouteSize ?? 15);
 }
 
 function toggleLogFilter(key) {
@@ -10108,7 +10136,8 @@ function applyClassData(data) {
     priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}],
     rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true},
     autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false},
-    townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false}
+    townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false},
+    liveMapRouteSize:15
   };
   G.config = Object.assign(DEFAULT_CONFIG, data.config||{});
   if (data.config?.equipRules) G.config.equipRules = Object.assign(DEFAULT_CONFIG.equipRules, data.config.equipRules);
@@ -10122,6 +10151,7 @@ function applyClassData(data) {
     itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   }, data.logFilter||{});
   updateDerived();
+  G.config.liveMapRouteSize = Math.max(6, Math.min(18, parseInt(G.config.liveMapRouteSize ?? 15, 10) || 15));
   G.hp = data.hp!==undefined ? Math.min(data.hp,G.maxHp) : G.maxHp;
   G.mp = data.mp!==undefined ? Math.min(data.mp,G.maxMp) : G.maxMp;
 }
@@ -11938,8 +11968,10 @@ function frRenderCombatLiveGrid() {
   const curStep = FarmRoutes.currentStep();
   const curTileIdx = route.path[curStep] ?? -1;
   const startTile = frGetStartTile(route.zone, route.subZone);
-  const compact = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
-  const CELL = compact ? 5 : 7, GAP = 1, PAD = 2;
+  const configuredCell = Math.max(6, Math.min(18, parseInt(G.config?.liveMapRouteSize ?? 15, 10) || 15));
+  const compact = window.matchMedia && window.matchMedia('(max-width: 430px) and (orientation: portrait)').matches;
+  const CELL = compact ? Math.max(6, Math.round(configuredCell * 0.82)) : configuredCell, GAP = 1, PAD = 2;
+  document.documentElement.style.setProperty('--combat-live-map-cell', CELL + 'px');
   const title = document.getElementById('fr-combat-route-title');
   const step = document.getElementById('fr-combat-route-step');
   if (title) title.textContent = route.name || 'Map Route';
