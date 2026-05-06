@@ -979,20 +979,20 @@ canvas {
 /* Combat live route grid: sticky panel below the right side of the pixel combat stage */
 .fr-combat-route-sticky-row { display:none; justify-content:flex-end; align-items:flex-start; padding:4px 8px 0; background:#000; position:sticky; top:0; z-index:8; flex-shrink:0; pointer-events:none; }
 .fr-combat-route-sticky-row.visible { display:flex; }
-.fr-combat-route-panel { width:max-content; max-width:min(170px, 46vw); padding:5px 6px; border:1px solid rgba(120,180,80,0.34); background:rgba(5,14,4,0.94); box-shadow:0 6px 14px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.06); overflow:hidden; pointer-events:none; }
-.fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
-.fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
-.fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
+.fr-combat-route-panel { width:max-content; max-width:min(240px, 62vw); padding:6px 7px; border:1px solid rgba(120,180,80,0.34); background:rgba(5,14,4,0.94); box-shadow:0 6px 14px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.06); overflow:hidden; pointer-events:none; }
+.fr-combat-route-title { font-size:9px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+.fr-combat-route-step { font-size:8px; color:#668855; margin-bottom:4px; white-space:nowrap; }
+.fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:3px; position:relative; max-width:100%; }
 #fr-combat-live-bg-canvas { position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
 .fr-combat-live-grid { display:inline-grid; gap:1px; pointer-events:none; position:relative; z-index:1; }
-.fr-combat-live-cell { width:7px; height:7px; background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
+.fr-combat-live-cell { width:var(--combat-live-cell, 10px); height:var(--combat-live-cell, 10px); background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
 .fr-combat-live-cell.fr-combat-live-dead { background:rgba(0,0,0,0.70); border-color:rgba(0,0,0,0.5); }
 .fr-combat-live-cell.fr-combat-live-start { background:rgba(30,60,20,0.48); border-color:rgba(80,160,60,0.36); }
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
-.fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-sticky-row { padding:3px 6px 0; } .fr-combat-route-panel { max-width:min(128px, 58vw); padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { max-width:112px; } .fr-combat-live-cell { width:4px; height:4px; } }
+.fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:calc(var(--combat-live-cell, 10px) * 0.82); color:#d0ff50; pointer-events:none; }
+@media (max-width:700px) { .fr-combat-route-sticky-row { padding:3px 6px 0; } .fr-combat-route-panel { max-width:min(210px, 72vw); padding:5px; } .fr-combat-route-title { font-size:8px; } .fr-combat-route-step { font-size:8px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { max-width:min(190px, 82vw); } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:5px; border-bottom:1px solid var(--border); margin-bottom:4px; flex-wrap:wrap; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
 .chaos-select-wrap { display:flex; align-items:center; gap:7px; font-size:calc(var(--ui-font-size) * 0.72); color:#cc4444; letter-spacing:1px; text-transform:uppercase; font-weight:bold; }
@@ -1600,6 +1600,11 @@ body.chaos-active .map-zone.active-zone { border-color:#ff6666; box-shadow:0 0 0
             <input type="range" id="cfg-ui-font-size" min="11" max="30" value="18" step="1" style="width:80px;accent-color:var(--white);" oninput="setUiFontSize(this.value)">
             <span id="cfg-ui-font-size-val" style="font-size:10px;color:var(--muted);min-width:20px;">18</span>
           </div>
+          <div class="config-row">
+            <div class="config-label">Live Map Route Size<span class="config-sub">Adjusts the sticky combat route grid</span></div>
+            <input type="range" id="cfg-live-map-size" min="6" max="18" value="15" step="1" style="width:100px;accent-color:#88cc66;" oninput="setLiveMapGridSize(this.value)">
+            <span id="cfg-live-map-size-val" style="font-size:10px;color:var(--muted);min-width:28px;">15</span>
+          </div>
         </div>
 
         <div class="config-section" style="border-color:#1a2a1a;">
@@ -1922,6 +1927,7 @@ const G = {
     healThreshold: 40, potionPref: 'healing',
     fleeThreshold: 20,
     chaosDifficulty: 0,
+    liveMapGridSize: 15,
     equipRules: {
       priorityStat: 'total',
       secondaryStat: 'none',
@@ -5118,7 +5124,7 @@ function renderLogFilterUI() {
   hideMapRow.className = 'config-row';
   hideMapRow.style.cssText = 'align-items:center;gap:6px;';
   hideMapRow.innerHTML = `
-    <div class="config-label" style="flex:1;">Hide Live Map Grid<span class="config-sub">Hides the compact route grid beside the combat pixel graphics</span></div>
+    <div class="config-label" style="flex:1;">Hide Live Map Grid<span class="config-sub">Hides the sticky live route grid below the combat pixel graphics</span></div>
     <div class="toggle-switch ${hideMapOn?'on':''}" id="toggle-hide-live-map-grid" style="flex-shrink:0;"></div>
   `;
   hideMapRow.querySelector('#toggle-hide-live-map-grid').addEventListener('click', () => toggleLogFilter('hideLiveMapGrid'));
@@ -9693,6 +9699,19 @@ function setUiFontSize(val) {
   if (G?.started) saveGame(false);
 }
 
+
+function setLiveMapGridSize(val) {
+  val = Math.max(6, Math.min(18, parseInt(val, 10) || 10));
+  if (G && G.config) G.config.liveMapGridSize = val;
+  document.documentElement.style.setProperty('--combat-live-cell', val + 'px');
+  const input = document.getElementById('cfg-live-map-size');
+  if (input) input.value = val;
+  const label = document.getElementById('cfg-live-map-size-val');
+  if (label) label.textContent = val;
+  frRenderCombatLiveGrid();
+  if (G?.started) saveGame(false);
+}
+
 function toggleLogFilter(key) {
   G.logFilter[key] = G.logFilter[key] === false ? true : false;
   renderLogFilterUI();
@@ -10009,6 +10028,7 @@ function applyClassData(data) {
   const DEFAULT_CONFIG = {
     paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
     uiFontSize:18,
+    liveMapGridSize:15,
     chaosDifficulty:0,
     healThreshold:40, potionPref:'healing', fleeThreshold:20,
     equipRules:{ priorityStat:'total', secondaryStat:'none', rarityPriority:'none', minMainStat:0, minSecondaryStat:0, minSubStat:'none', minSubStatVal:0 },
@@ -11857,8 +11877,11 @@ function frRenderCombatLiveGrid() {
   const curStep = FarmRoutes.currentStep();
   const curTileIdx = route.path[curStep] ?? -1;
   const startTile = frGetStartTile(route.zone, route.subZone);
+  const baseSize = Math.max(6, Math.min(18, parseInt(G.config?.liveMapGridSize || 15, 10) || 15));
   const compact = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
-  const CELL = compact ? 5 : 7, GAP = 1, PAD = 2;
+  const CELL = compact ? Math.max(6, Math.round(baseSize * 0.82)) : baseSize, GAP = 1, PAD = 3;
+  document.documentElement.style.setProperty('--combat-live-cell', CELL + 'px');
+  panel.style.maxWidth = compact ? 'min(240px, 82vw)' : 'min(320px, 62vw)';
   const title = document.getElementById('fr-combat-route-title');
   const step = document.getElementById('fr-combat-route-step');
   if (title) title.textContent = route.name || 'Map Route';
@@ -11871,6 +11894,8 @@ function frRenderCombatLiveGrid() {
     const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
     const cell = document.createElement('div');
     cell.className = 'fr-combat-live-cell';
+    cell.style.width = CELL + 'px';
+    cell.style.height = CELL + 'px';
     if (tInfo.dead) cell.classList.add('fr-combat-live-dead');
     else if (i === startTile) cell.classList.add('fr-combat-live-start');
     const stepIdx = route.path.indexOf(i);
@@ -12556,6 +12581,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
     const hi = document.getElementById('cfg-heal-threshold'); if(hi) hi.value = G.config.healThreshold;
     const pp = document.getElementById('cfg-potion-pref'); if(pp) pp.value = G.config.potionPref;
     const ft = document.getElementById('cfg-flee-threshold'); if(ft) ft.value = G.config.fleeThreshold;
+    setLiveMapGridSize(G.config.liveMapGridSize || 15);
     const cz = document.getElementById('cfg-zone'); if(cz) cz.value = G.zone;
     const rarities = ['common','rare','epic','legendary','mythic'];
     rarities.forEach(r => {
@@ -12588,6 +12614,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
 
 requestAnimationFrame(gameTick);
 setUiFontSize(G?.config?.uiFontSize || 18);
+setLiveMapGridSize(G?.config?.liveMapGridSize || 15);
 setLogFontSize(10);
 </script>
 </body>
