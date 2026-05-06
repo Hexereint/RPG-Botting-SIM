@@ -3870,6 +3870,69 @@ function spawnWitchOfTheWastesBoss(zc) {
   log(`<span style="color:#d96dff">☽ The Witch of the Wastes rises with 3 Elder Witches!</span>`, 'system');
 }
 
+
+function spawnRouteGoblinKingBoss(zc) {
+  const hpKing = 500;
+  G.monsters.push({
+    id:Date.now()+Math.random(), name:`<span style="color:${TAG_COLORS.ELITE}">[BOSS]</span> Goblin King`,
+    baseName:'Goblin King', zone:G.zone, subZone:G.subZone,
+    maxHp:hpKing, hp:hpKing, shield:0, arcaneShield:0,
+    dmgMin:Math.round(zc.dmg[0]*1.5), dmgMax:Math.round(zc.dmg[1]*1.5),
+    expMin:Math.round(zc.exp[0]*1.5), expMax:Math.round(zc.exp[1]*1.5),
+    atkMin:1500, atkMax:3000,
+    isBoss:true, isAbyssBoss:false, isElite:false, isSwarm:false, isGoblinKing:true, uniqueBossKey:'goblin_king', tags:[],
+    prefixData:PREFIXES[1], dmgMult:1.5, lastAttack:performance.now()
+  });
+  log(`<span style="color:#aadd66">♛ Goblin King storms from the camp throne!</span>`, 'system');
+}
+
+function spawnRouteEliteSwarm(zc, sourceLabel='Boss tile fallback') {
+  const swarmCount = randi(3, 5);
+  const maxEliteTags = zc.maxEliteTags || 1;
+  const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
+  for (let i = 0; i < swarmCount; i++) {
+    const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
+    const prefix = rollPrefix(true);
+    const tags = rollEliteTags(maxEliteTags, forceMaxEliteTags);
+    let baseHp = Math.round(randi(zc.hp[0], zc.hp[1]) * prefix.hpMult * 2);
+    if (G.zone==='abyss') baseHp = Math.round(baseHp * G.abyssDifficulty);
+    const shield = tags.includes('SHIELDED') ? Math.round(baseHp * 0.4) : 0;
+    const arcaneShield = tags.includes('ARCANE_SHIELDED') ? Math.round(baseHp * 0.4) : 0;
+    const dmgMult = prefix.dmgMult * 1.2;
+    let atkMin = 1000, atkMax = 2000;
+    if (tags.includes('FAST')) { atkMin=500; atkMax=800; }
+    if (tags.includes('FREEZING')) G.debuffs.freezing = true;
+    G.monsters.push({
+      id:Date.now()+Math.random(),
+      name: formatMonsterName(prefix.name, baseName, true, tags),
+      baseName, zone:G.zone, subZone:G.subZone,
+      maxHp:baseHp, hp:baseHp, shield, arcaneShield,
+      dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
+      expMin:Math.round(zc.exp[0]*prefix.expMult), expMax:Math.round(zc.exp[1]*prefix.expMult),
+      atkMin, atkMax,
+      isBoss:false, isElite:true, isSwarm:true, tags,
+      prefixData:prefix, dmgMult, lastAttack:performance.now()
+    });
+  }
+  log(`<span style="color:#9966cc">⚔ ${sourceLabel} — no unique boss available here, so ${swarmCount} elites surge in!</span>`, 'system');
+}
+
+function spawnRouteUniqueBossForCurrentZone(zc) {
+  const special = zc?.special || null;
+  if (special === 'dusty_outskirts') { spawnBandittoBoss(zc); return true; }
+  if (special === 'goblin_camp') { spawnRouteGoblinKingBoss(zc); return true; }
+  if (special === 'golem_temple') { spawnHakamBoss(zc); return true; }
+  if (special === 'stormwind_fields') { spawnRainougaBoss(zc); return true; }
+  if (special === 'deep_tunnels') { spawnSandwormBoss(zc); return true; }
+  if (special === 'forbidden_library') { spawnOverlordBoss(zc); return true; }
+  if (special === 'crimson_rot') { spawnQuelBoss(zc); return true; }
+  if (special === 'witch_coven') { spawnWitchOfTheWastesBoss(zc); return true; }
+  if (special === 'cursed_hollow' && hasDarkYoungKeys()) { spawnEyeDarkYoungBoss(zc); return true; }
+  if (special === 'pale_hollow') { spawnShuunaBoss(zc); return true; }
+  if (special === 'frozen_dragon_grave') { spawnAislongBoss(zc); return true; }
+  return false;
+}
+
 function currentFarmRateZoneKey() {
   return (G.zone || '') + '::' + (G.subZone || '');
 }
@@ -4036,57 +4099,35 @@ function spawnMonsters() {
   // Farm route tile modifiers
   const frTile = (typeof frGetCurrentTileModifiers === 'function') ? frGetCurrentTileModifiers() : null;
 
-  // BOSS TILE — 40% chance of zone boss, otherwise normal spawn
+  // BOSS TILE — outside Abyss, only unique named bosses can spawn.
+  // Zones/subzones without an available unique boss fall back to elite swarms instead of generic bosses.
   if (frTile && frTile.bossChance > 0 && Math.random() < frTile.bossChance) {
-    const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
-    const bossHp = Math.round(randi(zc.hp[0], zc.hp[1]) * 2.5);
-    const dmgMult = 1.8;
-    G.monsters.push({
-      id:Date.now()+Math.random(),
-      name:`<span style="color:${TAG_COLORS.ELITE}">[BOSS]</span> ${baseName}`,
-      baseName, zone:G.zone, subZone:G.subZone,
-      maxHp:bossHp, hp:bossHp, shield:0, arcaneShield:0,
-      dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
-      expMin:Math.round(zc.exp[0]*2), expMax:Math.round(zc.exp[1]*2),
-      atkMin:1000, atkMax:3000,
-      isBoss:true, isAbyssBoss:false, isRouteBoss:true, isElite:false, isSwarm:false, tags:[],
-      prefixData:PREFIXES[1], dmgMult, lastAttack:performance.now()
-    });
-    log(`<span style="color:#cc8844">⚑ Route Boss tile — <span class="log-monster">${baseName}</span> appears!</span>`, 'system');
+    if (G.zone === 'abyss') {
+      const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
+      const bossHp = Math.round(randi(zc.hp[0], zc.hp[1]) * 2.5 * G.abyssDifficulty);
+      const dmgMult = 1.8;
+      G.monsters.push({
+        id:Date.now()+Math.random(),
+        name:`<span style="color:${TAG_COLORS.ELITE}">[BOSS]</span> ${baseName}`,
+        baseName, zone:G.zone, subZone:G.subZone,
+        maxHp:bossHp, hp:bossHp, shield:0, arcaneShield:0,
+        dmgMin:Math.round(zc.dmg[0]*dmgMult*G.abyssDifficulty), dmgMax:Math.round(zc.dmg[1]*dmgMult*G.abyssDifficulty),
+        expMin:Math.round(zc.exp[0]*2), expMax:Math.round(zc.exp[1]*2),
+        atkMin:1000, atkMax:3000,
+        isBoss:true, isAbyssBoss:true, isRouteBoss:true, isElite:false, isSwarm:false, tags:[],
+        prefixData:PREFIXES[1], dmgMult, lastAttack:performance.now()
+      });
+      log(`<span style="color:#cc8844">⚑ Route Boss tile — <span class="log-monster">${baseName}</span> appears!</span>`, 'system');
+    } else if (!spawnRouteUniqueBossForCurrentZone(zc)) {
+      spawnRouteEliteSwarm(zc, 'Route Boss tile');
+    }
     if (typeof frOnSpawn === 'function') frOnSpawn();
     return;
   }
 
   // ELITE SWARM TILE — force 3-5 elites
   if (frTile && frTile.eliteSwarm) {
-    const swarmCount = randi(3, 5);
-    const maxEliteTags = zc.maxEliteTags || 1;
-    const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
-    for (let i = 0; i < swarmCount; i++) {
-      const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
-      const prefix = rollPrefix(true);
-      const tags = rollEliteTags(maxEliteTags, forceMaxEliteTags);
-      let baseHp = Math.round(randi(zc.hp[0], zc.hp[1]) * prefix.hpMult * 2);
-      if (G.zone==='abyss') baseHp = Math.round(baseHp * G.abyssDifficulty);
-      const shield = tags.includes('SHIELDED') ? Math.round(baseHp * 0.4) : 0;
-      const arcaneShield = tags.includes('ARCANE_SHIELDED') ? Math.round(baseHp * 0.4) : 0;
-      const dmgMult = prefix.dmgMult * 1.2;
-      let atkMin = 1000, atkMax = 2000;
-      if (tags.includes('FAST')) { atkMin=500; atkMax=800; }
-      if (tags.includes('FREEZING')) G.debuffs.freezing = true;
-      G.monsters.push({
-        id:Date.now()+Math.random(),
-        name: formatMonsterName(prefix.name, baseName, true, tags),
-        baseName, zone:G.zone, subZone:G.subZone,
-        maxHp:baseHp, hp:baseHp, shield, arcaneShield,
-        dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
-        expMin:Math.round(zc.exp[0]*prefix.expMult), expMax:Math.round(zc.exp[1]*prefix.expMult),
-        atkMin, atkMax,
-        isBoss:false, isElite:true, isSwarm:true, tags,
-        prefixData:prefix, dmgMult, lastAttack:performance.now()
-      });
-    }
-    log(`<span style="color:#9966cc">⚔ Elite Swarm tile — ${swarmCount} elites!</span>`, 'system');
+    spawnRouteEliteSwarm(zc, 'Elite Swarm tile');
     if (typeof frOnSpawn === 'function') frOnSpawn();
     return;
   }
