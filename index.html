@@ -979,7 +979,7 @@ canvas {
 /* Combat live route grid: floating overlay below the right side of the pixel combat stage.
    It is absolutely positioned so the event log can scroll/render behind it instead of
    reserving a blank strip above the log text. */
-.fr-combat-route-sticky-row { display:none; justify-content:flex-end; align-items:flex-start; padding:0; background:transparent; position:absolute; top:122px; right:8px; z-index:12; pointer-events:none; }
+.fr-combat-route-sticky-row { display:none; justify-content:flex-end; align-items:flex-start; padding:0; background:transparent; position:absolute; top:148px; right:8px; z-index:12; pointer-events:none; }
 .fr-combat-route-sticky-row.visible { display:flex; }
 .fr-combat-route-panel { width:max-content; max-width:min(240px, 62vw); padding:6px 7px; border:1px solid rgba(120,180,80,0.34); background:rgba(5,14,4,0.86); box-shadow:0 6px 14px rgba(0,0,0,0.55), inset 0 0 14px rgba(80,160,40,0.06); overflow:hidden; pointer-events:none; backdrop-filter:blur(1px); }
 .fr-combat-route-title { font-size:9px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
@@ -993,8 +993,8 @@ canvas {
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:calc(var(--combat-live-cell, 10px) * 0.82); color:#d0ff50; pointer-events:none; }
-@media (max-width:700px) { .fr-combat-route-sticky-row { top:108px; right:6px; } .fr-combat-route-panel { max-width:min(210px, 72vw); padding:5px; } .fr-combat-route-title { font-size:8px; } .fr-combat-route-step { font-size:8px; } }
-@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-sticky-row { top:100px; right:5px; } .fr-combat-route-panel { max-width:min(190px, 82vw); } }
+@media (max-width:700px) { .fr-combat-route-sticky-row { top:130px; right:6px; } .fr-combat-route-panel { max-width:min(210px, 72vw); padding:5px; } .fr-combat-route-title { font-size:8px; } .fr-combat-route-step { font-size:8px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-sticky-row { top:122px; right:5px; } .fr-combat-route-panel { max-width:min(190px, 82vw); } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:5px; border-bottom:1px solid var(--border); margin-bottom:4px; flex-wrap:wrap; }
 .map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
 .chaos-select-wrap { display:flex; align-items:center; gap:7px; font-size:calc(var(--ui-font-size) * 0.72); color:#cc4444; letter-spacing:1px; text-transform:uppercase; font-weight:bold; }
