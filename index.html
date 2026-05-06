@@ -12113,7 +12113,7 @@ function renderFarmRouteShop() {
     grid.appendChild(card);
   }
 
-  // Blank map — always shown at 100k
+  // Blank map — always shown at 10k
   const blankCard = document.createElement('div');
   blankCard.className = 'fr-shop-card';
   blankCard.style.borderColor = '#2a2a2a';
@@ -12121,16 +12121,16 @@ function renderFarmRouteShop() {
     <div class="fr-shop-name" style="color:#888;">Blank Map</div>
     <div class="fr-shop-zone" style="color:#444;">Any zone</div>
     <div class="fr-shop-desc" style="color:#444;">An empty route. Draw your own path in the editor.</div>
-    <div class="fr-shop-price">&#x2B21; 50k</div>
-    <button class="fr-shop-buy-btn" ${G.gold<50000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
+    <div class="fr-shop-price">&#x2B21; 10k</div>
+    <button class="fr-shop-buy-btn" ${G.gold<10000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
   `;
   grid.appendChild(blankCard);
   updateShopGoldDisplay();
 }
 
 function frBuyBlankRoute() {
-  const price = 50000;
-  if (G.gold < price) { log('Not enough gold for a blank map (50k needed).', 'system'); return; }
+  const price = 10000;
+  if (G.gold < price) { log('Not enough gold for a blank map (10k needed).', 'system'); return; }
   G.gold -= price;
   updateUI();
   const blankNum = FarmRoutes.getRoutes().filter(r => r.blank).length + 1;
@@ -12138,7 +12138,7 @@ function frBuyBlankRoute() {
   renderFarmRouteList();
   renderFarmRouteShop();
   saveGame(false);
-  log('Purchased a blank Map for 50k gold.', 'system');
+  log('Purchased a blank Map for 10k gold.', 'system');
 }
 
 function frMakeBlankRoute(label) {
