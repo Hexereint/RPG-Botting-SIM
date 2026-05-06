@@ -976,6 +976,28 @@ canvas {
 .fr-shop-buy-btn:hover { border-color:var(--yellow); color:var(--yellow); }
 .fr-shop-buy-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
+/* Combat live route grid */
+.fr-combat-route-panel { flex:0 0 auto; min-width:96px; max-width:150px; padding:5px 6px; border:1px solid rgba(120,180,80,0.24); background:rgba(5,14,4,0.72); box-shadow:inset 0 0 14px rgba(80,160,40,0.05); overflow:hidden; }
+.fr-combat-route-title { font-size:8px; color:#88cc66; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+.fr-combat-route-step { font-size:7px; color:#668855; margin-bottom:3px; white-space:nowrap; }
+.fr-combat-live-grid-wrap { overflow:hidden; border:1px solid rgba(120,180,80,0.18); padding:2px; position:relative; max-width:100%; }
+#fr-combat-live-bg-canvas { position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
+.fr-combat-live-grid { display:inline-grid; gap:1px; pointer-events:none; position:relative; z-index:1; }
+.fr-combat-live-cell { width:7px; height:7px; background:rgba(0,0,0,0.20); border:1px solid rgba(255,255,255,0.035); position:relative; }
+.fr-combat-live-cell.fr-combat-live-dead { background:rgba(0,0,0,0.70); border-color:rgba(0,0,0,0.5); }
+.fr-combat-live-cell.fr-combat-live-start { background:rgba(30,60,20,0.48); border-color:rgba(80,160,60,0.36); }
+.fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
+.fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
+.fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
+@media (max-width:700px) { .fr-combat-route-panel { min-width:74px; max-width:92px; padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
+@media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { display:none; } }
+.map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
+.map-title-row .map-title { border-bottom:none; padding-bottom:0; margin-bottom:0; }
+.chaos-select-wrap { display:flex; align-items:center; gap:5px; font-size:8px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+.chaos-select { background:#000; border:1px solid var(--border2); color:var(--white); font-family:inherit; font-size:9px; padding:3px 6px; }
+.chaos-select:focus { outline:none; border-color:var(--yellow); }
+.chaos-select-wrap.chaos-disabled { opacity:0.42; }
+.chaos-select:disabled { color:#666; border-color:#222; cursor:not-allowed; }
 /* Active route indicator in combat status bar */
 #fr-active-indicator { font-size:9px; color:#77aa66; }
 
@@ -1181,7 +1203,18 @@ canvas {
 
     <!-- MAP PANEL -->
     <div class="panel" id="map-panel">
-      <div class="map-title">WORLD MAP</div>
+      <div class="map-title-row">
+        <div class="map-title">WORLD MAP</div>
+        <label class="chaos-select-wrap">Difficulty
+          <select class="chaos-select" id="chaos-difficulty" onchange="setChaosDifficulty(this.value)">
+            <option value="0">Normal</option>
+            <option value="1">Chaos I</option>
+            <option value="2">Chaos II</option>
+            <option value="3">Chaos III</option>
+            <option value="4">Chaos IV</option>
+          </select>
+        </label>
+      </div>
       <div class="map-zone zone-town" id="zone-town" onclick="setZone('town')">
         <div class="map-zone-name">IRONHAVEN TOWN</div>
         <div class="map-zone-desc">Safe haven. Full regen. Merchant, Blacksmith and Gamble.</div>
@@ -1730,6 +1763,14 @@ canvas {
           </div>
         </div>
         <div class="combat-versus">AUTO<br>FARM</div>
+        <div id="fr-combat-route-panel" class="fr-combat-route-panel" style="display:none;">
+          <div class="fr-combat-route-title" id="fr-combat-route-title">MAP ROUTE</div>
+          <div class="fr-combat-route-step" id="fr-combat-route-step">Step —/—</div>
+          <div class="fr-combat-live-grid-wrap">
+            <canvas id="fr-combat-live-bg-canvas"></canvas>
+            <div class="fr-combat-live-grid" id="fr-combat-live-grid"></div>
+          </div>
+        </div>
         <div class="combat-side enemy-side">
           <div id="combat-viewport-info" class="combat-card">
             <div id="cvp-name"></div>
@@ -1873,6 +1914,7 @@ const G = {
     autoheal: false, lootfilter: false, autoequip: false, autosell: false, townRun: false,
     healThreshold: 40, potionPref: 'healing',
     fleeThreshold: 20,
+    chaosDifficulty: 0,
     equipRules: {
       priorityStat: 'total',
       secondaryStat: 'none',
@@ -1917,7 +1959,7 @@ const G = {
   logFilter: {
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true, itemdrop:true,
     goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true,
-    mpcost:true, system:true, reverseTextScroll:false
+    mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   },
   logColors: {},
   farmRates: { zoneKey:'', encounterStartedAt:0, startedAt:0, exp:0, gold:0, kills:0 }
@@ -1974,6 +2016,76 @@ function applyDeathExpPenalty(reason='death') {
 function randi(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
 function randf(min,max) { return min+Math.random()*(max-min); }
 function shuffle(arr) { for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr; }
+
+// CHAOS DIFFICULTY
+function getChaosLevel() {
+  return Math.max(0, Math.min(4, parseInt(G.config?.chaosDifficulty || 0, 10) || 0));
+}
+function isChaosEligibleZone(zone) {
+  return zone !== 'abyss';
+}
+function getChaosLevelForZone(zone) {
+  return isChaosEligibleZone(zone) ? getChaosLevel() : 0;
+}
+function getChaosDifficultyMult(zone=G.zone) {
+  const lv = getChaosLevelForZone(zone);
+  return lv > 0 ? lv + 2 : 1; // Chaos I-IV: 3x, 4x, 5x, 6x HP/damage/gold basis
+}
+function getChaosRewardMult(zone=G.zone) {
+  const lv = getChaosLevelForZone(zone);
+  return lv > 0 ? lv + 1 : 1; // Chaos I-IV: 2x, 3x, 4x, 5x EXP and item drop amount only (rarity weights unchanged)
+}
+function getChaosLabel(zone=G.zone) {
+  if (!isChaosEligibleZone(zone)) return 'Abyss Scaling';
+  return ['Normal','Chaos I','Chaos II','Chaos III','Chaos IV'][getChaosLevel()] || 'Normal';
+}
+function applyChaosToMonster(monster) {
+  const zone = monster?.zone || G.zone;
+  if (!monster || monster.chaosScaled || !isChaosEligibleZone(zone)) return monster;
+  const dMult = getChaosDifficultyMult(zone);
+  const rMult = getChaosRewardMult(zone);
+  if (dMult > 1) {
+    const oldMax = Math.max(1, Math.round(monster.maxHp || monster.hp || 1));
+    const hpRatio = oldMax > 0 ? Math.max(0, (monster.hp ?? oldMax) / oldMax) : 1;
+    monster.maxHp = Math.max(1, Math.round(oldMax * dMult));
+    monster.hp = Math.max(1, Math.round(monster.maxHp * hpRatio));
+    monster.dmgMin = Math.max(0, Math.round((monster.dmgMin || 0) * dMult));
+    monster.dmgMax = Math.max(monster.dmgMin, Math.round((monster.dmgMax || monster.dmgMin || 0) * dMult));
+    if (monster.shield) monster.shield = Math.round(monster.shield * dMult);
+    if (monster.arcaneShield) monster.arcaneShield = Math.round(monster.arcaneShield * dMult);
+    if (monster.name && !String(monster.name).includes('[CHAOS')) {
+      monster.name = `<span style="color:#d18cff">[CHAOS ${['','I','II','III','IV'][getChaosLevel()]}]</span> ${monster.name}`;
+    }
+    monster.expMin = Math.max(1, Math.round((monster.expMin || 1) * rMult));
+    monster.expMax = Math.max(monster.expMin, Math.round((monster.expMax || monster.expMin || 1) * rMult));
+    monster.chaosDropMult = rMult;
+    monster.chaosScaled = true;
+  }
+  return monster;
+}
+function applyChaosToEncounter() {
+  if (!isChaosEligibleZone(G.zone) || getChaosLevel() <= 0 || !Array.isArray(G.monsters)) return;
+  for (const m of G.monsters) applyChaosToMonster(m);
+}
+function setChaosDifficulty(value) {
+  if (!G.config) G.config = {};
+  G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(value || 0, 10) || 0));
+  const sel = document.getElementById('chaos-difficulty');
+  if (sel) sel.value = String(G.config.chaosDifficulty);
+  log(`Difficulty set to ${getChaosLabel()}.`, 'system');
+  updateUI();
+  if (G.started) saveGame(false);
+}
+function syncChaosDifficultyUI() {
+  const sel = document.getElementById('chaos-difficulty');
+  if (sel) sel.value = String(getChaosLevel());
+}
+function chaosRollAttempts(mult, baseChance=0.5) {
+  const target = Math.max(0, (baseChance || 0) * Math.max(1, mult || 1));
+  const guaranteed = Math.floor(target);
+  const frac = target - guaranteed;
+  return guaranteed + (Math.random() < frac ? 1 : 0);
+}
 
 // DERIVED STATS
 function totalEquipStat(stat) {
@@ -3116,6 +3228,8 @@ function updateCombatViewport() {
     d.textContent=`+${G.monsters.length-7}`; swarmEl.appendChild(d);
   }
 
+  frRenderCombatLiveGrid();
+
   drawCombatFx(document.getElementById('combat-fx-canvas'));
 }
 
@@ -3308,7 +3422,7 @@ function spawnSingleMonster(zc) {
     prefixData: PREFIXES[1], dmgMult: 1,
     lastAttack: performance.now()
   };
-  return m;
+  return applyChaosToMonster(m);
 }
 
 
@@ -4355,6 +4469,7 @@ function hasMythicMod(mod) {
 }
 
 function rollRarity(maxRarity) {
+  // Chaos difficulty never changes rarity weights. It only adds more item roll attempts / drop count.
   const cap = maxRarity ? RARITIES.indexOf(maxRarity) : RARITIES.length-1;
   let weights = RARITY_WEIGHTS.slice(0,cap+1);
   const total = weights.reduce((a,b)=>a+b,0);
@@ -4990,6 +5105,16 @@ function renderLogFilterUI() {
   `;
   reverseRow.querySelector('#toggle-reverse-log-scroll').addEventListener('click', toggleReverseLogScroll);
   container.appendChild(reverseRow);
+  const hideMapOn = !!G.logFilter.hideLiveMapGrid;
+  const hideMapRow = document.createElement('div');
+  hideMapRow.className = 'config-row';
+  hideMapRow.style.cssText = 'align-items:center;gap:6px;';
+  hideMapRow.innerHTML = `
+    <div class="config-label" style="flex:1;">Hide Live Map Grid<span class="config-sub">Hides the compact route grid beside the combat pixel graphics</span></div>
+    <div class="toggle-switch ${hideMapOn?'on':''}" id="toggle-hide-live-map-grid" style="flex-shrink:0;"></div>
+  `;
+  hideMapRow.querySelector('#toggle-hide-live-map-grid').addEventListener('click', () => toggleLogFilter('hideLiveMapGrid'));
+  container.appendChild(hideMapRow);
   applyLogScrollMode();
   for (const cat of LOG_CATEGORIES) {
     const on = G.logFilter[cat.key] !== false;
@@ -5116,6 +5241,7 @@ function gameTick(ts) {
   if(G.monsters.length===0&&ts>=G.nextSpawnAt){
     G.lastSpawnCountdown=-1;
     spawnMonsters();
+    applyChaosToEncounter();
     G.lastAttack=ts;
   } else if(G.monsters.length===0&&ts<G.nextSpawnAt){
     const secsLeft = Math.ceil((G.nextSpawnAt-ts)/1000);
@@ -6165,6 +6291,7 @@ function killMonster(m, ts) {
   recordObservedFarmGain(exp, observedGoldGain, ts);
 
   // Loot
+  // Chaos scales item quantity/attempts only. Do not feed Chaos into rollRarity() or rarity floors.
   let lootCount = 1;
   let forceRarity = null;
   if (m.isElite) lootCount = 3;
@@ -6175,64 +6302,73 @@ function killMonster(m, ts) {
   const isLichOrWitch = m.isWitch ||
     (m.baseName && ['Lich','Ancient Lich','Cursed Lich','Pale Lich','Void Lich',
       'Coven Witch','Swamp Sorceress','Bog Hexer','Marsh Seer','Wailing Crone'].includes(m.baseName));
+  const chaosDropMult = Math.max(1, Math.round(m.chaosDropMult || getChaosRewardMult(m.zone || G.zone)));
 
   // Hakam: 10 equipment, with 1 guaranteed general mythic helmet
   if (m.isEyeDarkYoung) {
     consumeDarkYoungKeys();
-    for (let i=0; i<6; i++) addItemToInventory(generateItem('legendary'));
+    for (let i=0; i<6 * chaosDropMult; i++) addItemToInventory(generateItem('legendary'));
     addKeyItem('dark_young_bell', 1);
     log(`<span style="color:var(--legendary)">Eye of the Dark Young drops 6 legendary equipment pieces!</span>`, 'itemdrop');
   } else if (m.isHakam) {
     addItemToInventory(generateTempleTitanCrown());
-    for (let i=1; i<10; i++) addItemToInventory(generateItem(null, false, 'rare'));
+    for (let i=1; i<10 * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
     log(`<span style="color:var(--unique)">Hakam drops Hakam's Helm and 9 more equipment pieces!</span>`, 'itemdrop');
   } else if (m.isShuuna) {
     if (Math.random() < 0.50) {
       addItemToInventory(generatePaleFurisode());
       log('<span style="color:var(--unique)">Shuuna drops Pale Furisode!</span>', 'itemdrop');
     }
-    for (let i=0; i<lootCount; i++) addItemToInventory(generateItem(null, false, 'rare'));
+    for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isAislong) {
     addKeyItem('frost_dragon_bone', 1);
-    for (let i=0; i<lootCount; i++) {
+    for (let i=0; i<lootCount * chaosDropMult; i++) {
       if (i === 0) {
         addItemToInventory(generateItem(Math.random() < 0.008 ? 'mythic' : 'legendary'));
       } else {
         addItemToInventory(generateItem(null, false, 'rare'));
       }
     }
-    addItemToInventory(generateItem('legendary'));
-    addItemToInventory(generateItem('legendary'));
+    for (let i=0; i<2 * chaosDropMult; i++) addItemToInventory(generateItem('legendary'));
     log('<span style="color:var(--legendary)">Aislong drops 2 bonus legendary equipment pieces!</span>', 'itemdrop');
   } else if (m.isOverlord) {
     addKeyItem('overlord_skull', 1);
-    for (let i=0; i<8; i++) addItemToInventory(generateItem('epic'));
-    addItemToInventory(generateItem('legendary'));
+    for (let i=0; i<8 * chaosDropMult; i++) addItemToInventory(generateItem('epic'));
+    for (let i=0; i<chaosDropMult; i++) addItemToInventory(generateItem('legendary'));
     log(`<span style="color:var(--epic)">Overlord drops 8 epic equipment pieces and 1 guaranteed legendary!</span>`, 'itemdrop');
   } else if (m.isWitchOfTheWastes) {
     addKeyItem('disaster_book', 1);
-    for (let i=0; i<lootCount; i++) addItemToInventory(generateItem(null, false, 'rare'));
+    for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else {
   // Crimson Rot: guaranteed drop + 30% second drop for normal enemies only; bosses keep regular boss drops.
   const isCrimsonRot = G.subZone==='crimson_rot';
   if (isCrimsonRot && !m.isBoss) {
-    addItemToInventory(generateItem(null, false, isLichOrWitch ? 'rare' : undefined));
-    if (Math.random()<0.3) {
+    const crimsonAttempts = Math.max(1, chaosRollAttempts(chaosDropMult, 1.0));
+    for (let i=0; i<crimsonAttempts; i++) addItemToInventory(generateItem(null, false, isLichOrWitch ? 'rare' : undefined));
+    if (Math.random() < Math.min(1, 0.3 * chaosDropMult)) {
       addItemToInventory(generateItem(null, false, isLichOrWitch ? 'rare' : undefined));
     }
   } else {
-    for (let i=0; i<lootCount; i++) {
-      if (!m.isBoss && !m.isElite && !m.isGoblinKing && Math.random()>0.5) continue;
-      // Abyss boss first drop: guaranteed legendary, 7% mythic.
-      // Map-specific bosses share boss drops but use normal 0.8% mythic rate.
-      if (m.isBoss && i===0) {
-        const mythicChance = m.isAbyssBoss ? 0.07 : 0.008;
-        const r = Math.random()<mythicChance ? 'mythic' : 'legendary';
-        addItemToInventory(generateItem(r)); continue;
+    if (!m.isBoss && !m.isElite && !m.isGoblinKing) {
+      // Normal mobs normally have a 50% item roll. Chaos multiplies item roll attempts only:
+      // Chaos I = 100% one item, Chaos II = 1 guaranteed + 50%, Chaos IV = 2 guaranteed + 50%.
+      // Rarity weights are unchanged for each item generated.
+      const attempts = chaosRollAttempts(chaosDropMult, 0.5);
+      for (let i=0; i<attempts; i++) addItemToInventory(generateItem(null, false, isLichOrWitch ? 'rare' : undefined));
+    } else {
+      const scaledLootCount = Math.max(1, lootCount * chaosDropMult);
+      for (let i=0; i<scaledLootCount; i++) {
+        // Abyss boss first drop: guaranteed legendary, 7% mythic.
+        // Map-specific bosses share boss drops but use normal 0.8% mythic rate.
+        if (m.isBoss && i===0) {
+          const mythicChance = m.isAbyssBoss ? 0.07 : 0.008;
+          const r = Math.random()<mythicChance ? 'mythic' : 'legendary';
+          addItemToInventory(generateItem(r)); continue;
+        }
+        // All other drops: flat 0.8% mythic via normal weights, minRarity only for rare floor on special mobs
+        const minR = (isLichOrWitch || m.isElite || m.isBoss || m.isGoblinKing) ? 'rare' : undefined;
+        addItemToInventory(generateItem(null, false, minR));
       }
-      // All other drops: flat 0.8% mythic via normal weights, minRarity only for rare floor on special mobs
-      const minR = (isLichOrWitch || m.isElite || m.isBoss || m.isGoblinKing) ? 'rare' : undefined;
-      addItemToInventory(generateItem(null, false, minR));
     }
   }
   }
@@ -7532,6 +7668,7 @@ function updateUI() {
   document.getElementById('gold-display').textContent=G.gold;
   const sl=document.getElementById('s-level');if(sl)sl.innerHTML=levelDisplayHtml();
   renderPotions(); // always update — must be before early returns
+  syncChaosDifficultyUI();
   if(document.getElementById('skills-panel').classList.contains('active')) updateSkillsRuntimeUI();
 
   const ci=document.getElementById('combat-info');
@@ -8588,6 +8725,13 @@ function updateZoneUI() {
   const tc=document.getElementById('town-content');
   tc.classList.toggle('visible', G.zone==='town' && !G.uiTownCollapsed);
   if (G.zone === 'town') closeTownScreen();
+  const chaosSel = document.getElementById('chaos-difficulty');
+  const chaosWrap = chaosSel?.closest('.chaos-select-wrap');
+  if (chaosSel) {
+    chaosSel.disabled = G.zone === 'abyss';
+    chaosSel.title = G.zone === 'abyss' ? 'Chaos difficulty does not affect The Abyss.' : '';
+  }
+  if (chaosWrap) chaosWrap.classList.toggle('chaos-disabled', G.zone === 'abyss');
   updateAbyssFloor();
 }
 
@@ -8784,7 +8928,7 @@ function initClassSetup(cls) {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
     G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
-  const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
+  const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
   G.logFilter = {pixelgraphics:true,basicattack:true,dmgdealt:true,dmgtaken:true,golddrop:true,itemdrop:true,goldsell:true,spawncountdown:true,spellcast:true,spelldmg:true,mpcost:true,system:true,reverseTextScroll:false};
   G.logColors = {};
@@ -9540,7 +9684,8 @@ function setUiFontSize(val) {
 function toggleLogFilter(key) {
   G.logFilter[key] = G.logFilter[key] === false ? true : false;
   renderLogFilterUI();
-  if (key === 'pixelgraphics') updateCombatViewport();
+  if (key === 'pixelgraphics' || key === 'hideLiveMapGrid') updateCombatViewport();
+  if (G.started) saveGame(false);
 }
 
 function toggleReverseLogScroll() {
@@ -9852,6 +9997,7 @@ function applyClassData(data) {
   const DEFAULT_CONFIG = {
     paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
     uiFontSize:18,
+    chaosDifficulty:0,
     healThreshold:40, potionPref:'healing', fleeThreshold:20,
     equipRules:{ priorityStat:'total', secondaryStat:'none', rarityPriority:'none', minMainStat:0, minSecondaryStat:0, minSubStat:'none', minSubStatVal:0 },
     skillConditions:{
@@ -9874,11 +10020,12 @@ function applyClassData(data) {
   if (data.config?.equipRules) G.config.equipRules = Object.assign(DEFAULT_CONFIG.equipRules, data.config.equipRules);
   if (data.config?.skillConditions) G.config.skillConditions = Object.assign(DEFAULT_CONFIG.skillConditions, data.config.skillConditions);
   if (data.config?.skillPriority) G.config.skillPriority = Array.isArray(data.config.skillPriority) ? data.config.skillPriority.slice() : DEFAULT_CONFIG.skillPriority.slice();
+  G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(G.config.chaosDifficulty || 0, 10) || 0));
   G.config.paused = false;
   G.logColors = data.logColors || {};
   G.logFilter = Object.assign({
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true,
-    itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, mpcost:true, system:true, reverseTextScroll:false
+    itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   }, data.logFilter||{});
   updateDerived();
   G.hp = data.hp!==undefined ? Math.min(data.hp,G.maxHp) : G.maxHp;
@@ -11680,6 +11827,46 @@ function frRenderLiveGrid() {
   }
 }
 
+function frRenderCombatLiveGrid() {
+  const panel = document.getElementById('fr-combat-route-panel');
+  const liveGrid = document.getElementById('fr-combat-live-grid');
+  if (!panel || !liveGrid) return;
+  if (G.logFilter?.hideLiveMapGrid === true) { panel.style.display = 'none'; return; }
+  const route = (typeof FarmRoutes !== 'undefined') ? FarmRoutes.getEquipped() : null;
+  if (!route || !route.path || route.path.length === 0 || G.zone === 'town' || !G.started || !G.monsters.length) {
+    panel.style.display = 'none';
+    liveGrid.innerHTML = '';
+    return;
+  }
+  panel.style.display = 'block';
+  const layout = frGetLayout(route.zone, route.subZone);
+  const gridTiles = route.gridTiles || layout.tiles;
+  const curStep = FarmRoutes.currentStep();
+  const curTileIdx = route.path[curStep] ?? -1;
+  const startTile = frGetStartTile(route.zone, route.subZone);
+  const compact = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
+  const CELL = compact ? 5 : 7, GAP = 1, PAD = 2;
+  const title = document.getElementById('fr-combat-route-title');
+  const step = document.getElementById('fr-combat-route-step');
+  if (title) title.textContent = route.name || 'Map Route';
+  if (step) step.textContent = `Step ${curStep + 1}/${route.path.length}`;
+  liveGrid.style.gridTemplateColumns = `repeat(${layout.cols}, ${CELL}px)`;
+  liveGrid.innerHTML = '';
+  frDrawZoneBg('fr-combat-live-bg-canvas', route.zone, layout.cols, layout.rows, CELL, GAP, PAD);
+  for (let i = 0; i < gridTiles.length; i++) {
+    const tType = gridTiles[i];
+    const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
+    const cell = document.createElement('div');
+    cell.className = 'fr-combat-live-cell';
+    if (tInfo.dead) cell.classList.add('fr-combat-live-dead');
+    else if (i === startTile) cell.classList.add('fr-combat-live-start');
+    const stepIdx = route.path.indexOf(i);
+    if (stepIdx >= 0 && i !== curTileIdx) cell.classList.add('fr-combat-live-step');
+    if (i === curTileIdx) cell.classList.add('fr-combat-live-player');
+    liveGrid.appendChild(cell);
+  }
+}
+
 function frEquipRoute(id) {
   const route = FarmRoutes.getRoutes().find(r => r.id === id);
   if (!route) return;
@@ -11841,6 +12028,7 @@ function frUpdateEquippedIndicator() {
 
   if (!route) {
     if (info) info.style.display = 'none';
+    const cp = document.getElementById('fr-combat-route-panel'); if (cp) cp.style.display = 'none';
     if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
     return;
   }
@@ -11851,6 +12039,7 @@ function frUpdateEquippedIndicator() {
   // Hide indicator if blank map (no path yet)
   if (pathLen === 0) {
     if (info) info.style.display = 'none';
+    const cp = document.getElementById('fr-combat-route-panel'); if (cp) cp.style.display = 'none';
     if (indicator) { indicator.style.display = 'none'; indicator.textContent = ''; }
     return;
   }
@@ -12113,7 +12302,7 @@ function renderFarmRouteShop() {
     grid.appendChild(card);
   }
 
-  // Blank map — always shown at 10k
+  // Blank map — always shown at 100k
   const blankCard = document.createElement('div');
   blankCard.className = 'fr-shop-card';
   blankCard.style.borderColor = '#2a2a2a';
@@ -12121,16 +12310,16 @@ function renderFarmRouteShop() {
     <div class="fr-shop-name" style="color:#888;">Blank Map</div>
     <div class="fr-shop-zone" style="color:#444;">Any zone</div>
     <div class="fr-shop-desc" style="color:#444;">An empty route. Draw your own path in the editor.</div>
-    <div class="fr-shop-price">&#x2B21; 10k</div>
-    <button class="fr-shop-buy-btn" ${G.gold<10000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
+    <div class="fr-shop-price">&#x2B21; 50k</div>
+    <button class="fr-shop-buy-btn" ${G.gold<50000?'disabled':''} onclick="frBuyBlankRoute()">BUY</button>
   `;
   grid.appendChild(blankCard);
   updateShopGoldDisplay();
 }
 
 function frBuyBlankRoute() {
-  const price = 10000;
-  if (G.gold < price) { log('Not enough gold for a blank map (10k needed).', 'system'); return; }
+  const price = 50000;
+  if (G.gold < price) { log('Not enough gold for a blank map (50k needed).', 'system'); return; }
   G.gold -= price;
   updateUI();
   const blankNum = FarmRoutes.getRoutes().filter(r => r.blank).length + 1;
@@ -12138,7 +12327,7 @@ function frBuyBlankRoute() {
   renderFarmRouteList();
   renderFarmRouteShop();
   saveGame(false);
-  log('Purchased a blank Map for 10k gold.', 'system');
+  log('Purchased a blank Map for 50k gold.', 'system');
 }
 
 function frMakeBlankRoute(label) {
