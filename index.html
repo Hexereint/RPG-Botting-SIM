@@ -1992,6 +1992,33 @@ function totalEquipSubStat(sub) {
   }
   return t;
 }
+// Ascension: get the player's primary class stat name
+function getAscendPrimaryStat() {
+  if (G.playerClass === 'warrior') return 'str';
+  if (G.playerClass === 'rogue') return 'agi';
+  return 'int';
+}
+
+// Sum a specific ascension stat key across all equipped items
+// Uses inline slot list so it can be called before SLOTS is defined
+function totalAscendStat(key) {
+  if (!G.equipped) return 0;
+  let total = 0;
+  const slots = ['helmet','armor','legging','weapon','offhand'];
+  for (const slot of slots) {
+    const item = G.equipped[slot];
+    if (item && item.ascendStat && item.ascendStat.key === key) {
+      total += item.ascendStat.val || 0;
+    }
+  }
+  return total;
+}
+
+// Total ascension bonus to the player's primary stat (dmgpct + skilldmgpct both boost it)
+function totalAscendPrimaryStatBonus() {
+  return totalAscendStat('dmgpct') + totalAscendStat('skilldmgpct');
+}
+
 function effStat(s) {
   const base = G.stats[s] + totalEquipStat(s);
   // Ascension: dmgpct and skilldmgpct boost the primary class stat by %
@@ -2034,29 +2061,6 @@ function calcMpRegen() {
   let r = 0.5 + effStat('int')*0.1; // base 0.5, +0.1 per INT
   r += totalEquipSubStat('mpregen');
   return +r.toFixed(2);
-}
-// Ascension: get the player's primary class stat name
-function getAscendPrimaryStat() {
-  if (G.playerClass === 'warrior') return 'str';
-  if (G.playerClass === 'rogue') return 'agi';
-  return 'int'; // wizard
-}
-
-// Sum a specific ascension stat key across all equipped items
-function totalAscendStat(key) {
-  let total = 0;
-  for (const slot of SLOTS) {
-    const item = G.equipped[slot];
-    if (item && item.ascendStat && item.ascendStat.key === key) {
-      total += item.ascendStat.val || 0;
-    }
-  }
-  return total;
-}
-
-// Total ascension bonus to the player's primary stat (dmgpct + skilldmgpct both boost it)
-function totalAscendPrimaryStatBonus() {
-  return totalAscendStat('dmgpct') + totalAscendStat('skilldmgpct');
 }
 
 function calcBaseDamage() {
@@ -7540,14 +7544,22 @@ function updateUI() {
   }
   if(G.config.paused){
     ci.innerHTML=`<span style="color:var(--yellow);">⏸ PAUSED — click to resume</span>`;
-    ci.style.cursor = 'pointer';
-    ci.style.textDecoration = 'underline dotted';
-    ci.onclick = togglePause;
+    const cs = document.getElementById('combat-status');
+    if (cs && !cs.querySelector('#pause-overlay')) {
+      const ov = document.createElement('div');
+      ov.id = 'pause-overlay';
+      ov.style.cssText = 'position:absolute;inset:0;cursor:pointer;z-index:10;';
+      ov.onclick = togglePause;
+      cs.style.position = 'relative';
+      cs.appendChild(ov);
+    }
     return;
   }
-  ci.style.cursor = '';
-  ci.style.textDecoration = '';
-  ci.onclick = null;
+  // Remove overlay when unpaused
+  const ov = document.getElementById('pause-overlay');
+  if (ov) ov.remove();
+  const cs2 = document.getElementById('combat-status');
+  if (cs2) cs2.style.position = '';
   if(G.zone==='town'){
     ci.innerHTML=`IRONHAVEN TOWN — HP:${Math.floor(G.hp)}/${G.maxHp} MP:${Math.floor(G.mp)}/${G.maxMp}`;
   }else if(G.monsters.length>0){
