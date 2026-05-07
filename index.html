@@ -10719,9 +10719,9 @@ function calcOfflineProgress(elapsed, zone, subZone) {
     }
   }
 
-  // Items — drop rate scales with time. Minimum guarantees scale linearly.
-  // At 12hrs: min 20, max 80. At 8hrs: min ~13. At 1hr: min ~2.
-  const MIN_ITEMS_AT_MAX = 20;
+  // Items — drop rate scales with time offline. Minimum guarantees scale linearly.
+  // At the 12hr offline cap: minimum 50 items. At 8hrs: min ~33. At 1hr: min ~4.
+  const MIN_ITEMS_AT_MAX = 50;
   const timeRatio = secs / MAX_SECS;  // 0..1
   const minItemsForThisSession = Math.max(1, Math.floor(MIN_ITEMS_AT_MAX * timeRatio));
   const baseDropRate = 0.5 * EFF;
