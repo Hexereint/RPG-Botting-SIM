@@ -1948,7 +1948,8 @@ const G = {
     flamestealerFireball: null,
     darkYoungWailAt: 0,
     darkYoungWailWarned: false,
-    lastGlobalSkillCastAt: 0
+    lastGlobalSkillCastAt: 0,
+    uniqueBossCooldownUntil: 0
   },
   inventory: [],
   invMax: 50,
@@ -3970,10 +3971,39 @@ function spawnRouteEliteSwarm(zc, sourceLabel='Boss tile fallback') {
       prefixData:prefix, dmgMult, lastAttack:performance.now()
     });
   }
-  log(`<span style="color:#9966cc">⚔ ${sourceLabel} — no unique boss available here, so ${swarmCount} elites surge in!</span>`, 'system');
+  const cooldownText = /cooldown/i.test(sourceLabel) ? 'boss is still on cooldown' : 'no unique boss available here';
+  log(`<span style="color:#9966cc">⚔ ${sourceLabel} — ${cooldownText}, so ${swarmCount} elites surge in!</span>`, 'system');
+}
+
+
+const UNIQUE_BOSS_COOLDOWN_MS = 40000;
+
+function getUniqueBossCooldownRemainingMs(now=Date.now()) {
+  const until = Number(G.combat?.uniqueBossCooldownUntil || 0);
+  return Math.max(0, until - now);
+}
+
+function isUniqueBossCooldownActive(now=Date.now()) {
+  return getUniqueBossCooldownRemainingMs(now) > 0;
+}
+
+function uniqueBossCooldownSeconds(now=Date.now()) {
+  return Math.ceil(getUniqueBossCooldownRemainingMs(now) / 1000);
+}
+
+function startUniqueBossCooldown(m) {
+  if (!m || !getUniqueBossKey(m) || m.isAbyssBoss || m.zone === 'abyss') return;
+  if (!G.combat) G.combat = {};
+  G.combat.uniqueBossCooldownUntil = Date.now() + UNIQUE_BOSS_COOLDOWN_MS;
+  updateBossCooldownIndicator();
+}
+
+function updateBossCooldownIndicator() {
+  // Cooldown remains active in logic, but is intentionally hidden from the status bar.
 }
 
 function spawnRouteUniqueBossForCurrentZone(zc) {
+  if (isUniqueBossCooldownActive()) return false;
   const special = zc?.special || null;
   if (special === 'dusty_outskirts') { spawnBandittoBoss(zc); return true; }
   if (special === 'goblin_camp') { spawnRouteGoblinKingBoss(zc); return true; }
@@ -4061,20 +4091,20 @@ function spawnMonsters() {
   }
   G.debuffs.freezing = false;
 
-  if (special==='stormwind_fields' && G.combat.pendingRainouga) {
+  if (special==='stormwind_fields' && G.combat.pendingRainouga && !isUniqueBossCooldownActive()) {
     G.combat.pendingRainouga = false;
     spawnRainougaBoss(zc);
     return;
   }
 
-  if (special==='forbidden_library' && G.combat.pendingOverlord) {
+  if (special==='forbidden_library' && G.combat.pendingOverlord && !isUniqueBossCooldownActive()) {
     G.combat.pendingOverlord = false;
     spawnOverlordBoss(zc);
     return;
   }
 
   if (special==='cursed_hollow' && G.swamp?.pendingDarkYoung) {
-    if (hasDarkYoungKeys()) {
+    if (hasDarkYoungKeys() && !isUniqueBossCooldownActive()) {
       G.swamp.pendingDarkYoung = false;
       spawnEyeDarkYoungBoss(zc);
       return;
@@ -4085,33 +4115,33 @@ function spawnMonsters() {
     }
   }
 
-  if (special==='witch_coven' && Math.random() < 0.10) {
+  if (special==='witch_coven' && !isUniqueBossCooldownActive() && Math.random() < 0.10) {
     spawnWitchOfTheWastesBoss(zc);
     return;
   }
 
-  if (special==='dusty_outskirts' && Math.random() < 0.15) {
+  if (special==='dusty_outskirts' && !isUniqueBossCooldownActive() && Math.random() < 0.15) {
     spawnBandittoBoss(zc);
     return;
   }
 
-  if (special==='crimson_rot' && Math.random() < 0.10) {
+  if (special==='crimson_rot' && !isUniqueBossCooldownActive() && Math.random() < 0.10) {
     spawnQuelBoss(zc);
     return;
   }
 
-  if (special==='deep_tunnels' && Math.random() < 0.10) {
+  if (special==='deep_tunnels' && !isUniqueBossCooldownActive() && Math.random() < 0.10) {
     spawnSandwormBoss(zc);
     return;
   }
 
-  if (special==='pale_hollow' && G.hoarspire?.pendingShuuna) {
+  if (special==='pale_hollow' && G.hoarspire?.pendingShuuna && !isUniqueBossCooldownActive()) {
     G.hoarspire.pendingShuuna = false;
     spawnShuunaBoss(zc);
     return;
   }
 
-  if (special==='frozen_dragon_grave' && Math.random() < 0.05) {
+  if (special==='frozen_dragon_grave' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
     spawnAislongBoss(zc);
     return;
   }
@@ -4146,7 +4176,7 @@ function spawnMonsters() {
   if (special==='bat_cave') { spawnBatCave(zc); return; }
   if (special==='forbidden_library') { spawnForbiddenLibrary(zc); return; }
   if (special==='golem_temple') {
-    if (Math.random() < 0.08) { spawnHakamBoss(zc); return; }
+    if (!isUniqueBossCooldownActive() && Math.random() < 0.08) { spawnHakamBoss(zc); return; }
     spawnGolemTemple(zc); return;
   }
   if (special==='witch_coven') { spawnWitchCoven(zc); return; }
@@ -4174,6 +4204,8 @@ function spawnMonsters() {
         prefixData:PREFIXES[1], dmgMult, lastAttack:performance.now()
       });
       log(`<span style="color:#cc8844">⚑ Route Boss tile — <span class="log-monster">${baseName}</span> appears!</span>`, 'system');
+    } else if (isUniqueBossCooldownActive()) {
+      spawnRouteEliteSwarm(zc, `Route Boss tile — boss cooldown ${uniqueBossCooldownSeconds()}s`);
     } else if (!spawnRouteUniqueBossForCurrentZone(zc)) {
       spawnRouteEliteSwarm(zc, 'Route Boss tile');
     }
@@ -4239,7 +4271,7 @@ function spawnMonsters() {
 
 function spawnGoblinCamp(zc) {
   const count = randi(1,5);
-  const hasKing = Math.random() < 0.1;
+  const hasKing = !isUniqueBossCooldownActive() && Math.random() < 0.1;
   for (let i=0; i<count; i++) {
     const baseName = zc.monsters[randi(0,zc.monsters.length-1)];
     const prefix = rollPrefix(false);
@@ -6294,6 +6326,7 @@ function recordUniqueBossKill(m) {
     entry.lastChaosKilledAt = now;
   }
   G.achievements.uniqueBossKills[key] = entry;
+  startUniqueBossCooldown(m);
   if (entry.count === 1) log('<span style="color:var(--yellow)">Achievement unlocked: ' + entry.name + ' defeated!</span>', 'system');
 }
 
@@ -7906,6 +7939,7 @@ function updateUI() {
   const sl=document.getElementById('s-level');if(sl)sl.innerHTML=levelDisplayHtml();
   renderPotions(); // always update — must be before early returns
   syncChaosDifficultyUI();
+  updateBossCooldownIndicator();
   if(document.getElementById('skills-panel').classList.contains('active')) updateSkillsRuntimeUI();
 
   const ci=document.getElementById('combat-info');
@@ -9052,20 +9086,23 @@ function togglePause() {
   G.config.paused=!G.config.paused;
   document.getElementById('toggle-paused').classList.toggle('on',G.config.paused);
   if(G.config.paused){
-    G.monsters=[];
+    // Manual pause should freeze the current fight exactly as-is.
+    // Encounter reset is reserved for town visits only.
     log('⏸ Bot paused.');
   }else{
-    G.nextSpawnAt=performance.now()+1000;
     lastTick=performance.now();
-    // If a map is equipped, ensure the bot is in the right zone
-    const equippedRoute = FarmRoutes.getEquipped();
-    if(equippedRoute && equippedRoute.zone && equippedRoute.zone !== 'town' && G.zone !== equippedRoute.zone){
-      setZone(equippedRoute.zone, true, equippedRoute.subZone);
-    } else if(G.zone === 'town'){
-      // Resume without a route — try queue or stay in town
-      const queueRoute = frQueueGetCurrent ? frQueueGetCurrent() : null;
-      if(queueRoute && queueRoute.zone && queueRoute.zone !== 'town'){
-        setZone(queueRoute.zone, true, queueRoute.subZone);
+    // Keep the current encounter intact when resuming from manual pause.
+    // Only schedule a spawn if there is no active encounter waiting.
+    if (!G.monsters || G.monsters.length === 0) {
+      G.nextSpawnAt=performance.now()+1000;
+    }
+    // If resuming from Town, route/queue selection may move the bot out and intentionally reset there.
+    if(G.zone === 'town'){
+      const equippedRoute = FarmRoutes.getEquipped();
+      const queueRoute = (typeof frQueueGetCurrent === 'function') ? frQueueGetCurrent() : null;
+      const route = (equippedRoute && equippedRoute.zone && equippedRoute.zone !== 'town') ? equippedRoute : queueRoute;
+      if(route && route.zone && route.zone !== 'town'){
+        setZone(route.zone, true, route.subZone);
       }
     }
     log('▶ Bot resumed.');
@@ -10089,6 +10126,7 @@ function serializeClassState() {
     equipped: G.equipped, potions: G.potions, potionDiscovered: G.potionDiscovered, selectedPotion: G.selectedPotion||'healing',
     bsRerollCounts: G.bsRerollCounts, passives: G.passives, skills: G.skills,
     legendaryEssence: G.legendaryEssence, gearEssence: G.gearEssence,
+    uniqueBossCooldownUntil: G.combat?.uniqueBossCooldownUntil || 0,
     abyssKills: G.abyssKills, hoarspire: G.hoarspire || { iceKitsuneKills:0, pendingShuuna:false }, swamp: G.swamp || { cursedHollowKills:0, pendingDarkYoung:false }, abyssBosses: G.abyssBosses, abyssDifficulty: G.abyssDifficulty,
     farmRoutes: G.farmRoutes || { routes:[], equippedId:null, botStep:0, shopStock:[] },
     config: G.config, logFilter: G.logFilter, logColors: G.logColors,
@@ -10265,6 +10303,8 @@ function applyClassData(data) {
   G.kills = data.kills||0; G.currentKills = data.currentKills||0;
   G.eliteKills = data.eliteKills||0; G.bossKills = data.bossKills||0; G.achievements = data.achievements || { uniqueBossKills:{} }; ensureAchievementState(); G.deaths = data.deaths||0;
   G.gold = data.gold||0;
+  if (!G.combat) G.combat = {};
+  G.combat.uniqueBossCooldownUntil = Math.max(0, Number(data.uniqueBossCooldownUntil || 0));
   G.zone = data.zone||'fields'; G.subZone = data.subZone||null;
   G.prevCombatZone = data.prevCombatZone||'fields'; G.prevCombatSubZone = data.prevCombatSubZone||null;
   G.inventory = (data.inventory||[]).filter(i=>i&&i.rarity&&i.slot&&i.name);
