@@ -539,8 +539,18 @@ select.config-input { width:auto; cursor:pointer; }
 #cvp-shield-bar { width:100%; height:4px; background:rgba(0,0,0,0.60); margin-bottom:3px; border:1px solid rgba(255,255,255,0.08); display:none; }
 #cvp-shield-fill { height:100%; background:#aaaaaa; transition:width 0.16s linear; }
 #cvp-stats { font-size:8px; color:rgba(255,255,255,0.46); line-height:1.25; }
-#cvp-swarm { display:flex; flex-wrap:wrap; gap:3px; max-width:70px; align-self:center; justify-content:flex-end; }
-#cvp-swarm canvas { image-rendering:pixelated; width:16px; height:16px; border:1px solid rgba(255,255,255,0.12); background:rgba(0,0,0,0.35); }
+#cvp-swarm { display:flex; flex-wrap:wrap; gap:5px; max-width:118px; align-self:center; justify-content:flex-end; }
+#cvp-swarm canvas {
+  image-rendering:pixelated;
+  width:26px;
+  height:26px;
+  border:1px solid rgba(255,255,255,0.18);
+  background:rgba(0,0,0,0.48);
+  box-shadow:inset 0 0 8px rgba(255,255,255,0.035), 0 3px 8px rgba(0,0,0,0.35);
+}
+#cvp-swarm canvas.secondary-elite { border-color:rgba(255,204,64,0.48); box-shadow:0 0 9px rgba(255,204,64,0.16), inset 0 0 8px rgba(255,204,64,0.06); }
+#cvp-swarm canvas.secondary-boss { border-color:rgba(204,68,68,0.62); box-shadow:0 0 10px rgba(204,68,68,0.24), inset 0 0 8px rgba(204,68,68,0.08); }
+.cvp-swarm-more { font-size:9px; color:rgba(255,255,255,0.56); align-self:center; padding:0 2px; }
 .equip-slot::before {
   content:'';
   width:18px;
@@ -645,7 +655,8 @@ select.config-input { width:auto; cursor:pointer; }
   .sprite-plinth { width:56px; height:56px; }
   .sprite-plinth canvas { width:52px; height:52px; }
   .combat-versus { display:none; }
-  #cvp-swarm { display:none; }
+  #cvp-swarm { display:flex; max-width:92px; gap:4px; }
+  #cvp-swarm canvas { width:20px; height:20px; }
 }
 @media (max-width:430px) and (orientation:portrait) {
   #log-container { height:210px; max-height:calc(100vh - 96px); }
@@ -1548,6 +1559,7 @@ body.chaos-active #map-panel .subzone-row,
 
           <div id="fr-queue-rows" style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+            <button onclick="frQueueStartRun()" style="background:#061206;border:1px solid #55aa33;color:#88cc55;font-family:inherit;font-size:8px;padding:3px 12px;cursor:pointer;letter-spacing:1px;font-weight:bold;">▶ START RUN</button>
             <button onclick="frQueueAdd()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">+ ADD SLOT</button>
             <button onclick="frQueueClear()" style="background:#000;border:1px solid var(--border2);color:#555;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">CLEAR ALL</button>
           </div>
@@ -3286,15 +3298,27 @@ function updateCombatViewport() {
   if (G.monsters.length>1) statParts.push(`+${G.monsters.length-1} more`);
   document.getElementById('cvp-stats').innerHTML = statParts.join(' · ');
 
-  // Mini swarm sprites
-  const swarmEl = document.getElementById('cvp-swarm'); swarmEl.innerHTML='';
-  for (let i=1;i<Math.min(G.monsters.length,7);i++) {
-    const sc=document.createElement('canvas'); sc.width=16;sc.height=16;
-    drawMiniSprite(sc,G.monsters[i]); swarmEl.appendChild(sc);
-  }
-  if (G.monsters.length>7) {
-    const d=document.createElement('div'); d.style.cssText='font-size:8px;color:rgba(255,255,255,0.45);align-self:center;';
-    d.textContent=`+${G.monsters.length-7}`; swarmEl.appendChild(d);
+  // Secondary enemy boxes — larger when swarms / multiple enemies are present.
+  const swarmEl = document.getElementById('cvp-swarm');
+  if (swarmEl) {
+    swarmEl.innerHTML='';
+    for (let i=1;i<Math.min(G.monsters.length,7);i++) {
+      const other = G.monsters[i];
+      const sc=document.createElement('canvas');
+      sc.width=24; sc.height=24;
+      const otherLabel = String(other.name || other.baseName || 'Enemy').replace(/<[^>]*>/g, '');
+      sc.title = `${otherLabel} — ${Math.max(0, Math.round(other.hp || 0))}/${Math.max(1, other.maxHp || 1)} HP`;
+      if (other.isBoss) sc.classList.add('secondary-boss');
+      else if (other.isElite) sc.classList.add('secondary-elite');
+      drawMiniSprite(sc, other);
+      swarmEl.appendChild(sc);
+    }
+    if (G.monsters.length>7) {
+      const d=document.createElement('div');
+      d.className='cvp-swarm-more';
+      d.textContent=`+${G.monsters.length-7}`;
+      swarmEl.appendChild(d);
+    }
   }
 
   frRenderCombatLiveGrid();
@@ -9161,6 +9185,48 @@ function frQueueClear() {
 function frQueueToggleLoop() { /* no-op — always loops */ }
 
 function frQueueSetRepeat(slotIdx, val) { /* no-op — repeat removed */ }
+
+function frQueueFindNextValidRoute(startIdx=0) {
+  const fr = frQueueEnsure();
+  const routes = FarmRoutes.getRoutes();
+  if (!fr.queue.length) return null;
+  for (let offset = 0; offset < fr.queue.length; offset++) {
+    const idx = (startIdx + offset) % fr.queue.length;
+    const slot = fr.queue[idx];
+    if (!slot || !slot.routeId) continue;
+    const route = routes.find(r => r.id === slot.routeId);
+    if (route && route.path && route.path.length > 0) return { route, idx };
+  }
+  return null;
+}
+
+function frQueueStartRun() {
+  const fr = frQueueEnsure();
+  if (!fr.queue.length) {
+    log('Map Queue: add at least one route slot before starting a run.', 'system');
+    frUpdateQueueStatus();
+    return;
+  }
+  const startIdx = fr.queueIdx % Math.max(1, fr.queue.length);
+  const found = frQueueFindNextValidRoute(startIdx);
+  if (!found) {
+    log('Map Queue: no valid route selected. Choose a saved map route first.', 'system');
+    frUpdateQueueStatus();
+    return;
+  }
+
+  fr.queueIdx = found.idx;
+  FarmRoutes.equip(found.route.id);
+  if (found.route.zone && found.route.zone !== 'town') {
+    setZone(found.route.zone, true, found.route.subZone);
+  }
+  G.nextSpawnAt = performance.now() + 250;
+  log(`Map Queue: started run at "${found.route.name}".`, 'system');
+  frUpdateQueueStatus();
+  frUpdateEquippedIndicator();
+  renderRouteQueue();
+  saveGame(false);
+}
 
 // Get the currently active queued route
 function frQueueGetCurrent() {
