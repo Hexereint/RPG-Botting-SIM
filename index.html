@@ -68,6 +68,14 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 #log-output::-webkit-scrollbar-thumb { background:var(--border2); }
 .log-entry { display:flex; gap:5px; align-items:baseline; color:#ffffff; }
 #log-output.log-distorted .log-entry { color:#cc88ff; text-shadow:0 0 4px rgba(204,136,255,0.9), 1px 0 0 rgba(255,255,255,0.18), -1px 0 0 rgba(120,40,160,0.55); letter-spacing:0.5px; }
+
+/* Aislong freeze log aura: center line is brightest, nearby lines fade outward. */
+.log-entry.aislong-freeze-aura-0 span:not(.log-time) { color:#d9f7ff !important; text-shadow:0 0 7px rgba(125,220,255,0.95), 0 0 14px rgba(80,180,255,0.50); }
+.log-entry.aislong-freeze-aura-1 span:not(.log-time) { color:#c7f0ff !important; text-shadow:0 0 6px rgba(110,210,255,0.72), 0 0 11px rgba(70,170,255,0.32); }
+.log-entry.aislong-freeze-aura-2 span:not(.log-time) { color:#b3e8ff !important; text-shadow:0 0 5px rgba(95,195,255,0.52); }
+.log-entry.aislong-freeze-aura-3 span:not(.log-time) { color:#9bdcff !important; text-shadow:0 0 4px rgba(80,175,255,0.34); }
+.log-entry.aislong-freeze-aura-4 span:not(.log-time) { color:#82ceff !important; text-shadow:0 0 3px rgba(70,155,255,0.22); }
+.log-entry.aislong-freeze-core { border-left:2px solid rgba(130,220,255,0.65); padding-left:4px; }
 .log-time { font-size:8px; flex-shrink:0; color:var(--muted); }
 .log-monster { color:var(--red); }
 .log-death { color:var(--red); font-weight:bold; }
@@ -5127,7 +5135,12 @@ function log(msg, category=null) {
   const color = cat ? (G.logColors?.[category] || cat.color) : null;
   const msgSpan = color ? `<span style="color:${color}">${msg}</span>` : `<span>${msg}</span>`;
   div.innerHTML=`<span class="log-time">[${t}]</span>${msgSpan}`;
+  if (isAislongFreezeLogMessage(msg)) {
+    div.dataset.aislongFreezeCore = '1';
+    div.classList.add('aislong-freeze-core');
+  }
   el.prepend(div);
+  applyAislongFreezeLogGradient();
   if (isLogDistorted()) {
     const original = div.innerHTML;
     div.dataset.originalHtml = original;
@@ -5136,6 +5149,39 @@ function log(msg, category=null) {
   }
   applyLogScrollMode();
   while(el.children.length>400)el.removeChild(el.lastChild);
+  applyAislongFreezeLogGradient();
+}
+
+function isAislongFreezeLogMessage(msg) {
+  const text = String(msg || '').replace(/<[^>]*>/g, ' ');
+  return /Aislong/i.test(text) && /Frost Dragon Blast/i.test(text) && /frozen/i.test(text);
+}
+
+function applyAislongFreezeLogGradient() {
+  const el = document.getElementById('log-output');
+  if (!el) return;
+  const entries = Array.from(el.querySelectorAll('.log-entry'));
+  for (const entry of entries) {
+    entry.classList.remove(
+      'aislong-freeze-aura-0', 'aislong-freeze-aura-1', 'aislong-freeze-aura-2',
+      'aislong-freeze-aura-3', 'aislong-freeze-aura-4', 'aislong-freeze-core'
+    );
+    delete entry.dataset.aislongFreezeAura;
+  }
+  entries.forEach((entry, idx) => {
+    if (entry.dataset.aislongFreezeCore !== '1') return;
+    for (let offset = -4; offset <= 4; offset++) {
+      const target = entries[idx + offset];
+      if (!target) continue;
+      const strength = Math.abs(offset);
+      const current = target.dataset.aislongFreezeAura;
+      if (current !== undefined && Number(current) <= strength) continue;
+      for (let i = 0; i <= 4; i++) target.classList.remove(`aislong-freeze-aura-${i}`);
+      target.dataset.aislongFreezeAura = String(strength);
+      target.classList.add(`aislong-freeze-aura-${strength}`);
+      if (strength === 0) target.classList.add('aislong-freeze-core');
+    }
+  });
 }
 
 const LOG_CATEGORIES = [
