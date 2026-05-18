@@ -1070,6 +1070,19 @@ body.chaos-active #map-panel .subzone-row,
 /* Active route indicator in combat status bar */
 #fr-active-indicator { font-size:9px; color:#77aa66; }
 
+/* OVERGEAR -------------------------------------------------------------- */
+.overgear-star-line { font-size:12px; line-height:1; margin:0 0 3px; letter-spacing:1px; }
+.overgear-star {
+  display:inline-block;
+  color:#fff;
+  text-shadow:0 0 4px #fff, 0 0 8px #77ddff, 0 0 12px #ff77ee;
+  filter:drop-shadow(0 0 3px rgba(160,220,255,0.85));
+}
+.overgear-x { font-size:9px; color:#e8d8ff; margin-left:3px; text-shadow:0 0 5px #aa77ff; }
+.overgear-card { border-color:rgba(180,140,255,0.55) !important; box-shadow:inset 0 0 14px rgba(120,220,255,0.08), 0 0 10px rgba(180,120,255,0.08); }
+.overgear-subtab { background:#000; border:1px solid var(--border2); color:#666; font-family:inherit; font-size:8px; padding:5px 10px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
+.overgear-subtab.active { border-color:#d8c7ff; color:#fff; background:#0b0711; box-shadow:0 0 10px rgba(160,120,255,0.12); }
+
 </style>
 </head>
 <body>
@@ -1350,27 +1363,51 @@ body.chaos-active #map-panel .subzone-row,
         <div id="town-screen-gamble" class="town-sub">
           <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
           <div class="town-section">
-            <div class="town-section-title">GEAR GAMBLE</div>
-            <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-              <span style="font-size:9px;color:#888;">Gear Essence:</span>
-              <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gamble-ge-display">0</span>
+            <div style="display:flex;gap:4px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">
+              <button class="overgear-subtab active" id="gamble-subtab-gear" onclick="setGambleTab('gear')">GEAR GAMBLE</button>
+              <button class="overgear-subtab" id="gamble-subtab-overgear" onclick="setGambleTab('overgear')">OVERGEAR GAMBLE</button>
             </div>
-            <div style="font-size:9px;color:#666;margin-bottom:8px;line-height:1.5;">Roll a random item. Your class main stat is always guaranteed. Slot and sub stats are random.</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-              <div>
-                <div style="font-size:10px;color:#44bbaa;font-weight:bold;">Gear Roll</div>
-                <div style="font-size:8px;color:#555;">Class stat guaranteed · 3 GE per roll</div>
+            <div id="gamble-tab-gear">
+              <div class="town-section-title">GEAR GAMBLE</div>
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+                <span style="font-size:9px;color:#888;">Gear Essence:</span>
+                <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gamble-ge-display">0</span>
               </div>
-              <button id="gamble-btn" onclick="doGamble('rough')" style="background:#000;border:1px solid #44bbaa;color:#44bbaa;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL (3 GE)</button>
+              <div style="font-size:9px;color:#666;margin-bottom:8px;line-height:1.5;">Roll a random item. Your class main stat is always guaranteed. Slot and sub stats are random.</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                <div>
+                  <div style="font-size:10px;color:#44bbaa;font-weight:bold;">Gear Roll</div>
+                  <div style="font-size:8px;color:#555;">Class stat guaranteed · 3 GE per roll</div>
+                </div>
+                <button id="gamble-btn" onclick="doGamble('rough')" style="background:#000;border:1px solid #44bbaa;color:#44bbaa;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL (3 GE)</button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;">
+                <div style="text-align:center;"><div style="font-size:8px;color:#aaaaaa;font-weight:bold;letter-spacing:1px;">COM</div><div style="font-size:10px;color:#aaaaaa;font-weight:bold;">46.3%</div></div>
+                <div style="text-align:center;"><div style="font-size:8px;color:#4488ff;font-weight:bold;letter-spacing:1px;">RARE</div><div style="font-size:10px;color:#4488ff;font-weight:bold;">31.2%</div></div>
+                <div style="text-align:center;"><div style="font-size:8px;color:#aa66ff;font-weight:bold;letter-spacing:1px;">EPIC</div><div style="font-size:10px;color:#aa66ff;font-weight:bold;">12.5%</div></div>
+                <div style="text-align:center;"><div style="font-size:8px;color:var(--legendary);font-weight:bold;letter-spacing:1px;">LEG</div><div style="font-size:10px;color:var(--legendary);font-weight:bold;">7.0%</div></div>
+                <div style="text-align:center;"><div style="font-size:8px;color:var(--unique);font-weight:bold;letter-spacing:1px;">MYT</div><div style="font-size:10px;color:var(--unique);font-weight:bold;">3.0%</div></div>
+              </div>
+              <div id="gamble-last" style="font-size:9px;color:#555;min-height:16px;"></div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;">
-              <div style="text-align:center;"><div style="font-size:8px;color:#aaaaaa;font-weight:bold;letter-spacing:1px;">COM</div><div style="font-size:10px;color:#aaaaaa;font-weight:bold;">46.3%</div></div>
-              <div style="text-align:center;"><div style="font-size:8px;color:#4488ff;font-weight:bold;letter-spacing:1px;">RARE</div><div style="font-size:10px;color:#4488ff;font-weight:bold;">31.2%</div></div>
-              <div style="text-align:center;"><div style="font-size:8px;color:#aa66ff;font-weight:bold;letter-spacing:1px;">EPIC</div><div style="font-size:10px;color:#aa66ff;font-weight:bold;">12.5%</div></div>
-              <div style="text-align:center;"><div style="font-size:8px;color:var(--legendary);font-weight:bold;letter-spacing:1px;">LEG</div><div style="font-size:10px;color:var(--legendary);font-weight:bold;">7.0%</div></div>
-              <div style="text-align:center;"><div style="font-size:8px;color:var(--unique);font-weight:bold;letter-spacing:1px;">MYT</div><div style="font-size:10px;color:var(--unique);font-weight:bold;">3.0%</div></div>
+            <div id="gamble-tab-overgear" style="display:none;">
+              <div class="town-section-title" style="color:#d8c7ff;">✦ OVERGEAR GAMBLE</div>
+              <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+                <span style="font-size:9px;color:#888;">Gold: <span id="og-gamble-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
+                <span style="font-size:9px;color:#888;">Gear Essence: <span id="og-gamble-ge-display" style="color:#44bbaa;font-weight:bold;">0</span></span>
+              </div>
+              <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Select an Overgeared item, then gamble for +1 Overgear star. Failure reduces the item by 2 stars.</div>
+              <div id="overgear-gamble-list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;"></div>
+              <div id="overgear-gamble-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Overgeared equipment available.</div>
+              <div id="overgear-gamble-actions" style="display:none;margin-top:8px;padding:8px;background:#050505;border:1px solid rgba(180,140,255,0.35);">
+                <div id="overgear-gamble-selected" style="font-size:9px;color:#aaa;margin-bottom:7px;"></div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button onclick="doOvergearGamble(30)" style="flex:1;min-width:140px;background:#000;border:1px solid #aa77ff;color:#d8c7ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">30% GAMBLE<br><span style="font-size:8px;color:#888;">500,000g + 500 GE</span></button>
+                  <button onclick="doOvergearGamble(70)" style="flex:1;min-width:140px;background:#000;border:1px solid #77ddff;color:#d8f8ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">70% GAMBLE<br><span style="font-size:8px;color:#888;">700,000g + 500 GE</span></button>
+                </div>
+              </div>
+              <div id="overgear-gamble-last" style="font-size:9px;color:#555;min-height:16px;margin-top:6px;"></div>
             </div>
-            <div id="gamble-last" style="font-size:9px;color:#555;min-height:16px;"></div>
           </div>
         </div>
 
@@ -1423,14 +1460,29 @@ body.chaos-active #map-panel .subzone-row,
         <div id="town-screen-upgrade" class="town-sub">
           <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
           <div class="town-section" style="border-color:#664422;">
-            <div class="town-section-title" style="color:#cc7733;">⬆ GEAR UPGRADE — ASCENSION</div>
-            <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Ascend a Legendary item to unlock a powerful bonus sub stat and upgrade its stats to Ascended tier. One ascension per item.<br>Cost: <span style="color:var(--yellow);">200,000g</span> + <span style="color:var(--legendary);">5 Legendary Essence</span></div>
-            <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-              <span style="font-size:9px;color:#888;">Gold: <span id="upgrade-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
-              <span style="font-size:9px;color:#888;">Legendary Essence: <span id="upgrade-le-display" style="color:var(--legendary);font-weight:bold;">0</span></span>
+            <div style="display:flex;gap:4px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:6px;">
+              <button class="overgear-subtab active" id="upgrade-subtab-ascension" onclick="setUpgradeTab('ascension')">GEAR UPGRADE — ASCENSION</button>
+              <button class="overgear-subtab" id="upgrade-subtab-overgear" onclick="setUpgradeTab('overgear')">GEAR UPGRADE — OVERGEAR</button>
             </div>
-            <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
-            <div id="upgrade-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No legendary items available to ascend.</div>
+            <div id="upgrade-tab-ascension">
+              <div class="town-section-title" style="color:#cc7733;">⬆ GEAR UPGRADE — ASCENSION</div>
+              <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Ascend a Legendary item to unlock a powerful bonus sub stat and upgrade its stats to Ascended tier. One ascension per item.<br>Cost: <span style="color:var(--yellow);">200,000g</span> + <span style="color:var(--legendary);">5 Legendary Essence</span></div>
+              <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+                <span style="font-size:9px;color:#888;">Gold: <span id="upgrade-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
+                <span style="font-size:9px;color:#888;">Legendary Essence: <span id="upgrade-le-display" style="color:var(--legendary);font-weight:bold;">0</span></span>
+              </div>
+              <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+              <div id="upgrade-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No legendary items available to ascend.</div>
+            </div>
+            <div id="upgrade-tab-overgear" style="display:none;">
+              <div class="town-section-title" style="color:#d8c7ff;">✦ GEAR UPGRADE — OVERGEAR</div>
+              <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Only Ascended Legendary and Mythic equipment can be Overgeared. Each Overgear star increases normal stats by +0.25%, HP/MP regen by +0.10%, Crit Chance by +0.1%, and Crit Damage by +10%. Mythic skill modifiers are not changed.<br>Cost: <span style="color:var(--yellow);">1,000,000g</span>, +<span style="color:var(--yellow);">100,000g</span> for each existing Overgear on that equipment.</div>
+              <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+                <span style="font-size:9px;color:#888;">Gold: <span id="overgear-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
+              </div>
+              <div id="overgear-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+              <div id="overgear-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Ascended or Mythic items available to Overgear.</div>
+            </div>
           </div>
         </div>
 
@@ -6896,6 +6948,37 @@ function unequipSlot(slot) {
 // TOWN
 // ── TOWN HUB NAVIGATION ──────────────────────────────────────────────────────
 const TOWN_SCREENS = ['merchant','gamble','reroll','salvage','upgrade'];
+let currentUpgradeTab = 'ascension';
+let currentGambleTab = 'gear';
+let overgearGambleSelectedItemId = null;
+
+function setUpgradeTab(tab) {
+  currentUpgradeTab = tab === 'overgear' ? 'overgear' : 'ascension';
+  const asc = document.getElementById('upgrade-tab-ascension');
+  const og = document.getElementById('upgrade-tab-overgear');
+  const ascBtn = document.getElementById('upgrade-subtab-ascension');
+  const ogBtn = document.getElementById('upgrade-subtab-overgear');
+  if (asc) asc.style.display = currentUpgradeTab === 'ascension' ? '' : 'none';
+  if (og) og.style.display = currentUpgradeTab === 'overgear' ? '' : 'none';
+  if (ascBtn) ascBtn.classList.toggle('active', currentUpgradeTab === 'ascension');
+  if (ogBtn) ogBtn.classList.toggle('active', currentUpgradeTab === 'overgear');
+  if (currentUpgradeTab === 'ascension') renderUpgradeList();
+  else renderOvergearList();
+}
+
+function setGambleTab(tab) {
+  currentGambleTab = tab === 'overgear' ? 'overgear' : 'gear';
+  const gear = document.getElementById('gamble-tab-gear');
+  const og = document.getElementById('gamble-tab-overgear');
+  const gearBtn = document.getElementById('gamble-subtab-gear');
+  const ogBtn = document.getElementById('gamble-subtab-overgear');
+  if (gear) gear.style.display = currentGambleTab === 'gear' ? '' : 'none';
+  if (og) og.style.display = currentGambleTab === 'overgear' ? '' : 'none';
+  if (gearBtn) gearBtn.classList.toggle('active', currentGambleTab === 'gear');
+  if (ogBtn) ogBtn.classList.toggle('active', currentGambleTab === 'overgear');
+  if (currentGambleTab === 'overgear') renderOvergearGambleList();
+  else updateGambleUI();
+}
 
 function openTownScreen(name) {
   document.getElementById('town-hub-screen').style.display = 'none';
@@ -6907,10 +6990,15 @@ function openTownScreen(name) {
   if (name === 'reroll')   { buildBsRerollList(); }
   if (name === 'salvage')  { buildSalvageSelect(); }
   if (name === 'gamble')   {
-    const ge = document.getElementById('gamble-ge-display');
-    if (ge) ge.textContent = G.gearEssence || 0;
+    setGambleTab(currentGambleTab || 'gear');
+    updateGambleUI();
+    renderOvergearGambleList();
   }
-  if (name === 'upgrade')  { renderUpgradeList(); }
+  if (name === 'upgrade')  {
+    setUpgradeTab(currentUpgradeTab || 'ascension');
+    renderUpgradeList();
+    renderOvergearList();
+  }
 }
 
 // ── GEAR ASCENSION ───────────────────────────────────────────────────────────
@@ -6918,6 +7006,276 @@ const ASCEND_COST_GOLD = 200000;
 const ASCEND_COST_LE   = 5;
 const ASCEND_REROLL_COST = 50000;
 const ASCEND_COLOR = '#cc7733';
+const OVERGEAR_COLOR = '#d8c7ff';
+const OVERGEAR_BASE_COST = 1000000;
+const OVERGEAR_COST_STEP = 100000;
+const OVERGEAR_GAMBLE_GE_COST = 500;
+const OVERGEAR_GAMBLE_COSTS = { 30:500000, 70:700000 };
+
+function getOvergearLevel(item) {
+  return Math.max(0, parseInt(item?.overgearLevel || 0, 10) || 0);
+}
+function canOvergearItem(item) {
+  if (!item || item.locked) return false;
+  return item.rarity === 'mythic' || item.rarity === 'ascended';
+}
+function isOvergeared(item) { return getOvergearLevel(item) > 0; }
+function overgearCost(item) { return OVERGEAR_BASE_COST + getOvergearLevel(item) * OVERGEAR_COST_STEP; }
+function fmtOvergearLabel(item) {
+  const lvl = getOvergearLevel(item);
+  if (lvl <= 0) return '';
+  if (lvl <= 5) return `${'✦'.repeat(lvl)}`;
+  return `✦ <span class="overgear-x">x${lvl}</span>`;
+}
+function overgearStarHtml(item) {
+  const label = fmtOvergearLabel(item);
+  return label ? `<div class="overgear-star-line"><span class="overgear-star">${label}</span></div>` : '';
+}
+const OVERGEAR_NORMAL_RATE = 0.0025;      // +0.25% per star for ordinary equipment stats
+const OVERGEAR_REGEN_RATE = 0.001;        // +0.10% per star for HP/MP regen
+const OVERGEAR_CRIT_CHANCE_FLAT = 0.1;    // +0.1 percentage point per star
+const OVERGEAR_CRIT_DAMAGE_FLAT = 10;     // +10 percentage points per star
+
+function cloneOvergearStats(stats) {
+  const out = {};
+  for (const [k,v] of Object.entries(stats || {})) out[k] = Number(v || 0);
+  return out;
+}
+function overgearStatValue(key, baseValue, level) {
+  const base = Number(baseValue || 0);
+  const lvl = Math.max(0, Number(level || 0));
+  if (lvl <= 0) return base;
+  if (key === 'critchance') return base + lvl * OVERGEAR_CRIT_CHANCE_FLAT;
+  if (key === 'critdamage') return base + lvl * OVERGEAR_CRIT_DAMAGE_FLAT;
+  const rate = (key === 'hpregen' || key === 'mpregen') ? OVERGEAR_REGEN_RATE : OVERGEAR_NORMAL_RATE;
+  return base * (1 + lvl * rate);
+}
+function overgearBaseValueFromCurrent(key, currentValue, level) {
+  const cur = Number(currentValue || 0);
+  const lvl = Math.max(0, Number(level || 0));
+  if (lvl <= 0) return cur;
+  if (key === 'critchance') return cur - lvl * OVERGEAR_CRIT_CHANCE_FLAT;
+  if (key === 'critdamage') return cur - lvl * OVERGEAR_CRIT_DAMAGE_FLAT;
+  const rate = (key === 'hpregen' || key === 'mpregen') ? OVERGEAR_REGEN_RATE : OVERGEAR_NORMAL_RATE;
+  const mult = 1 + lvl * rate;
+  return mult ? cur / mult : cur;
+}
+function cloneOvergearBaseFromCurrent(stats, level) {
+  const out = {};
+  for (const [k,v] of Object.entries(stats || {})) out[k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, v, level));
+  return out;
+}
+function overgearValueAlmostEqual(a, b) {
+  return Math.abs(Number(a || 0) - Number(b || 0)) < 0.0005;
+}
+function repairOvergearBaseStatsIfNeeded(item) {
+  const lvl = getOvergearLevel(item);
+  if (!item || lvl <= 0 || !item.overgearBaseStats) return;
+  const base = item.overgearBaseStats;
+  const repairSection = (sectionName) => {
+    const section = item[sectionName] || {};
+    base[sectionName] = base[sectionName] || {};
+    for (const [k, cur] of Object.entries(section)) {
+      const storedBase = base[sectionName][k];
+      if (storedBase == null) {
+        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl));
+        continue;
+      }
+      // Older patched saves could accidentally snapshot the already-Overgeared value as the base.
+      // When base and current match at a positive star count, rebuild the true pre-Overgear base.
+      if (Number(cur || 0) !== 0 && overgearValueAlmostEqual(storedBase, cur)) {
+        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl));
+      }
+    }
+  };
+  repairSection('mainStats');
+  repairSection('subStats');
+  if (item.ascendStat) {
+    base.ascendStat = base.ascendStat || { key:item.ascendStat.key, val:roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl)) };
+    if (base.ascendStat.key === item.ascendStat.key && Number(item.ascendStat.val || 0) !== 0 && overgearValueAlmostEqual(base.ascendStat.val, item.ascendStat.val)) {
+      base.ascendStat.val = roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl));
+    }
+  }
+}
+function ensureOvergearBaseStats(item) {
+  if (!item) return null;
+  const lvl = getOvergearLevel(item);
+  if (!item.overgearBaseStats) {
+    item.overgearBaseStats = {
+      mainStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.mainStats, lvl) : cloneOvergearStats(item.mainStats),
+      subStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.subStats, lvl) : cloneOvergearStats(item.subStats),
+      ascendStat: item.ascendStat ? {
+        key:item.ascendStat.key,
+        val:Number(lvl > 0 ? roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl)) : (item.ascendStat.val || 0))
+      } : null
+    };
+  }
+  repairOvergearBaseStatsIfNeeded(item);
+  return item.overgearBaseStats;
+}
+function roundOvergearStoredValue(key, value) {
+  if (['critchance','critdamage'].includes(key)) return parseFloat(Number(value || 0).toFixed(1));
+  if (['hpregen','mpregen','cdr'].includes(key)) return parseFloat(Number(value || 0).toFixed(3));
+  return parseFloat(Number(value || 0).toFixed(3));
+}
+function recalcOvergearStats(item) {
+  if (!item) return;
+  const base = ensureOvergearBaseStats(item);
+  const lvl = getOvergearLevel(item);
+  item.mainStats = item.mainStats || {};
+  item.subStats = item.subStats || {};
+  for (const [k,v] of Object.entries(base.mainStats || {})) item.mainStats[k] = roundOvergearStoredValue(k, overgearStatValue(k, v, lvl));
+  for (const [k,v] of Object.entries(base.subStats || {})) item.subStats[k] = roundOvergearStoredValue(k, overgearStatValue(k, v, lvl));
+  if (item.ascendStat && base.ascendStat && item.ascendStat.key === base.ascendStat.key) {
+    item.ascendStat.val = roundOvergearStoredValue(item.ascendStat.key, overgearStatValue(item.ascendStat.key, base.ascendStat.val, lvl));
+  }
+  item.overgeared = lvl > 0;
+  buildItemDesc(item);
+  item.goldVal = calcItemGold(item);
+}
+function applyOvergearStatBoost(item, deltaStars=1) {
+  if (!item || deltaStars <= 0) return;
+  ensureOvergearBaseStats(item);
+  item.overgearLevel = getOvergearLevel(item) + deltaStars;
+  recalcOvergearStats(item);
+}
+function removeOvergearStatBoost(item, deltaStars=1) {
+  if (!item || deltaStars <= 0) return;
+  ensureOvergearBaseStats(item);
+  const actual = Math.min(getOvergearLevel(item), deltaStars);
+  item.overgearLevel = Math.max(0, getOvergearLevel(item) - actual);
+  recalcOvergearStats(item);
+}
+function overgearLineBonus(item, section, key) {
+  const lvl = getOvergearLevel(item);
+  if (!item || lvl <= 0) return 0;
+  ensureOvergearBaseStats(item);
+  if (section === 'ascendStat') {
+    const baseAsc = item.overgearBaseStats.ascendStat;
+    if (!baseAsc || !item.ascendStat || baseAsc.key !== item.ascendStat.key) return 0;
+    return Number(item.ascendStat.val || 0) - Number(baseAsc.val || 0);
+  }
+  const baseValue = item.overgearBaseStats?.[section]?.[key];
+  const curValue = item?.[section]?.[key];
+  if (baseValue == null || curValue == null) return 0;
+  return Number(curValue || 0) - Number(baseValue || 0);
+}
+function fmtOvergearBonus(key, bonus) {
+  const n = Number(bonus || 0);
+  if (Math.abs(n) < 0.0005) return '';
+  if (key === 'critdamage') return `+${Math.round(n)}% OG`;
+  if (key === 'critchance') return `+${n.toFixed(1)}% OG`;
+  if (key === 'hpregen' || key === 'mpregen' || key === 'cdr') return `+${n.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')} OG`;
+  return `+${n.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')} OG`;
+}
+function overgearBonusHtml(item, section, key) {
+  const txt = fmtOvergearBonus(key, overgearLineBonus(item, section, key));
+  return txt ? ` <span class="overgear-inline-bonus" style="color:${OVERGEAR_COLOR};font-size:0.92em;font-weight:bold;text-shadow:0 0 5px rgba(180,120,255,0.45);">(${txt})</span>` : '';
+}
+function syncEquippedOvergearItem(item) {
+  if (!item || !item.slot || !G.equipped?.[item.slot] || G.equipped[item.slot].id !== item.id) return;
+  G.equipped[item.slot] = item;
+  item.equipped = true;
+}
+function renderOvergearList() {
+  const list = document.getElementById('overgear-item-list');
+  const empty = document.getElementById('overgear-empty');
+  const gold = document.getElementById('overgear-gold-display');
+  if (gold) gold.textContent = fmtNum(G.gold || 0);
+  if (!list) return;
+  list.innerHTML = '';
+  const items = (G.inventory || []).filter(canOvergearItem);
+  if (!items.length) { if (empty) empty.style.display='block'; return; }
+  if (empty) empty.style.display='none';
+  for (const item of items) {
+    const lvl = getOvergearLevel(item);
+    const cost = overgearCost(item);
+    const row = document.createElement('div');
+    row.className = 'overgear-card';
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border:1px solid rgba(180,140,255,0.55);';
+    row.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        ${overgearStarHtml(item)}
+        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}</div>
+        <div style="font-size:8px;color:#666;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl || 0}</div>
+        <div style="font-size:8px;color:#888;margin-top:2px;">Next: +0.25% normal stats · +0.10% regen · +0.1% Crit · +10% CritDmg · Cost ${fmtNum(cost)}g</div>
+      </div>
+      <button style="background:#000;border:1px solid #d8c7ff;color:#d8c7ff;font-family:inherit;font-size:8px;padding:4px 9px;cursor:pointer;letter-spacing:1px;white-space:nowrap;" onclick="doOvergearUpgrade(${item.id})" ${G.gold < cost ? 'disabled' : ''}>OVERGEAR</button>`;
+    list.appendChild(row);
+  }
+}
+function doOvergearUpgrade(itemId) {
+  const item = (G.inventory || []).find(i => i.id === itemId);
+  if (!canOvergearItem(item)) { log('Only Ascended and Mythic equipment can be Overgeared.', 'system'); return; }
+  const cost = overgearCost(item);
+  if ((G.gold || 0) < cost) { log(`Need ${fmtNum(cost)}g to Overgear this equipment.`, 'system'); return; }
+  G.gold -= cost;
+  applyOvergearStatBoost(item, 1);
+  syncEquippedOvergearItem(item);
+  log(`✦ Overgear: ${item.name} reached Overgear ${getOvergearLevel(item)}. (-${fmtNum(cost)}g)`, 'system');
+  updateDerived(); renderEquipSlots(); renderInventory(); renderStats(); renderOvergearList(); updateGambleUI();
+}
+function renderOvergearGambleList() {
+  const list = document.getElementById('overgear-gamble-list');
+  const empty = document.getElementById('overgear-gamble-empty');
+  const actions = document.getElementById('overgear-gamble-actions');
+  const gold = document.getElementById('og-gamble-gold-display');
+  const ge = document.getElementById('og-gamble-ge-display');
+  if (gold) gold.textContent = fmtNum(G.gold || 0);
+  if (ge) ge.textContent = G.gearEssence || 0;
+  if (!list) return;
+  list.innerHTML = '';
+  const items = (G.inventory || []).filter(i => isOvergeared(i) && !i.locked);
+  if (!items.length) {
+    if (empty) empty.style.display = 'block';
+    if (actions) actions.style.display = 'none';
+    overgearGambleSelectedItemId = null;
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  if (!items.some(i => i.id === overgearGambleSelectedItemId)) overgearGambleSelectedItemId = null;
+  for (const item of items) {
+    const lvl = getOvergearLevel(item);
+    const row = document.createElement('div');
+    const selected = item.id === overgearGambleSelectedItemId;
+    row.className = 'overgear-card';
+    row.style.cssText = `padding:7px 9px;background:${selected ? '#100818' : 'var(--bg3)'};border:1px solid ${selected ? '#d8c7ff' : 'rgba(180,140,255,0.45)'};cursor:pointer;`;
+    row.onclick = () => { overgearGambleSelectedItemId = item.id; renderOvergearGambleList(); };
+    row.innerHTML = `${overgearStarHtml(item)}<div style="font-size:11px;color:${RC[item.rarity]};">${item.name}</div><div style="font-size:8px;color:#666;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl}</div>`;
+    list.appendChild(row);
+  }
+  if (actions) actions.style.display = overgearGambleSelectedItemId ? 'block' : 'none';
+  const selected = (G.inventory || []).find(i => i.id === overgearGambleSelectedItemId);
+  const selEl = document.getElementById('overgear-gamble-selected');
+  if (selEl && selected) selEl.innerHTML = `Selected: <span style="color:${RC[selected.rarity]};">${selected.name}</span> · ${fmtOvergearLabel(selected)}`;
+}
+function doOvergearGamble(chance) {
+  const item = (G.inventory || []).find(i => i.id === overgearGambleSelectedItemId);
+  if (!item || !isOvergeared(item)) { log('Select an Overgeared equipment first.', 'system'); return; }
+  const cost = OVERGEAR_GAMBLE_COSTS[chance];
+  if (!cost) return;
+  if ((G.gold || 0) < cost) { log(`Need ${fmtNum(cost)}g for the ${chance}% Overgear Gamble.`, 'system'); return; }
+  if ((G.gearEssence || 0) < OVERGEAR_GAMBLE_GE_COST) { log(`Need ${OVERGEAR_GAMBLE_GE_COST} Gear Essence for Overgear Gamble.`, 'system'); return; }
+  G.gold -= cost;
+  G.gearEssence -= OVERGEAR_GAMBLE_GE_COST;
+  const roll = Math.random() * 100;
+  const oldLevel = getOvergearLevel(item);
+  const last = document.getElementById('overgear-gamble-last');
+  if (roll < chance) {
+    applyOvergearStatBoost(item, 1);
+    syncEquippedOvergearItem(item);
+    const msg = `Success (${chance}%): ${item.name} reached Overgear ${getOvergearLevel(item)}.`;
+    log(`✦ Overgear Gamble ${msg}`, 'system');
+    if (last) last.textContent = msg;
+  } else {
+    removeOvergearStatBoost(item, 2);
+    syncEquippedOvergearItem(item);
+    const msg = `Failed (${chance}%): ${item.name} dropped from Overgear ${oldLevel} to ${getOvergearLevel(item)}.`;
+    log(`✦ Overgear Gamble ${msg}`, 'system');
+    if (last) last.textContent = msg;
+  }
+  updateDerived(); renderEquipSlots(); renderInventory(); renderStats(); renderOvergearGambleList(); renderOvergearList(); updateGambleUI();
+}
 
 // The four possible ascension bonus stats
 const ASCEND_STATS = [
@@ -7031,6 +7389,7 @@ function doAscension(itemId) {
   renderEquipSlots();
   renderInventory();
   renderUpgradeList();
+  renderOvergearList();
 }
 
 function selectAscendedItem(itemId) {
@@ -7189,6 +7548,10 @@ function updateGambleUI() {
   if (btn) btn.disabled = G.gearEssence < 3 || G.inventory.length >= G.invMax;
   const geEd = document.getElementById('gear-essence-display');
   if (geEd) geEd.textContent = G.gearEssence;
+  const ogGe = document.getElementById('og-gamble-ge-display');
+  if (ogGe) ogGe.textContent = G.gearEssence || 0;
+  const ogGold = document.getElementById('og-gamble-gold-display');
+  if (ogGold) ogGold.textContent = fmtNum(G.gold || 0);
 }
 
 function renderMerchant() {
@@ -7524,7 +7887,7 @@ function updateUnifiedRerollPanel() {
     const label = def ? def.fmt(item.ascendStat.val) : item.ascendStat.key;
     const b = document.createElement('button');
     b.className = 'bs-stat-btn';
-    b.innerHTML = `<span style="color:#cc7733;">✦ ${label}</span> <span style="font-size:8px;color:#666;">(ascension)</span>`;
+    b.innerHTML = `<span style="color:#cc7733;">✦ ${label}${overgearBonusHtml(item, 'ascendStat', 'val')}</span> <span style="font-size:8px;color:#666;">(ascension)</span>`;
     applyRerollResultToButton(b, item, '__ascend__', 'ascend', source);
     b.setAttribute('data-stat', '__ascend__');
     b.setAttribute('data-type', 'ascend');
@@ -8212,7 +8575,7 @@ function renderEquipSlots() {
     const ne = el.querySelector('.equip-item-name');
     const preview = document.getElementById(`slot-${slot}-preview`);
     if (item) {
-      ne.textContent = item.name;
+      ne.innerHTML = `${overgearStarHtml(item)}<span>${item.name}</span>`;
       ne.style.color = RC[item.rarity] || '#aaa';
       el.classList.add('filled');
       if (preview) {
@@ -8302,25 +8665,25 @@ function formatItemStats(item) {
     const range=getStatRange(k,item.rarity,item.slot);
     const tag=minMaxTag(v,range);
     const rerollIcon = rerollIconFor(item, k, 'main');
-    parts.push(`<span style="color:#ccaa44">+${fmt1(v)} ${k.toUpperCase()}${rerollIcon}${tag}</span>`);
+    parts.push(`<span style="color:#ccaa44">+${fmt1(v)} ${k.toUpperCase()}${overgearBonusHtml(item, 'mainStats', k)}${rerollIcon}${tag}</span>`);
   }
   for(const [k,v] of Object.entries(item.subStats||{})){
     if (v == null) continue;
     const range=getStatRange(k,item.rarity,item.slot);
     const tag=minMaxTag(v,range);
     const rerollIcon = rerollIconFor(item, k, 'sub');
-    if(k==='critchance') parts.push(`<span style="color:#cc7744">+${fmt1(v)}% Crit${rerollIcon}${tag}</span>`);
-    else if(k==='critdamage') parts.push(`<span style="color:#cc5544">+${fmt1(v)}% CritDmg${rerollIcon}${tag}</span>`);
-    else if(k==='maxhp') parts.push(`<span style="color:#886644">+${fmt1(v)} HP${rerollIcon}${tag}</span>`);
-    else if(k==='maxmp') parts.push(`<span style="color:#446688">+${fmt1(v)} MP${rerollIcon}${tag}</span>`);
-    else if(k==='hpregen') parts.push(`<span style="color:#668844">+${fmt1(v)} HP/s${rerollIcon}${tag}</span>`);
-    else if(k==='mpregen') parts.push(`<span style="color:#4466aa">+${fmt1(v)} MP/s${rerollIcon}${tag}</span>`);
-    else if(k==='cdr') parts.push(`<span style="color:#888844">-${fmt1(v)}s CDR${rerollIcon}${tag}</span>`);
+    if(k==='critchance') parts.push(`<span style="color:#cc7744">+${fmt1(v)}% Crit${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
+    else if(k==='critdamage') parts.push(`<span style="color:#cc5544">+${fmt1(v)}% CritDmg${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
+    else if(k==='maxhp') parts.push(`<span style="color:#886644">+${fmt1(v)} HP${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
+    else if(k==='maxmp') parts.push(`<span style="color:#446688">+${fmt1(v)} MP${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
+    else if(k==='hpregen') parts.push(`<span style="color:#668844">+${fmt1(v)} HP/s${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
+    else if(k==='mpregen') parts.push(`<span style="color:#4466aa">+${fmt1(v)} MP/s${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
+    else if(k==='cdr') parts.push(`<span style="color:#888844">-${fmt1(v)}s CDR${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
   }
   if (item.ascendStat) {
     const def = ASCEND_STATS ? ASCEND_STATS.find(d => d.key === item.ascendStat.key) : null;
     const label = def ? def.fmt(item.ascendStat.val) : `+${item.ascendStat.val}% ${item.ascendStat.key}`;
-    parts.push(`<span style="color:${ASCEND_COLOR || '#cc7733'};font-weight:bold;">✦ ${label}</span>`);
+    parts.push(`<span style="color:${ASCEND_COLOR || '#cc7733'};font-weight:bold;">✦ ${label}${overgearBonusHtml(item, 'ascendStat', 'val')}</span>`);
   }
   if (item.rarity === 'mythic' && item.mythicMod) {
     const liveDef = item.mythicMod ? getMythicDefByMod(item.mythicMod, item.mythicClass || G.playerClass, item.slot) : null;
@@ -8392,6 +8755,7 @@ function renderInventory() {
         <div class="item-pixel-icon rarity-${item.rarity}" style="color:${RC[item.rarity]}">${itemIconSVG(item)}</div>
         <div class="item-head">
           <div class="item-rarity" style="color:${RC[item.rarity]}">${item.rarity.toUpperCase()}</div>
+          ${overgearStarHtml(item)}
           <div class="item-name" style="color:${RC[item.rarity]}">${item.name}</div>
           <div class="item-slot-type">${item.slot.toUpperCase()}</div>
         </div>
@@ -10321,7 +10685,8 @@ function applyClassData(data) {
   G.equipped = data.equipped||{helmet:null,armor:null,legging:null,weapon:null,offhand:null};
   Object.values(G.equipped || {}).forEach(migrateMythicNames);
   const equippedIds = new Set(Object.values(G.equipped).filter(Boolean).map(i=>i.id));
-  for (const item of G.inventory) item.equipped = equippedIds.has(item.id);
+  for (const item of G.inventory) { if (getOvergearLevel(item) > 0) { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
+  for (const item of Object.values(G.equipped || {})) { if (item && getOvergearLevel(item) > 0) { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
   G.potions = data.potions||{healing:0};
   G.potionDiscovered = data.potionDiscovered || {};
   G.potionBuffs = { arcanicUntil:0, fervorUntil:0 };
