@@ -7031,7 +7031,8 @@ function overgearStarHtml(item) {
   const label = fmtOvergearLabel(item);
   return label ? `<div class="overgear-star-line"><span class="overgear-star">${label}</span></div>` : '';
 }
-const OVERGEAR_NORMAL_RATE = 0.0025;      // +0.25% per star for ordinary equipment stats
+const OVERGEAR_MAIN_STAT_FLAT = 1.1;      // +1.1 STR/AGI/INT/VIT per star
+const OVERGEAR_NORMAL_RATE = 0.0025;      // +0.25% per star for ordinary non-regen equipment stats
 const OVERGEAR_REGEN_RATE = 0.001;        // +0.10% per star for HP/MP regen
 const OVERGEAR_CRIT_CHANCE_FLAT = 0.1;    // +0.1 percentage point per star
 const OVERGEAR_CRIT_DAMAGE_FLAT = 10;     // +10 percentage points per star
@@ -7041,28 +7042,33 @@ function cloneOvergearStats(stats) {
   for (const [k,v] of Object.entries(stats || {})) out[k] = Number(v || 0);
   return out;
 }
-function overgearStatValue(key, baseValue, level) {
+function isOvergearMainStatSection(section) {
+  return section === 'mainStats';
+}
+function overgearStatValue(key, baseValue, level, section='') {
   const base = Number(baseValue || 0);
   const lvl = Math.max(0, Number(level || 0));
   if (lvl <= 0) return base;
+  if (isOvergearMainStatSection(section)) return base + lvl * OVERGEAR_MAIN_STAT_FLAT;
   if (key === 'critchance') return base + lvl * OVERGEAR_CRIT_CHANCE_FLAT;
   if (key === 'critdamage') return base + lvl * OVERGEAR_CRIT_DAMAGE_FLAT;
   const rate = (key === 'hpregen' || key === 'mpregen') ? OVERGEAR_REGEN_RATE : OVERGEAR_NORMAL_RATE;
   return base * (1 + lvl * rate);
 }
-function overgearBaseValueFromCurrent(key, currentValue, level) {
+function overgearBaseValueFromCurrent(key, currentValue, level, section='') {
   const cur = Number(currentValue || 0);
   const lvl = Math.max(0, Number(level || 0));
   if (lvl <= 0) return cur;
+  if (isOvergearMainStatSection(section)) return cur - lvl * OVERGEAR_MAIN_STAT_FLAT;
   if (key === 'critchance') return cur - lvl * OVERGEAR_CRIT_CHANCE_FLAT;
   if (key === 'critdamage') return cur - lvl * OVERGEAR_CRIT_DAMAGE_FLAT;
   const rate = (key === 'hpregen' || key === 'mpregen') ? OVERGEAR_REGEN_RATE : OVERGEAR_NORMAL_RATE;
   const mult = 1 + lvl * rate;
   return mult ? cur / mult : cur;
 }
-function cloneOvergearBaseFromCurrent(stats, level) {
+function cloneOvergearBaseFromCurrent(stats, level, section='') {
   const out = {};
-  for (const [k,v] of Object.entries(stats || {})) out[k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, v, level));
+  for (const [k,v] of Object.entries(stats || {})) out[k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, v, level, section));
   return out;
 }
 function overgearValueAlmostEqual(a, b) {
@@ -7078,13 +7084,13 @@ function repairOvergearBaseStatsIfNeeded(item) {
     for (const [k, cur] of Object.entries(section)) {
       const storedBase = base[sectionName][k];
       if (storedBase == null) {
-        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl));
+        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl, sectionName));
         continue;
       }
       // Older patched saves could accidentally snapshot the already-Overgeared value as the base.
       // When base and current match at a positive star count, rebuild the true pre-Overgear base.
       if (Number(cur || 0) !== 0 && overgearValueAlmostEqual(storedBase, cur)) {
-        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl));
+        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl, sectionName));
       }
     }
   };
@@ -7102,8 +7108,8 @@ function ensureOvergearBaseStats(item) {
   const lvl = getOvergearLevel(item);
   if (!item.overgearBaseStats) {
     item.overgearBaseStats = {
-      mainStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.mainStats, lvl) : cloneOvergearStats(item.mainStats),
-      subStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.subStats, lvl) : cloneOvergearStats(item.subStats),
+      mainStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.mainStats, lvl, 'mainStats') : cloneOvergearStats(item.mainStats),
+      subStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.subStats, lvl, 'subStats') : cloneOvergearStats(item.subStats),
       ascendStat: item.ascendStat ? {
         key:item.ascendStat.key,
         val:Number(lvl > 0 ? roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl)) : (item.ascendStat.val || 0))
@@ -7124,8 +7130,8 @@ function recalcOvergearStats(item) {
   const lvl = getOvergearLevel(item);
   item.mainStats = item.mainStats || {};
   item.subStats = item.subStats || {};
-  for (const [k,v] of Object.entries(base.mainStats || {})) item.mainStats[k] = roundOvergearStoredValue(k, overgearStatValue(k, v, lvl));
-  for (const [k,v] of Object.entries(base.subStats || {})) item.subStats[k] = roundOvergearStoredValue(k, overgearStatValue(k, v, lvl));
+  for (const [k,v] of Object.entries(base.mainStats || {})) item.mainStats[k] = roundOvergearStoredValue(k, overgearStatValue(k, v, lvl, 'mainStats'));
+  for (const [k,v] of Object.entries(base.subStats || {})) item.subStats[k] = roundOvergearStoredValue(k, overgearStatValue(k, v, lvl, 'subStats'));
   if (item.ascendStat && base.ascendStat && item.ascendStat.key === base.ascendStat.key) {
     item.ascendStat.val = roundOvergearStoredValue(item.ascendStat.key, overgearStatValue(item.ascendStat.key, base.ascendStat.val, lvl));
   }
