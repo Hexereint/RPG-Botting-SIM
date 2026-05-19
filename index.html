@@ -262,7 +262,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .map-zone.zone-caves::before { background:var(--orange); }
 .map-zone.zone-swamp::before { background:var(--purple); }
 .map-zone.zone-hoarspire::before { background:#88bbff; }
-.map-zone.zone-chaotic::before { background:#77ff55; }
+.map-zone.zone-chaotic::before { background:#4b1b6f; }
 .map-zone.zone-abyss::before { background:var(--red); }
 .map-zone:hover { background:var(--bg3); }
 .map-zone.active-zone { background:var(--bg3); border-color:var(--border2); }
@@ -333,21 +333,30 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .town-back-btn {
   display:flex;
   align-items:center;
-  gap:6px;
-  background:transparent;
-  border:none;
-  color:#555;
+  justify-content:flex-start;
+  gap:8px;
+  background:linear-gradient(90deg, rgba(187,170,119,0.18), rgba(0,0,0,0.74));
+  border:1px solid rgba(187,170,119,0.58);
+  color:var(--yellow);
   font-family:inherit;
-  font-size:9px;
+  font-size:10px;
+  font-weight:bold;
   cursor:pointer;
-  padding:0 0 8px;
-  letter-spacing:1px;
+  padding:8px 10px;
+  letter-spacing:1.5px;
   text-transform:uppercase;
-  border-bottom:1px solid var(--border);
   margin-bottom:10px;
   width:100%;
+  min-height:34px;
+  box-shadow:0 0 10px rgba(187,170,119,0.12), inset 0 0 12px rgba(187,170,119,0.05);
 }
-.town-back-btn:hover { color:var(--white); }
+.town-back-btn:hover {
+  color:var(--white);
+  border-color:var(--white);
+  background:linear-gradient(90deg, rgba(255,255,255,0.14), rgba(20,20,20,0.92));
+  box-shadow:0 0 14px rgba(255,255,255,0.12), inset 0 0 12px rgba(255,255,255,0.04);
+}
+.town-back-btn:active { transform:translateY(1px); }
 
 /* Merchant sub-tabs */
 .merchant-subtab {
@@ -631,7 +640,7 @@ select.config-input { width:auto; cursor:pointer; }
 .map-zone.zone-caves::after { background-image:linear-gradient(135deg, rgba(187,136,85,0.32) 25%, transparent 25%), radial-gradient(circle at 72% 55%, rgba(187,136,85,0.18), transparent 42%); }
 .map-zone.zone-swamp::after { background-image:radial-gradient(circle at 64% 70%, rgba(80,120,50,0.34) 0 10%, transparent 11%), radial-gradient(circle at 80% 38%, rgba(153,119,187,0.18), transparent 46%); }
 .map-zone.zone-hoarspire::after { background-image:linear-gradient(135deg, rgba(150,210,255,0.24) 25%, transparent 25%), radial-gradient(circle at 76% 34%, rgba(190,230,255,0.22), transparent 42%); }
-.map-zone.zone-chaotic::after { background-image:linear-gradient(135deg, rgba(80,255,90,0.18) 25%, transparent 25%), radial-gradient(circle at 76% 40%, rgba(120,255,90,0.17), transparent 38%), radial-gradient(circle at 88% 70%, rgba(80,20,120,0.28), transparent 36%); }
+.map-zone.zone-chaotic::after { background-image:linear-gradient(135deg, rgba(92,35,130,0.28) 25%, transparent 25%), radial-gradient(circle at 76% 40%, rgba(128,64,190,0.22), transparent 38%), radial-gradient(circle at 88% 70%, rgba(40,8,80,0.40), transparent 36%); }
 .map-zone.zone-abyss::after { background-image:radial-gradient(circle at 70% 46%, rgba(204,68,68,0.26), transparent 22%), radial-gradient(circle at 86% 28%, rgba(153,0,80,0.20), transparent 38%); }
 .class-slot-card, .class-pick-btn {
   position:relative;
@@ -1599,13 +1608,13 @@ body.chaos-active #map-panel .subzone-row,
 
       <div class="map-zone zone-chaotic" id="zone-chaotic_chasm" onclick="setZoneBase('chaotic_chasm')">
         <div class="map-zone-name">CHAOTIC CHASM</div>
-        <div class="map-zone-desc">A fractured ravine where all skill damage is reduced by 15%.</div>
+        <div class="map-zone-desc">A fractured ravine where reality splinters into green-lit depths.</div>
       </div>
       <div class="subzone-row" id="subzone-chaotic_chasm" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
-        <button class="subzone-btn" id="sz-chaotic_chasm-base" onclick="setSubZone('chaotic_chasm','')">Abyssmouth<span class="sz-desc">Skill damage -15%; brutal chasm beasts</span></button>
-        <button class="subzone-btn" id="sz-chaotic_chasm-maw" onclick="setSubZone('chaotic_chasm','maw')">The Maw<span class="sz-desc">Guzmak, the Devourer lurks here</span></button>
-        <button class="subzone-btn" id="sz-chaotic_chasm-madwind_pass" onclick="setSubZone('chaotic_chasm','madwind_pass')">Madwind Pass<span class="sz-desc">Vaalix, the Necrodragon hunts the pass</span></button>
-        <button class="subzone-btn" id="sz-chaotic_chasm-last_breach" onclick="setSubZone('chaotic_chasm','last_breach')">Last Breach<span class="sz-desc">Kitarasque, the Absolute Mass waits here</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-base" onclick="setSubZone('chaotic_chasm','')">Abyssmouth<span class="sz-desc">A green-lit wound at the chasm's edge where hungry shapes crawl from below</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-maw" onclick="setSubZone('chaotic_chasm','maw')">The Maw<span class="sz-desc">A greedy gorge that swallows gold, flesh, and every careless footstep</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-madwind_pass" onclick="setSubZone('chaotic_chasm','madwind_pass')">Madwind Pass<span class="sz-desc">Rot-green winds howl through bone-white cliffs and broken dragon nests</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-last_breach" onclick="setSubZone('chaotic_chasm','last_breach')">Last Breach<span class="sz-desc">The chasm floor pulses like living meat beneath impossible weight</span></button>
       </div>
 
       <div class="map-zone zone-abyss" id="zone-abyss" onclick="setZone('abyss')">
@@ -3573,7 +3582,7 @@ const ZONE_DATA = {
     }
   },
   chaotic_chasm: {
-    name: 'Chaotic Chasm', color: '#77ff55', skillDmgMult:0.85,
+    name: 'Chaotic Chasm', color: '#4b1b6f', skillDmgMult:0.85,
     base: { name:'Abyssmouth', delay:[3,7], hp:[2000,4000], dmg:[90,120], exp:[190,290], swarmChance:0.15, swarmSize:[1,3], eliteChance:0.30, maxEliteTags:3,
       monsters:['Chasm Mawling','Voidgnaw Brute','Riftclaw','Abyssmouth Horror','Fracture Fiend','Chasm Skitterer'],
       special:'abyssmouth' },
@@ -3976,7 +3985,7 @@ function spawnKitarasqueBoss(zc) {
     dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
     expMin:820, expMax:1180, atkMin:4000, atkMax:4000,
     isBoss:true, isElite:false, isKitarasque:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
-    lastAttack:now, uniqueBossKey:'kitarasque_absolute_mass', kitarasqueHitsTaken:0, kitarasqueRegenTick:0, kitarasqueHeartbeats:{80:false,50:false,30:false}
+    lastAttack:now, uniqueBossKey:'kitarasque_absolute_mass', kitarasqueHitsTaken:0, kitarasqueBlobSpawns:0, kitarasqueRegenTick:0, kitarasqueHeartbeats:{80:false,50:false,30:false}
   };
   G.monsters = [m];
   logEncounterFlavor(m, 1, false, true, 'last_breach');
@@ -4002,9 +4011,15 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
     monster.hp = Math.min(monster.maxHp, monster.hp + heal);
     if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
     monster.kitarasqueHitsTaken = (monster.kitarasqueHitsTaken || 0) + 1;
-    if (monster.kitarasqueHitsTaken >= 5) {
+    if (monster.kitarasqueHitsTaken >= 10) {
       monster.kitarasqueHitsTaken = 0;
-      spawnKitarasqueMassBlobs(monster, ts);
+      monster.kitarasqueBlobSpawns = monster.kitarasqueBlobSpawns || 0;
+      if (monster.kitarasqueBlobSpawns < 10) {
+        monster.kitarasqueBlobSpawns++;
+        spawnKitarasqueMassBlobs(monster, ts);
+      } else {
+        log('<span style="color:#884455">Kitarasque's Flesh Tumor has reached its limit — no more Mass Blobs split away.</span>', 'dmgtaken');
+      }
     }
   }
   if (monster.isGuzmak) {
@@ -4110,15 +4125,15 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     const dmg = Math.max(1, Math.round(G.hp * 0.70));
     G.hp = Math.max(0, G.hp - dmg);
     G.debuffs.necrorotUntil = ts + 10000;
-    log('<span style="color:#55aa55">☠ Vaalix casts Necrodragon Breath — dark green rot floods the log!</span>', 'dmgtaken');
+    log('<span style="color:#55aa55">☠ Vaalix exhales the grave-wind of ancient carrion — the battlefield drowns beneath the Necrodragon Breath!</span>', 'dmgtaken');
     log(`<span style="color:#55aa55">Necrodragon Breath deals ${fmtNum(dmg)} damage and inflicts Necrorot for 10s. Potion healing becomes damage.</span>`, 'dmgtaken');
     applyKitarasqueHeartHeal(dmg);
     if (G.hp <= 0) { G.hp = 0; die(); return true; }
   }
   if (!v.vaalixResurrectionStarted && !v.vaalixResurrected && hpPct <= 30) {
     v.vaalixResurrectionStarted = true;
-    v.vaalixResurrectAt = ts + 40000;
-    log('<span style="color:#55aa55">Vaalix begins Necrodragon Resurrection. Kill it within 40 seconds or it returns at 50% HP!</span>', 'dmgtaken');
+    v.vaalixResurrectAt = ts + 20000;
+    log('<span style="color:#55aa55">Vaalix begins Necrodragon Resurrection. Kill it within 20 seconds or it returns at 50% HP!</span>', 'dmgtaken');
   }
   if (v.vaalixResurrectionStarted && !v.vaalixResurrected && ts >= (v.vaalixResurrectAt || Infinity)) {
     v.vaalixResurrected = true;
@@ -4585,27 +4600,27 @@ function spawnMonsters() {
     return;
   }
 
-  if (special==='frozen_dragon_grave' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+  if (special==='frozen_dragon_grave' && !isUniqueBossCooldownActive() && Math.random() < 0.07) {
     spawnAislongBoss(zc);
     return;
   }
 
-  if (special==='sheercold_terrace' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+  if (special==='sheercold_terrace' && !isUniqueBossCooldownActive() && Math.random() < 0.07) {
     spawnAbominableSnowmanBoss(zc);
     return;
   }
 
-  if (special==='maw' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+  if (special==='maw' && !isUniqueBossCooldownActive() && Math.random() < 0.07) {
     spawnGuzmakBoss(zc);
     return;
   }
 
-  if (special==='madwind_pass' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+  if (special==='madwind_pass' && !isUniqueBossCooldownActive() && Math.random() < 0.07) {
     spawnVaalixBoss(zc);
     return;
   }
 
-  if (special==='last_breach' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+  if (special==='last_breach' && !isUniqueBossCooldownActive() && Math.random() < 0.07) {
     spawnKitarasqueBoss(zc);
     return;
   }
@@ -7716,20 +7731,28 @@ function killMonster(m, ts) {
     log('<span style="color:var(--legendary)">Abominable Snowman drops bonus legendary equipment!</span>', 'itemdrop');
   } else if (m.isGuzmak) {
     if (Math.random() < 0.70) { addItemToInventory(generateGuzmakGreed()); log('<span style="color:var(--unique)">Guzmak drops Guzmak Greed!</span>', 'itemdrop'); }
+    addItemToInventory(generateItem('legendary'));
+    log('<span style="color:var(--legendary)">Guzmak drops 1 guaranteed legendary equipment!</span>', 'itemdrop');
     for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isVaalix) {
     addKeyItem('fang_of_necrodragon', 1);
     if (Math.random() < 0.70) { addItemToInventory(generateVaalixTiara()); log('<span style="color:var(--unique)">Vaalix drops Vaalix Tiara!</span>', 'itemdrop'); }
+    addItemToInventory(generateItem('legendary'));
+    log('<span style="color:var(--legendary)">Vaalix drops 1 guaranteed legendary equipment!</span>', 'itemdrop');
     for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isKitarasque) {
     addKeyItem('blood_of_kitarasque', 1);
     if (G.playerClass === 'warrior') { addItemToInventory(generateHeartOfKitarasque()); log('<span style="color:var(--unique)">Kitarasque drops Heart of Kitarasque!</span>', 'itemdrop'); }
+    addItemToInventory(generateItem('legendary'));
+    log('<span style="color:var(--legendary)">Kitarasque drops 1 guaranteed legendary equipment!</span>', 'itemdrop');
     for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isShuuna) {
     if (Math.random() < 0.50) {
       addItemToInventory(generatePaleFurisode());
       log('<span style="color:var(--unique)">Shuuna drops Pale Furisode!</span>', 'itemdrop');
     }
+    addItemToInventory(generateItem('legendary'));
+    log('<span style="color:var(--legendary)">Shuuna drops 1 guaranteed legendary equipment!</span>', 'itemdrop');
     for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isAislong) {
     addKeyItem('frost_dragon_bone', 1);
@@ -10431,10 +10454,10 @@ function getZoneBossFlavor(zone, subZone) {
     witch_coven: 'The Witch Coven whispers through the reeds. A wandering witch may answer trespass with curses and flame...',
     crimson_rot: 'The Crimson Rot reeks of old hunger. Somewhere in the mire, a defiled beast may catch your scent...',
     hoarspire: 'The Hoarspire winds cut through bone. Every swing feels heavier in the cold...',
-    chaotic_chasm: 'The Chaotic Chasm warps every spell. Skill damage is reduced by 15% here...',
-    maw: 'The Maw gurgles with greed. Guzmak, the Devourer may answer repeated trespass...',
-    madwind_pass: 'Madwind Pass stinks of green rot. Vaalix, the Necrodragon circles somewhere above...',
-    last_breach: 'The Last Breach pulses with absolute mass. Kitarasque may answer the heartbeat...',
+    chaotic_chasm: 'Abyssmouth yawns like a green-lit wound at the chasm edge. Zone gimmick: all skill damage is reduced by 15% here.',
+    maw: 'The Maw gurgles with greed. Treasure, bone, and breath vanish into its endless throat. Zone gimmick: all skill damage is reduced by 15% here.',
+    madwind_pass: 'Madwind Pass stinks of green rot. The air itself feels cursed, and every gust carries a dead-winged rasp. Zone gimmick: all skill damage is reduced by 15% here.',
+    last_breach: 'The Last Breach pulses with absolute mass. The ground feels alive, swollen, and hungry beneath each step. Zone gimmick: all skill damage is reduced by 15% here.',
     pale_hollow: 'Pale Hollow is silent beneath the snow. The Ice Kitsune are said to herald a woman in white...',
     frozen_dragon_grave: 'The Frozen Dragon Grave creaks with old bones. Something winged and winter-dead may stir beneath the frost...',
     abyss: 'The Abyss counts every kill. On certain floors, something vast may answer from the dark...'
@@ -13204,13 +13227,13 @@ const FR_ZONE_BG = {
     const rnd = mulberry32(seed + 991);
     ctx.save();
     ctx.globalAlpha = 0.28;
-    ctx.fillStyle = '#123b18';
+    ctx.fillStyle = '#1a0b2e';
     for (let i=0;i<18;i++) {
       const x = rnd()*W, y = rnd()*H;
       ctx.fillRect(x, y, 2+rnd()*8, 1+rnd()*4);
     }
     ctx.globalAlpha = 0.18;
-    ctx.strokeStyle = '#77ff55';
+    ctx.strokeStyle = '#6f35a8';
     for (let i=0;i<7;i++) {
       ctx.beginPath(); ctx.moveTo(rnd()*W, rnd()*H); ctx.lineTo(rnd()*W, rnd()*H); ctx.stroke();
     }
@@ -14127,7 +14150,7 @@ const FR_SHOP_POOL = [
   { name:"Glacial Loop",       zone:'hoarspire', subZone:null,                         desc:"Follows a glacier's edge. Chunks break off unpredictably.", char:'fast' },
 
   // Chaotic Chasm
-  { name:"Abyssmouth Trace",  zone:'chaotic_chasm', subZone:null,           desc:"A route along the chasm lip where skills feel weaker.", char:'elite' },
+  { name:"Abyssmouth Trace",  zone:'chaotic_chasm', subZone:null,           desc:"A route along a green-lit wound at the chasm lip.", char:'elite' },
   { name:"Maw Circuit",       zone:'chaotic_chasm', subZone:'maw',          desc:"A greedy loop through The Maw. Something devours footprints here.", char:'boss' },
   { name:"Madwind Spiral",    zone:'chaotic_chasm', subZone:'madwind_pass', desc:"Wind howls through bone-white arches. The air tastes rotten.", char:'boss' },
   { name:"Last Breach Pulse", zone:'chaotic_chasm', subZone:'last_breach', desc:"A route across breathing flesh and impossible mass.", char:'boss' },
