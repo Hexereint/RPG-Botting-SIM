@@ -76,6 +76,15 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .log-entry.aislong-freeze-aura-3 span:not(.log-time) { color:#9bdcff !important; text-shadow:0 0 4px rgba(80,175,255,0.34); }
 .log-entry.aislong-freeze-aura-4 span:not(.log-time) { color:#82ceff !important; text-shadow:0 0 3px rgba(70,155,255,0.22); }
 .log-entry.aislong-freeze-core { border-left:2px solid rgba(130,220,255,0.65); padding-left:4px; }
+.log-entry.necrodragon-breath-aura-0 span:not(.log-time) { color:#b8ffb8 !important; text-shadow:0 0 8px rgba(60,255,80,0.78), 0 0 16px rgba(0,120,30,0.55); }
+.log-entry.necrodragon-breath-aura-1 span:not(.log-time) { color:#9af09a !important; text-shadow:0 0 7px rgba(50,220,70,0.58); }
+.log-entry.necrodragon-breath-aura-2 span:not(.log-time) { color:#7fd87f !important; text-shadow:0 0 6px rgba(35,180,55,0.44); }
+.log-entry.necrodragon-breath-aura-3 span:not(.log-time) { color:#65c865 !important; text-shadow:0 0 5px rgba(20,150,45,0.34); }
+.log-entry.necrodragon-breath-aura-4 span:not(.log-time) { color:#4eb84e !important; text-shadow:0 0 4px rgba(20,120,40,0.28); }
+.log-entry.necrodragon-breath-aura-5 span:not(.log-time) { color:#3fa33f !important; text-shadow:0 0 4px rgba(10,95,30,0.24); }
+.log-entry.necrodragon-breath-aura-6 span:not(.log-time) { color:#348c34 !important; text-shadow:0 0 3px rgba(0,70,20,0.20); }
+.log-entry.necrodragon-breath-aura-7 span:not(.log-time) { color:#2a742a !important; text-shadow:0 0 3px rgba(0,55,15,0.16); }
+.log-entry.necrodragon-breath-core { border-left:2px solid rgba(80,255,100,0.70); padding-left:4px; }
 .log-time { font-size:8px; flex-shrink:0; color:var(--muted); }
 .log-monster { color:var(--red); }
 .log-death { color:var(--red); font-weight:bold; }
@@ -167,6 +176,12 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .achievement-name { display:none; }
 .achievement-count { color:var(--yellow); font-weight:bold; white-space:nowrap; font-size:8px; line-height:1; }
 .achievement-empty { font-size:9px; color:#444; padding:6px 0; grid-column:1 / -1; }
+.achievement-row.achievement-locked { opacity:0.42; filter:grayscale(1); border-color:#242424; background:#030303; }
+.achievement-row.achievement-locked:hover { border-color:#555; background:#080808; }
+.achievement-row.achievement-locked .achievement-icon { color:#555; border-color:#222; background:#070707; box-shadow:none; text-shadow:none; }
+.achievement-row.achievement-locked .achievement-count { color:#555; }
+.achievement-row.achievement-locked .achievement-name { color:#555; }
+
 @media (max-width: 900px) {
   .stats-top-stack { flex-basis:100%; grid-template-columns:minmax(160px, 220px) minmax(230px, 1fr); }
   .stat-allocation-card { flex-basis:100%; }
@@ -247,6 +262,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .map-zone.zone-caves::before { background:var(--orange); }
 .map-zone.zone-swamp::before { background:var(--purple); }
 .map-zone.zone-hoarspire::before { background:#88bbff; }
+.map-zone.zone-chaotic::before { background:#77ff55; }
 .map-zone.zone-abyss::before { background:var(--red); }
 .map-zone:hover { background:var(--bg3); }
 .map-zone.active-zone { background:var(--bg3); border-color:var(--border2); }
@@ -615,6 +631,7 @@ select.config-input { width:auto; cursor:pointer; }
 .map-zone.zone-caves::after { background-image:linear-gradient(135deg, rgba(187,136,85,0.32) 25%, transparent 25%), radial-gradient(circle at 72% 55%, rgba(187,136,85,0.18), transparent 42%); }
 .map-zone.zone-swamp::after { background-image:radial-gradient(circle at 64% 70%, rgba(80,120,50,0.34) 0 10%, transparent 11%), radial-gradient(circle at 80% 38%, rgba(153,119,187,0.18), transparent 46%); }
 .map-zone.zone-hoarspire::after { background-image:linear-gradient(135deg, rgba(150,210,255,0.24) 25%, transparent 25%), radial-gradient(circle at 76% 34%, rgba(190,230,255,0.22), transparent 42%); }
+.map-zone.zone-chaotic::after { background-image:linear-gradient(135deg, rgba(80,255,90,0.18) 25%, transparent 25%), radial-gradient(circle at 76% 40%, rgba(120,255,90,0.17), transparent 38%), radial-gradient(circle at 88% 70%, rgba(80,20,120,0.28), transparent 36%); }
 .map-zone.zone-abyss::after { background-image:radial-gradient(circle at 70% 46%, rgba(204,68,68,0.26), transparent 22%), radial-gradient(circle at 86% 28%, rgba(153,0,80,0.20), transparent 38%); }
 .class-slot-card, .class-pick-btn {
   position:relative;
@@ -942,6 +959,9 @@ canvas {
 }
 /* Start tile that's also a route step */
 .fr-cell.fr-start.route-step::before { display:none; }
+.fr-cell.fr-event-tile { background:rgba(187,170,119,0.40); border-color:rgba(255,230,150,0.82); box-shadow:inset 0 0 10px rgba(187,170,119,0.20), 0 0 8px rgba(187,170,119,0.18); }
+.fr-cell.fr-event-tile::before { content:'E'; position:absolute; top:2px; right:3px; font-size:7px; font-weight:bold; color:#ffe6a0; text-shadow:0 0 5px rgba(255,220,120,0.75); pointer-events:none; }
+.fr-cell.fr-event-tile.route-step::before { top:2px; right:3px; left:auto; transform:none; }
 
 /* Route stats bar — no spawn rate shown */
 .fr-route-stats { display:flex; gap:10px; flex-wrap:wrap; padding:5px 8px; background:var(--bg2); border:1px solid var(--border); font-size:9px; color:var(--muted); margin-bottom:8px; }
@@ -991,6 +1011,8 @@ canvas {
 .fr-live-cell.fr-live-step::after { content:attr(data-step); position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:6px; color:rgba(160,230,60,0.8); pointer-events:none; }
 .fr-live-cell.fr-live-player { background:rgba(60,140,10,0.9) !important; border-color:rgba(160,255,50,0.9) !important; box-shadow:inset 0 0 4px rgba(136,255,40,0.6); }
 .fr-live-cell.fr-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:7px; color:#d0ff50; pointer-events:none; }
+.fr-live-cell.fr-live-event { background:rgba(187,170,119,0.42); border-color:rgba(255,230,150,0.62); box-shadow:inset 0 0 4px rgba(187,170,119,0.28); }
+.fr-live-cell.fr-live-event::before { content:'E'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:6px; color:#ffe6a0; pointer-events:none; }
 
 /* Route Shop */
 .fr-shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:6px; }
@@ -1015,6 +1037,8 @@ canvas {
 .fr-combat-live-cell.fr-combat-live-step { background:rgba(30,60,8,0.65); border-color:rgba(80,150,30,0.45); }
 .fr-combat-live-cell.fr-combat-live-player { background:rgba(70,160,12,0.96) !important; border-color:rgba(175,255,70,0.95) !important; box-shadow:0 0 5px rgba(136,255,40,0.58), inset 0 0 4px rgba(136,255,40,0.6); z-index:2; }
 .fr-combat-live-cell.fr-combat-live-player::after { content:'●'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:6px; color:#d0ff50; pointer-events:none; }
+.fr-combat-live-cell.fr-combat-live-event { background:rgba(187,170,119,0.44); border-color:rgba(255,230,150,0.58); box-shadow:inset 0 0 3px rgba(187,170,119,0.25); }
+.fr-combat-live-cell.fr-combat-live-event::before { content:'E'; position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); font-size:5px; color:#ffe6a0; pointer-events:none; }
 @media (max-width:700px) { .fr-combat-route-panel { right:5px; min-width:74px; max-width:min(92px, calc(100% - 10px)); padding:4px; } .fr-combat-live-cell { width:5px; height:5px; } .fr-combat-route-title { font-size:7px; } .fr-combat-route-step { font-size:7px; } }
 @media (max-width:430px) and (orientation:portrait) { .fr-combat-route-panel { right:4px; min-width:64px; max-width:min(92px, calc(100% - 8px)); padding:3px; display:block; } .fr-combat-route-title { display:none; } .fr-combat-route-step { font-size:6px; margin-bottom:2px; } }
 .map-title-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; border-bottom:1px solid var(--border); margin-bottom:2px; }
@@ -1083,6 +1107,35 @@ body.chaos-active #map-panel .subzone-row,
 .overgear-subtab { background:#000; border:1px solid var(--border2); color:#666; font-family:inherit; font-size:8px; padding:5px 10px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
 .overgear-subtab.active { border-color:#d8c7ff; color:#fff; background:#0b0711; box-shadow:0 0 10px rgba(160,120,255,0.12); }
 
+
+/* RANDOM EVENTS --------------------------------------------------------- */
+#random-event-popup {
+  display:none;
+  position:fixed;
+  top:8px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:720;
+  width:min(560px, calc(100vw - 18px));
+  background:#060606;
+  border:1px solid var(--yellow);
+  box-shadow:0 10px 36px rgba(0,0,0,0.88), 0 0 18px rgba(187,170,119,0.16), inset 0 0 0 1px rgba(255,255,255,0.03);
+  padding:10px;
+  pointer-events:auto;
+}
+#random-event-popup.visible { display:block; }
+.random-event-title { font-size:10px; color:var(--yellow); letter-spacing:2px; text-transform:uppercase; font-weight:bold; margin-bottom:5px; }
+.random-event-body { font-size:10px; color:#cfcfcf; line-height:1.45; margin-bottom:8px; }
+.random-event-timer { font-size:9px; color:#777; margin-bottom:8px; }
+.random-event-actions { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; }
+.random-event-btn { background:#000; border:1px solid var(--border2); color:#aaa; font-family:inherit; font-size:9px; padding:6px 8px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
+.random-event-btn:hover { border-color:var(--white); color:var(--white); }
+.random-event-btn.escape { border-color:#773333; color:#cc7777; }
+.random-event-btn.escape:hover { border-color:var(--red); color:var(--red); }
+.random-event-btn strong { display:block; color:#fff; font-size:10px; margin-bottom:2px; }
+.random-event-btn span { display:block; color:#777; font-size:8px; line-height:1.35; text-transform:none; letter-spacing:0; }
+@media (max-width:700px) { #random-event-popup { top:6px; } .random-event-actions { grid-template-columns:1fr; } }
+
 </style>
 </head>
 <body>
@@ -1129,6 +1182,15 @@ body.chaos-active #map-panel .subzone-row,
   <span id="combat-rates">EXP/min: — · Gold/min: —</span>
   <span id="fr-active-indicator" style="display:none;"></span>
 </div>
+
+<!-- RANDOM EVENT POPUP -->
+<div id="random-event-popup">
+  <div class="random-event-title" id="random-event-title">EVENT</div>
+  <div class="random-event-body" id="random-event-body"></div>
+  <div class="random-event-timer" id="random-event-timer">Auto-picks in 20s</div>
+  <div class="random-event-actions" id="random-event-actions"></div>
+</div>
+
 
 <!-- NAV -->
 <div id="nav">
@@ -1535,6 +1597,17 @@ body.chaos-active #map-panel .subzone-row,
         <button class="subzone-btn" id="sz-hoarspire-frozen_dragon_grave" onclick="setSubZone('hoarspire','frozen_dragon_grave')">Frozen Dragon Grave<span class="sz-desc">Ice drakes and dragon bones</span></button>
       </div>
 
+      <div class="map-zone zone-chaotic" id="zone-chaotic_chasm" onclick="setZoneBase('chaotic_chasm')">
+        <div class="map-zone-name">CHAOTIC CHASM</div>
+        <div class="map-zone-desc">A fractured ravine where all skill damage is reduced by 15%.</div>
+      </div>
+      <div class="subzone-row" id="subzone-chaotic_chasm" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
+        <button class="subzone-btn" id="sz-chaotic_chasm-base" onclick="setSubZone('chaotic_chasm','')">Abyssmouth<span class="sz-desc">Skill damage -15%; brutal chasm beasts</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-maw" onclick="setSubZone('chaotic_chasm','maw')">The Maw<span class="sz-desc">Guzmak, the Devourer lurks here</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-madwind_pass" onclick="setSubZone('chaotic_chasm','madwind_pass')">Madwind Pass<span class="sz-desc">Vaalix, the Necrodragon hunts the pass</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-last_breach" onclick="setSubZone('chaotic_chasm','last_breach')">Last Breach<span class="sz-desc">Kitarasque, the Absolute Mass waits here</span></button>
+      </div>
+
       <div class="map-zone zone-abyss" id="zone-abyss" onclick="setZone('abyss')">
         <div class="map-zone-name">THE ABYSS</div>
         <div class="map-zone-desc">Endless void of escalating horror. Difficulty grows with each floor cleared.</div>
@@ -1559,6 +1632,10 @@ body.chaos-active #map-panel .subzone-row,
           <div class="config-row" style="border:none;">
             <div class="config-label" style="font-size:12px;">Pause Bot<span class="config-sub">Suspend all combat/auto-systems</span></div>
             <div class="toggle-switch" id="toggle-paused" onclick="togglePause()"></div>
+          </div>
+          <div class="config-row" style="border:none;padding-top:7px;">
+            <div class="config-label" style="font-size:12px;">Skip Random Events<span class="config-sub">Prevents optional random events and route event tiles from triggering.</span></div>
+            <div class="toggle-switch" id="toggle-skipEvents" onclick="toggleConfig('skipEvents')"></div>
           </div>
         </div>
 
@@ -1667,6 +1744,7 @@ body.chaos-active #map-panel .subzone-row,
                   <option value="caves">Dark Cave</option>
                   <option value="swamp">Bleakmoor Swamp</option>
                   <option value="hoarspire">Hoarspire Valley</option>
+                  <option value="chaotic_chasm">Chaotic Chasm</option>
                 </select>
                 <select class="fr-zone-select" id="fr-editor-subzone" onchange="frChangeEditorSubzone()" style="min-width:110px;background:#000;border:1px solid #335522;color:#cceeaa;">
                   <option value="">Base Zone</option>
@@ -1676,6 +1754,7 @@ body.chaos-active #map-panel .subzone-row,
               <!-- Toolbar -->
               <div class="fr-toolbar" style="margin-bottom:8px;background:#0a1a06;border:1px solid #2a3a1a;">
                 <button class="fr-tool-btn active" id="fr-tool-route" onclick="frSetTool('route')" style="font-size:10px;padding:4px 12px;">PATH</button>
+                <button class="fr-tool-btn" id="fr-tool-event" onclick="frSetTool('event')" style="font-size:10px;padding:4px 12px;color:#d8b45a;">EVENT</button>
                 <button class="fr-tool-btn" id="fr-tool-erase" onclick="frSetTool('erase')" style="font-size:10px;padding:4px 12px;">ERASE</button>
                 <div class="fr-tool-sep"></div>
                 <button class="fr-tool-btn" onclick="frClearRoute()" style="font-size:10px;padding:4px 12px;">CLEAR</button>
@@ -1700,7 +1779,7 @@ body.chaos-active #map-panel .subzone-row,
                 <button class="fr-action-btn danger" onclick="frDeleteEditing()" style="font-size:10px;padding:5px 14px;">RESET</button>
                 <button class="fr-action-btn" onclick="frUnequipRoute()" id="fr-unequip-btn" style="display:none;font-size:10px;padding:5px 14px;">UNEQUIP</button>
               </div>
-              <div style="font-size:8px;color:#555;line-height:1.4;margin-top:4px;" id="fr-editor-hint">Start at <span style="color:rgba(130,220,100,0.9);">S</span>, then step onto highlighted adjacent tiles. Once saved, routes are permanent — use ✕ in your route list to delete.</div>
+              <div style="font-size:8px;color:#555;line-height:1.4;margin-top:4px;" id="fr-editor-hint">Start at <span style="color:rgba(130,220,100,0.9);">S</span>, then step onto highlighted adjacent tiles. Use EVENT to mark walkable tiles that guarantee a zone random event. Once saved, routes are permanent — use ✕ in your route list to delete.</div>
             </div>
           </div>
         </div>
@@ -2001,7 +2080,9 @@ const G = {
     darkYoungWailAt: 0,
     darkYoungWailWarned: false,
     lastGlobalSkillCastAt: 0,
-    uniqueBossCooldownUntil: 0
+    uniqueBossCooldownUntil: 0,
+    pendingAbominableSnowman: false,
+    abominableSnowmanKills: 0
   },
   inventory: [],
   invMax: 50,
@@ -2033,13 +2114,15 @@ const G = {
   passives: {},
   abyssKills: 0,
   hoarspire: { iceKitsuneKills: 0, pendingShuuna: false },
+  chaoticChasm: { guzmakKills:0, vaalixKills:0 },
   abyssBosses: 0,
   abyssDifficulty: 1,
   swamp: { cursedHollowKills:0, pendingDarkYoung:false },
   lastSpawnCountdown: -1,
+  randomEvent: { active:null, pauseCombat:false, lastTriggerAt:0, nextAllowedAt:0, lastMiniAt:0 },
   config: {
     paused: false,
-    autoheal: false, lootfilter: false, autoequip: false, autosell: false, townRun: false,
+    autoheal: false, lootfilter: false, autoequip: false, autosell: false, townRun: false, skipEvents: false,
     healThreshold: 40, potionPref: 'healing',
     fleeThreshold: 20,
     chaosDifficulty: 0,
@@ -2366,8 +2449,31 @@ function ensureMonsterShieldFields(monster) {
   if (monster.arcaneShield == null) monster.arcaneShield = 0;
   if (monster.shield == null) monster.shield = 0;
 }
+function chaoticSkillDamageMultiplier(monster=null, now=performance.now()) {
+  let mult = 1;
+  if (G.zone === 'chaotic_chasm') mult *= 0.85;
+  if (G.subZone === 'madwind_pass' && (G.combat?.vaalixEffluviumUntil || 0) > now) mult *= 0.90;
+  return mult;
+}
+function bossHealMultiplier(monster=null) {
+  return hasMythicMod('vaalix_tiara') && monster && monster.isBoss ? 0.5 : 1;
+}
 function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
-  const ascendedSkillDmg = applyAscendSkillDamage(baseDmg);
+  const ascendedSkillDmg = Math.max(0, Math.round(applyAscendSkillDamage(baseDmg) * chaoticSkillDamageMultiplier(monster, now)));
+  if (monster && monster.isGuzmak && (monster.guzmakGluttonyUntil || 0) > now) {
+    const attemptedGluttony = Math.max(0, Math.round(ascendedSkillDmg || 0));
+    if (attemptedGluttony > 0) {
+      const heal = Math.max(1, Math.round(attemptedGluttony * bossHealMultiplier(monster)));
+      const before = monster.hp;
+      monster.hp = Math.min(monster.maxHp, monster.hp + heal);
+      const reflect = Math.max(1, Math.round(attemptedGluttony * 0.35));
+      G.hp = Math.max(0, G.hp - reflect);
+      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP and returning ${fmtNum(reflect)} damage!`, 'dmgtaken');
+      applyKitarasqueHeartHeal(reflect);
+      if (G.hp <= 0) { G.hp = 0; die(); }
+    }
+    return { attempted:attemptedGluttony, dealt:0, shieldAbsorbed:0, arcaneBlocked:false, gluttonyAbsorbed:true, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
+  }
   if (isSandwormUnderground(monster, now)) {
     return { attempted:Math.max(0, Math.round(ascendedSkillDmg||0)), dealt:0, shieldAbsorbed:0, arcaneBlocked:false, burrowBlocked:true, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
   }
@@ -2384,7 +2490,7 @@ function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
     remaining -= shieldAbsorbed;
   }
   const dealt = Math.max(0, remaining);
-  if (dealt > 0) monster.hp -= dealt;
+  if (dealt > 0) { monster.hp -= dealt; onMonsterTakesPlayerHit(monster, 'skill', dealt, now); }
   return { attempted, dealt, shieldAbsorbed, arcaneBlocked:false, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
 }
 function isFortifyActive(now=performance.now()) {
@@ -3466,6 +3572,23 @@ const ZONE_DATA = {
         special:'frozen_dragon_grave' }
     }
   },
+  chaotic_chasm: {
+    name: 'Chaotic Chasm', color: '#77ff55', skillDmgMult:0.85,
+    base: { name:'Abyssmouth', delay:[3,7], hp:[2000,4000], dmg:[90,120], exp:[190,290], swarmChance:0.15, swarmSize:[1,3], eliteChance:0.30, maxEliteTags:3,
+      monsters:['Chasm Mawling','Voidgnaw Brute','Riftclaw','Abyssmouth Horror','Fracture Fiend','Chasm Skitterer'],
+      special:'abyssmouth' },
+    subZones: {
+      maw: { name:'The Maw', delay:[3,7], hp:[2400,4600], dmg:[100,155], exp:[230,340], swarmChance:0.15, swarmSize:[1,3], eliteChance:0.32, maxEliteTags:3,
+        monsters:['Maw Grazer','Greedmaw Horror','Gluttonous Ravager','Chasm Devourling','Rift-Fed Brute'],
+        special:'maw' },
+      madwind_pass: { name:'Madwind Pass', delay:[3,7], hp:[3000,5000], dmg:[90,180], exp:[270,410], swarmChance:0.15, swarmSize:[1,3], eliteChance:0.35, maxEliteTags:3,
+        monsters:['Madwind Drake','Rotwing Serpent','Chasm Necrobeast','Gravewind Harrier','Bonegust Wyrm'],
+        special:'madwind_pass' },
+      last_breach: { name:'Last Breach', delay:[3,7], hp:[4000,7000], dmg:[100,220], exp:[330,520], swarmChance:0.15, swarmSize:[1,3], eliteChance:0.38, maxEliteTags:3,
+        monsters:['Massbound Horror','Fleshbreach Giant','Absolute Mawling','Tumorborn Brute','Bloodmass Crawler','Gorged Chasm Beast'],
+        special:'last_breach' }
+    }
+  },
   abyss: {
     name: 'The Abyss', color: '#cc4444',
     base: { delay:[3,3], hp:[500,900], dmg:[35,70], exp:[50,75], swarmChance:0, eliteChance:0.30, maxEliteTags:2,
@@ -3480,10 +3603,10 @@ const PREFIXES = [
   { name:'Elder',  weight:10, hpMult:2.2,  dmgMult:1.4,  expMult:1.45 }
 ];
 
-const ELITE_TAGS = ['FAST','FREEZING','PLAGUED','ARCANE_SHIELDED','SHIELDED','REFLECT'];
+const ELITE_TAGS = ['FAST','FREEZING','PLAGUED','ARCANE_SHIELDED','SHIELDED','REFLECT','VAMPIRIC'];
 const TAG_COLORS = {
   ELITE:'#ffaa00', FAST:'#44dddd', FREEZING:'#88bbff',
-  PLAGUED:'#55cc55', ARCANE_SHIELDED:'#aaaaff', SHIELDING:'#aaaaff', SHIELDED:'#d7c06a', REFLECT:'#dd8833'
+  PLAGUED:'#55cc55', ARCANE_SHIELDED:'#aaaaff', SHIELDING:'#aaaaff', SHIELDED:'#d7c06a', REFLECT:'#dd8833', VAMPIRIC:'#cc3355'
 };
 
 function rollPrefix(canBeElite) {
@@ -3523,7 +3646,8 @@ function tagLabel(t) {
     FAST:'FAST',
     FREEZING:'FREEZING',
     PLAGUED:'PLAGUED',
-    REFLECT:'REFLECT'
+    REFLECT:'REFLECT',
+    VAMPIRIC:'VAMPIRIC'
   })[t] || t;
 }
 
@@ -3806,6 +3930,206 @@ function spawnSnowdevilRabbitSwarm(zc) {
   logEncounterFlavor(G.monsters[0], count, true, false, zc.special || null);
 }
 
+
+function spawnGuzmakBoss(zc) {
+  const now = performance.now();
+  const eliteMult = 1.5;
+  const maxHp = 58000;
+  const m = {
+    id:Date.now()+Math.random(),
+    name:'<span style="color:#77ff55">[BOSS]</span> Guzmak, the Devourer', baseName:'Guzmak, the Devourer',
+    zone:G.zone, subZone:G.subZone, maxHp, hp:maxHp, shield:0, arcaneShield:0,
+    dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
+    expMin:520, expMax:760, atkMin:1000, atkMax:3000,
+    isBoss:true, isElite:false, isGuzmak:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
+    lastAttack:now, uniqueBossKey:'guzmak_devourer', guzmakHitThreshold:9, guzmakHitsTaken:0, guzmakRegenTick:0
+  };
+  G.monsters = [m];
+  logEncounterFlavor(m, 1, false, true, 'maw');
+  log('<span style="color:#77ff55">Guzmak\'s hunger distorts the chasm air...</span>', 'system');
+}
+function spawnVaalixBoss(zc) {
+  const now = performance.now();
+  const eliteMult = 1.5;
+  const maxHp = 70000;
+  const m = {
+    id:Date.now()+Math.random(),
+    name:'<span style="color:#55aa55">[BOSS]</span> Vaalix, the Necrodragon', baseName:'Vaalix, the Necrodragon',
+    zone:G.zone, subZone:G.subZone, maxHp, hp:maxHp, shield:0, arcaneShield:0,
+    dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
+    expMin:680, expMax:980, atkMin:1000, atkMax:3000,
+    isBoss:true, isElite:false, isVaalix:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
+    lastAttack:now, uniqueBossKey:'vaalix_necrodragon', vaalixEffluviumAt:now+3000, vaalixRegenTick:0
+  };
+  G.monsters = [m];
+  logEncounterFlavor(m, 1, false, true, 'madwind_pass');
+  log('<span style="color:#55aa55">Vaalix beats its rotten wings. Cursed air gathers...</span>', 'system');
+}
+function spawnKitarasqueBoss(zc) {
+  const now = performance.now();
+  const eliteMult = 1.5;
+  const maxHp = 90000;
+  const m = {
+    id:Date.now()+Math.random(),
+    name:'<span style="color:#cc3355">[BOSS]</span> Kitarasque, the Absolute Mass', baseName:'Kitarasque, the Absolute Mass',
+    zone:G.zone, subZone:G.subZone, maxHp, hp:maxHp, shield:0, arcaneShield:0,
+    dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
+    expMin:820, expMax:1180, atkMin:4000, atkMax:4000,
+    isBoss:true, isElite:false, isKitarasque:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
+    lastAttack:now, uniqueBossKey:'kitarasque_absolute_mass', kitarasqueHitsTaken:0, kitarasqueRegenTick:0, kitarasqueHeartbeats:{80:false,50:false,30:false}
+  };
+  G.monsters = [m];
+  logEncounterFlavor(m, 1, false, true, 'last_breach');
+  log('<span style="color:#cc3355">The Last Breach pulses. Kitarasque, the Absolute Mass, begins to grow...</span>', 'system');
+}
+function spawnKitarasqueMassBlobs(boss, ts=performance.now()) {
+  for (let i=0; i<5; i++) {
+    const blob = {
+      id:Date.now()+Math.random()+i, name:'<span style="color:#cc6688">Mass Blob</span>', baseName:'Mass Blob',
+      zone:G.zone, subZone:G.subZone, maxHp:1000, hp:1000, shield:0, arcaneShield:0,
+      dmgMin:0, dmgMax:0, expMin:0, expMax:0, atkMin:999999999, atkMax:999999999,
+      isBoss:false, isElite:false, isSwarm:true, isMassBlob:true, kitarasqueBlob:true, tags:[], prefixData:PREFIXES[1], dmgMult:0, lastAttack:ts
+    };
+    G.monsters.push(blob);
+  }
+  log('<span style="color:#cc6688">Kitarasque casts Flesh Tumor — 5 Mass Blobs split from its body!</span>', 'dmgtaken');
+}
+function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
+  if (!monster || amount <= 0) return;
+  if (monster.isKitarasque) {
+    const before = monster.hp;
+    const heal = Math.max(1, Math.round(before * 0.05 * bossHealMultiplier(monster)));
+    monster.hp = Math.min(monster.maxHp, monster.hp + heal);
+    if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
+    monster.kitarasqueHitsTaken = (monster.kitarasqueHitsTaken || 0) + 1;
+    if (monster.kitarasqueHitsTaken >= 5) {
+      monster.kitarasqueHitsTaken = 0;
+      spawnKitarasqueMassBlobs(monster, ts);
+    }
+  }
+  if (monster.isGuzmak) {
+    const hpPct = (monster.hp / Math.max(1, monster.maxHp)) * 100;
+    if (hpPct <= 25 && !monster.guzmakEternalHunger) {
+      monster.guzmakEternalHunger = true;
+      monster.guzmakGluttonyUntil = 0;
+      log('<span style="color:#77ff55">Guzmak stops casting Gluttony and invokes Eternal Hunger!</span>', 'dmgtaken');
+    }
+    if (monster.guzmakEternalHunger && kind === 'basic') {
+      const heal = Math.max(1, Math.round(amount * 0.60 * bossHealMultiplier(monster)));
+      const before = monster.hp;
+      monster.hp = Math.min(monster.maxHp, monster.hp + heal);
+      if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'dmgtaken');
+    } else if (!monster.guzmakEternalHunger && (monster.guzmakGluttonyUntil || 0) <= ts) {
+      monster.guzmakHitsTaken = (monster.guzmakHitsTaken || 0) + 1;
+      const threshold = Math.max(3, monster.guzmakHitThreshold || 9);
+      if (monster.guzmakHitsTaken >= threshold) {
+        monster.guzmakHitsTaken = 0;
+        monster.guzmakHitThreshold = Math.max(3, threshold - 1);
+        monster.guzmakGluttonyUntil = ts + 5000;
+        log(`<span style="color:#77ff55">Guzmak casts Guzmak's Gluttony! Skill damage is absorbed for 5s. Next cast after ${monster.guzmakHitThreshold} hits.</span>`, 'dmgtaken');
+      }
+    }
+  }
+}
+function rollVaalixBasicMiss(target, ts=performance.now()) {
+  if (!target || !target.isVaalix || (G.combat?.vaalixEffluviumUntil || 0) <= ts) return false;
+  if (Math.random() >= 0.15) return false;
+  log('<span style="color:#55aa55">Cursed Rot Effluvium spoils your aim — basic attack misses Vaalix.</span>', 'basicattack');
+  return true;
+}
+function vaalixCastNecrodragonBreath(m, ts=performance.now(), immediate=false) {
+  if (!m || !m.isVaalix) return false;
+  G.combat.necrodragonPausedUntil = ts + (immediate ? 800 : 1500);
+  m.vaalixBreathResolveAt = G.combat.necrodragonPausedUntil;
+  m.vaalixBreathPending = true;
+  log('<span style="color:#55aa55">Vaalix inhales — Necrodragon Breath freezes the battle in rotten silence...</span>', 'dmgtaken');
+  return true;
+}
+function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
+  if ((G.combat?.necrodragonPausedUntil || 0) > ts) return true;
+  const guz = G.monsters.find(m => m.isGuzmak);
+  if (guz) {
+    const before = guz.hp;
+    guz.hp = Math.min(guz.maxHp, guz.hp + 300 * dt * bossHealMultiplier(guz));
+    const tick = Math.floor(ts/1000);
+    if (tick !== guz.guzmakRegenTick && guz.hp > before) { guz.guzmakRegenTick = tick; log(`<span class="log-monster">Guzmak</span> regenerates ${fmtNum(guz.hp-before)} HP.`, 'dmgtaken'); }
+  }
+  const kit = G.monsters.find(m => m.isKitarasque);
+  if (kit) {
+    const before = kit.hp;
+    kit.hp = Math.min(kit.maxHp, kit.hp + 350 * dt * bossHealMultiplier(kit));
+    const tick = Math.floor(ts/1000);
+    if (tick !== kit.kitarasqueRegenTick && kit.hp > before) { kit.kitarasqueRegenTick = tick; log(`<span class="log-monster">Kitarasque</span> regenerates ${fmtNum(kit.hp-before)} HP.`, 'dmgtaken'); }
+    const hpPct = (kit.hp / Math.max(1, kit.maxHp)) * 100;
+    kit.kitarasqueHeartbeats = kit.kitarasqueHeartbeats || {80:false,50:false,30:false};
+    for (const pct of [80,50,30]) {
+      if (!kit.kitarasqueHeartbeats[pct] && hpPct <= pct) {
+        kit.kitarasqueHeartbeats[pct] = true;
+        const heal = Math.max(1, Math.round(kit.maxHp * 0.10 * bossHealMultiplier(kit)));
+        const hbBefore = kit.hp;
+        kit.hp = Math.min(kit.maxHp, kit.hp + heal);
+        log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'dmgtaken');
+      }
+    }
+    if (!kit.kitarasqueDesperateGrowthCast && hpPct <= 10) {
+      kit.kitarasqueDesperateGrowthCast = true;
+      kit.kitarasqueDesperateGrowthAt = ts + 10000;
+      log('<span style="color:#cc3355">Kitarasque casts Desperate Growth — kill it within 10 seconds or it regains 20% max HP!</span>', 'dmgtaken');
+    }
+    if (kit.kitarasqueDesperateGrowthCast && !kit.kitarasqueDesperateGrowthResolved && ts >= (kit.kitarasqueDesperateGrowthAt || Infinity)) {
+      kit.kitarasqueDesperateGrowthResolved = true;
+      const dgBefore = kit.hp;
+      kit.hp = Math.min(kit.maxHp, kit.hp + Math.round(kit.maxHp * 0.20 * bossHealMultiplier(kit)));
+      log(`<span style="color:#cc3355">Desperate Growth completes — Kitarasque regains ${fmtNum(kit.hp-dgBefore)} HP!</span>`, 'dmgtaken');
+    }
+  }
+  const v = G.monsters.find(m => m.isVaalix);
+  if (!v) return false;
+  const before = v.hp;
+  v.hp = Math.min(v.maxHp, v.hp + 300 * dt * bossHealMultiplier(v));
+  const tick = Math.floor(ts/1000);
+  if (tick !== v.vaalixRegenTick && v.hp > before) { v.vaalixRegenTick = tick; log(`<span class="log-monster">Vaalix</span> regenerates ${fmtNum(v.hp-before)} HP.`, 'dmgtaken'); }
+  if (!v.vaalixEffluviumCast && ts >= (v.vaalixEffluviumAt || Infinity)) {
+    v.vaalixEffluviumCast = true;
+    G.combat.vaalixEffluviumUntil = Infinity;
+    log('<span style="color:#55aa55">Vaalix casts Cursed Rot Effluvium — basic attacks may miss, skill damage weakens, and HP regen is reduced by 10/s.</span>', 'dmgtaken');
+  }
+  const hpPct = (v.hp / Math.max(1, v.maxHp)) * 100;
+  if (!v.vaalixBreathWarned70 && hpPct <= 70) {
+    v.vaalixBreathWarned70 = true;
+    v.vaalixBreathAt = ts + 10000;
+    log('<span style="color:#55aa55">Vaalix gathers Necrodragon Breath — impact in 10 seconds!</span>', 'dmgtaken');
+  }
+  if (v.vaalixBreathAt && !v.vaalixBreathPending && ts >= v.vaalixBreathAt) {
+    v.vaalixBreathAt = 0;
+    vaalixCastNecrodragonBreath(v, ts);
+    return true;
+  }
+  if (v.vaalixBreathPending && ts >= (v.vaalixBreathResolveAt || Infinity)) {
+    v.vaalixBreathPending = false;
+    const dmg = Math.max(1, Math.round(G.hp * 0.70));
+    G.hp = Math.max(0, G.hp - dmg);
+    G.debuffs.necrorotUntil = ts + 10000;
+    log('<span style="color:#55aa55">☠ Vaalix casts Necrodragon Breath — dark green rot floods the log!</span>', 'dmgtaken');
+    log(`<span style="color:#55aa55">Necrodragon Breath deals ${fmtNum(dmg)} damage and inflicts Necrorot for 10s. Potion healing becomes damage.</span>`, 'dmgtaken');
+    applyKitarasqueHeartHeal(dmg);
+    if (G.hp <= 0) { G.hp = 0; die(); return true; }
+  }
+  if (!v.vaalixResurrectionStarted && !v.vaalixResurrected && hpPct <= 30) {
+    v.vaalixResurrectionStarted = true;
+    v.vaalixResurrectAt = ts + 40000;
+    log('<span style="color:#55aa55">Vaalix begins Necrodragon Resurrection. Kill it within 40 seconds or it returns at 50% HP!</span>', 'dmgtaken');
+  }
+  if (v.vaalixResurrectionStarted && !v.vaalixResurrected && ts >= (v.vaalixResurrectAt || Infinity)) {
+    v.vaalixResurrected = true;
+    v.vaalixResurrectionStarted = false;
+    v.hp = Math.max(v.hp, Math.round(v.maxHp * 0.50));
+    log('<span style="color:#55aa55">Necrodragon Resurrection completes — Vaalix returns to 50% HP!</span>', 'dmgtaken');
+    vaalixCastNecrodragonBreath(v, ts, true);
+    return true;
+  }
+  return false;
+}
 function spawnAislongBoss(zc) {
   const now = performance.now();
   const maxHp = 50000;
@@ -3848,6 +4172,70 @@ function spawnShuunaBoss(zc) {
     shuunaAttackCount:0
   });
   log(`<span style="color:#d8f1ff">❄ A snow storm brews across Pale Hollow... Shuuna, the Yuki Musume descends through the white veil.</span>`, 'system');
+}
+
+
+function spawnAbominableSnowmanBoss(zc) {
+  const now = performance.now();
+  const maxHp = 40000;
+  const dmgMult = 2.4; // 2x elite-equivalent damage for Sheercold Terrace
+  G.monsters.push({
+    id:Date.now()+Math.random(),
+    name:`<span style="color:${TAG_COLORS.ELITE}">[BOSS]</span> Abominable Snowman`,
+    baseName:'Abominable Snowman', zone:G.zone, subZone:G.subZone,
+    maxHp, hp:maxHp, shield:0, arcaneShield:0,
+    dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
+    expMin:1100, expMax:1450,
+    atkMin:2000, atkMax:2000,
+    isBoss:true, isAbyssBoss:false, isAbominableSnowman:true, uniqueBossKey:'abominable_snowman', isElite:false, isSwarm:false, tags:[],
+    prefixData:PREFIXES[1], dmgMult,
+    lastAttack:now,
+    snowstormAt:now + 3000,
+    snowstormActive:false,
+    blizzardActive:false,
+    blizzardNextTick:0
+  });
+  log(`<span style="color:#d8f1ff">☃ The Abominable Snowman lumbers onto Sheercold Terrace. A snowstorm is gathering...</span>`, 'system');
+}
+
+function getAbominableSnowman() {
+  return (G.monsters || []).find(m => m && m.isAbominableSnowman && m.hp > 0) || null;
+}
+function isAbominableSnowstormActive(ts=performance.now()) {
+  const m = getAbominableSnowman();
+  return !!(m && (m.snowstormActive || m.blizzardActive));
+}
+function rollAbominableSnowMiss(kind, target, ts=performance.now()) {
+  if (!isAbominableSnowstormActive(ts)) return false;
+  if (Math.random() >= 0.40) return false;
+  const name = target?.baseName || target?.name || 'Abominable Snowman';
+  const label = kind === 'skill' ? 'skill' : 'attack';
+  log(`<span style="color:#d8f1ff">❄ The snowstorm blinds you — your ${label} misses <span class="log-monster">${name}</span>.</span>`, kind === 'skill' ? 'spelldmg' : 'basicattack');
+  return true;
+}
+function updateAbominableSnowman(ts=performance.now()) {
+  const m = getAbominableSnowman();
+  if (!m) return false;
+  if (!m.snowstormActive && ts >= (m.snowstormAt || 0)) {
+    m.snowstormActive = true;
+    log(`<span style="color:#d8f1ff">❄ Snowstorm sets in! Attacks and skills have a 40% chance to miss Abominable Snowman.</span>`, 'dmgtaken');
+  }
+  const hpPct = (m.hp / Math.max(1, m.maxHp)) * 100;
+  if (!m.blizzardActive && hpPct <= 30) {
+    m.blizzardActive = true;
+    m.snowstormActive = true;
+    m.blizzardNextTick = ts + 1500;
+    log(`<span style="color:#bfe8ff">❄ The snowstorm upgrades to BLIZZARD! It will deal 150 damage every 1.5 seconds.</span>`, 'dmgtaken');
+  }
+  if (m.blizzardActive && ts >= (m.blizzardNextTick || 0)) {
+    m.blizzardNextTick = ts + 1500;
+    const dmg = 150;
+    G.hp = Math.max(0, G.hp - dmg);
+    log(`<span style="color:#bfe8ff">❄ Blizzard tears through you for ${fmtNum(dmg)} damage!</span>`, 'dmgtaken');
+    applyKitarasqueHeartHeal(dmg);
+    if (G.hp <= 0) { G.hp = 0; die(); return true; }
+  }
+  return false;
 }
 
 function spawnBandittoBoss(zc) {
@@ -3998,7 +4386,7 @@ function spawnRouteGoblinKingBoss(zc) {
 function spawnRouteEliteSwarm(zc, sourceLabel='Boss tile fallback') {
   const swarmCount = randi(3, 5);
   const maxEliteTags = zc.maxEliteTags || 1;
-  const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
+  const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'chaotic_chasm' || G.zone === 'abyss');
   for (let i = 0; i < swarmCount; i++) {
     const baseName = zc.monsters[randi(0, zc.monsters.length-1)];
     const prefix = rollPrefix(true);
@@ -4066,6 +4454,10 @@ function spawnRouteUniqueBossForCurrentZone(zc) {
   if (special === 'crimson_rot') { spawnQuelBoss(zc); return true; }
   if (special === 'witch_coven') { spawnWitchOfTheWastesBoss(zc); return true; }
   if (special === 'cursed_hollow' && hasDarkYoungKeys()) { spawnEyeDarkYoungBoss(zc); return true; }
+  if (special === 'sheercold_terrace') { spawnAbominableSnowmanBoss(zc); return true; }
+  if (special === 'maw') { spawnGuzmakBoss(zc); return true; }
+  if (special === 'madwind_pass') { spawnVaalixBoss(zc); return true; }
+  if (special === 'last_breach') { spawnKitarasqueBoss(zc); return true; }
   if (special === 'pale_hollow') { spawnShuunaBoss(zc); return true; }
   if (special === 'frozen_dragon_grave') { spawnAislongBoss(zc); return true; }
   return false;
@@ -4198,6 +4590,26 @@ function spawnMonsters() {
     return;
   }
 
+  if (special==='sheercold_terrace' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+    spawnAbominableSnowmanBoss(zc);
+    return;
+  }
+
+  if (special==='maw' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+    spawnGuzmakBoss(zc);
+    return;
+  }
+
+  if (special==='madwind_pass' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+    spawnVaalixBoss(zc);
+    return;
+  }
+
+  if (special==='last_breach' && !isUniqueBossCooldownActive() && Math.random() < 0.05) {
+    spawnKitarasqueBoss(zc);
+    return;
+  }
+
   if ((special==='snowwind_plains' || special==='sheercold_terrace') && Math.random() < 0.20) {
     spawnSnowdevilRabbitSwarm(zc);
     return;
@@ -4236,6 +4648,16 @@ function spawnMonsters() {
   // Standard spawn
   // Farm route tile modifiers
   const frTile = (typeof frGetCurrentTileModifiers === 'function') ? frGetCurrentTileModifiers() : null;
+
+  // EVENT TILE — guarantees one zone random event when stepped on.
+  if (shouldTriggerRouteEventTile(frTile, performance.now())) {
+    const result = triggerGuaranteedRouteEvent(performance.now());
+    if (result === 'replace') {
+      if (typeof frOnSpawn === 'function') frOnSpawn();
+      return;
+    }
+    // 'continue' zone mini events resolve without pausing, then the normal spawn continues.
+  }
 
   // BOSS TILE — outside Abyss, only unique named bosses can spawn.
   // Zones/subzones without an available unique boss fall back to elite swarms instead of generic bosses.
@@ -4278,7 +4700,7 @@ function spawnMonsters() {
   const isSwarm = zc.swarmChance > 0 && Math.random() < zc.swarmChance;
   const count = isSwarm ? randi(zc.swarmSize[0], zc.swarmSize[1]) : 1;
   const maxEliteTags = zc.maxEliteTags || 1;
-  const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'abyss');
+  const forceMaxEliteTags = (G.zone === 'swamp' || G.zone === 'hoarspire' || G.zone === 'chaotic_chasm' || G.zone === 'abyss');
   const isElite = forceElite || (!isSwarm && zc.eliteChance > 0 && Math.random() < zc.eliteChance);
 
   for (let i=0; i<count; i++) {
@@ -4484,6 +4906,507 @@ function spawnWitchCoven(zc) {
     }
   }
   logEncounterFlavor(witch, G.monsters.length, hasMinions, canElite, 'witch_coven');
+}
+
+
+// RANDOM EVENTS ---------------------------------------------------------
+function isRandomEventBaseZoneEligible() {
+  return G.started && !G.dead && G.zone && G.zone !== 'town' && G.zone !== 'abyss';
+}
+function isRandomEventZoneEligible() {
+  return isRandomEventBaseZoneEligible() && !G.config?.skipEvents;
+}
+function randomEventState() {
+  if (!G.randomEvent || typeof G.randomEvent !== 'object') G.randomEvent = { active:null, pauseCombat:false, lastTriggerAt:0, nextAllowedAt:0, lastMiniAt:0 };
+  return G.randomEvent;
+}
+function randomEventZoneScale() {
+  const idx = ['fields','caves','swamp','hoarspire','chaotic_chasm'].indexOf(G.zone);
+  return Math.max(1, idx + 1);
+}
+function randomEventChoose(arr) { return arr[randi(0, arr.length - 1)]; }
+function randomEventCanTrigger(ts=performance.now()) {
+  const st = randomEventState();
+  return isRandomEventBaseZoneEligible() && !st.active && G.monsters.length === 0 && ts >= (st.nextAllowedAt || 0);
+}
+function randomEventZoneMiniAllowed() {
+  // Forbidden Library should never roll the Cave-in mini event.
+  if (G.zone === 'caves' && G.subZone === 'forbidden_library') return false;
+  return ['fields','caves','swamp','hoarspire','chaotic_chasm'].includes(G.zone);
+}
+function rollRandomEventType() {
+  const roll = Math.random();
+  if (roll < 0.25) return 'lootGoblin';
+  if (roll < 0.47) return 'shrine';
+  if (roll < 0.68) return 'chest';
+  if (roll < 0.86) return 'abyssalPortal';
+  return randomEventZoneMiniAllowed() ? 'zoneMini' : randomEventChoose(['lootGoblin','shrine','chest','abyssalPortal']);
+}
+function rollGuaranteedRouteEventType() {
+  const roll = Math.random();
+  if (roll < 0.24) return 'lootGoblin';
+  if (roll < 0.45) return 'shrine';
+  if (roll < 0.66) return 'chest';
+  if (roll < 0.84) return 'abyssalPortal';
+  return randomEventZoneMiniAllowed() ? 'zoneMini' : randomEventChoose(['lootGoblin','shrine','chest','abyssalPortal']);
+}
+function randomEventTitleForType(type) {
+  if (type === 'lootGoblin') return 'Loot Goblin';
+  if (type === 'shrine') return 'Ancient Shrine';
+  if (type === 'chest') return 'Treasure Chest';
+  if (type === 'mimic') return 'Mimic Chest';
+  if (type === 'abyssalPortal') return 'Abyssal Portal';
+  if (type === 'zoneMini') {
+    if (G.zone === 'fields' && G.subZone === 'stormwind_fields') return 'Thunderstorm';
+    if (G.zone === 'fields') return 'Lost Farmer';
+    if (G.zone === 'caves') return 'Cave-in';
+    if (G.zone === 'swamp') return 'Witch Ritual';
+    if (G.zone === 'hoarspire') return 'Frozen Caravan';
+    if (G.zone === 'chaotic_chasm') return 'Chasm Cache';
+  }
+  return 'Random Event';
+}
+function logEscapedFromEvent(name) {
+  log(`<span style="color:#aa7777">escaped from ${name}</span>`, 'system');
+}
+function skipRandomEventType(type, cooldownMin=45000, cooldownMax=90000) {
+  const st = randomEventState();
+  const now = performance.now();
+  st.active = null;
+  st.pauseCombat = false;
+  st.nextAllowedAt = now + randi(cooldownMin, cooldownMax);
+  st.lastTriggerAt = now;
+  hideRandomEventPopup();
+  logEscapedFromEvent(randomEventTitleForType(type));
+  return true;
+}
+function showRandomEventPopup(ev) {
+  const box = document.getElementById('random-event-popup');
+  if (!box || !ev) return;
+  document.getElementById('random-event-title').textContent = ev.title || 'Random Event';
+  document.getElementById('random-event-body').innerHTML = ev.body || '';
+  const actions = document.getElementById('random-event-actions');
+  actions.innerHTML = '';
+  (ev.options || []).forEach((op, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'random-event-btn';
+    btn.innerHTML = `<strong>${op.label}</strong><span>${op.desc || ''}</span>`;
+    btn.onclick = () => resolveRandomEventChoice(idx, false);
+    actions.appendChild(btn);
+  });
+  const esc = document.createElement('button');
+  esc.className = 'random-event-btn escape';
+  esc.innerHTML = `<strong>Escape</strong><span>Skip this event and continue farming.</span>`;
+  esc.onclick = () => escapeActiveRandomEvent();
+  actions.appendChild(esc);
+  box.classList.add('visible');
+  updateRandomEventPopupTimer(performance.now());
+}
+function hideRandomEventPopup() {
+  const box = document.getElementById('random-event-popup');
+  if (box) box.classList.remove('visible');
+}
+function updateRandomEventPopupTimer(ts=performance.now()) {
+  const st = randomEventState();
+  const ev = st.active;
+  const el = document.getElementById('random-event-timer');
+  if (!el || !ev) return;
+  if (ev.kind === 'combat') {
+    el.textContent = 'Combat continues. Escape to skip this event.';
+    return;
+  }
+  if (ev.kind !== 'choice') return;
+  const left = Math.max(0, Math.ceil(((ev.expiresAt || ts) - ts) / 1000));
+  el.textContent = `Auto-picks in ${left}s`;
+}
+function tickRandomEvent(ts=performance.now()) {
+  tickThunderstormEvent(ts);
+  tickAbyssalPortalEvent(ts);
+  const st = randomEventState();
+  const ev = st.active;
+  if (!ev) return;
+  if (ev.kind === 'choice') {
+    updateRandomEventPopupTimer(ts);
+    if (ts >= (ev.expiresAt || 0)) {
+      const opts = ev.options || [];
+      const idx = opts.length ? randi(0, opts.length - 1) : 0;
+      resolveRandomEventChoice(idx, true);
+    }
+  }
+}
+function startChoiceRandomEvent(type) {
+  const st = randomEventState();
+  const scale = randomEventZoneScale();
+  let ev = null;
+  if (type === 'shrine') {
+    ev = {
+      kind:'choice', type, title:'Ancient Shrine', pauseCombat:true, startedAt:performance.now(), expiresAt:performance.now()+20000,
+      body:'An ancient shrine hums above the battlefield. Choose a blessing before the shrine decides for you.',
+      options:[
+        { label:'Wealth', desc:'+35% gold from kills for 5 minutes.', apply:()=>applyRandomEventBuff('wealth', 300000, 0.35) },
+        { label:'Growth', desc:'+25% EXP from kills for 5 minutes.', apply:()=>applyRandomEventBuff('growth', 300000, 0.25) },
+        { label:'Steel', desc:'+20% equipment drop attempts for 5 minutes.', apply:()=>applyRandomEventBuff('steel', 300000, 0.20) }
+      ]
+    };
+  } else if (type === 'chest') {
+    ev = {
+      kind:'choice', type, title:'Treasure Chest', pauseCombat:true, startedAt:performance.now(), expiresAt:performance.now()+20000,
+      body:'A heavy chest sits in your path. Choose how to handle it. It may be a real cache... or a mimic.',
+      options:[
+        { label:'Force Open', desc:'Fast rewards, higher mimic chance.', apply:()=>resolveTreasureChest('force', scale) },
+        { label:'Open Carefully', desc:'Safer, slightly smaller reward.', apply:()=>resolveTreasureChest('careful', scale) },
+        { label:'Leave It', desc:'Skip the chest and continue farming.', apply:()=>log('You leave the treasure chest untouched.', 'system') }
+      ]
+    };
+  } else if (type === 'abyssalPortal') {
+    ev = {
+      kind:'choice', type, title:'Abyssal Portal', pauseCombat:true, startedAt:performance.now(), expiresAt:performance.now()+20000,
+      body:'A violet portal tears open nearby. Entering creates a 40-second elite rush: a new elite appears instantly whenever one dies.',
+      options:[
+        { label:'Enter Portal', desc:'Fight instant elite spawns for 40 seconds.', apply:()=>startAbyssalPortalEvent(scale) }
+      ]
+    };
+  }
+  if (!ev) return false;
+  st.active = ev;
+  st.pauseCombat = !!ev.pauseCombat;
+  st.lastTriggerAt = performance.now();
+  showRandomEventPopup(ev);
+  log(`<span style="color:var(--yellow)">Random Event: ${ev.title}</span>`, 'system');
+  updateUI();
+  return true;
+}
+function resolveRandomEventChoice(idx=0, auto=false) {
+  const st = randomEventState();
+  const ev = st.active;
+  if (!ev) return;
+  const op = (ev.options || [])[idx] || (ev.options || [])[0];
+  hideRandomEventPopup();
+  st.active = null;
+  st.pauseCombat = false;
+  st.nextAllowedAt = performance.now() + randi(45000, 90000);
+  if (op) {
+    log(`${auto ? 'The event chooses randomly' : 'Chosen'}: ${op.label}`, 'system');
+    if (typeof op.apply === 'function') op.apply();
+  }
+  if (G.monsters.length === 0) G.nextSpawnAt = performance.now() + 1000;
+  updateUI();
+}
+function escapeActiveRandomEvent() {
+  const st = randomEventState();
+  const ev = st.active;
+  if (!ev) return;
+  hideRandomEventPopup();
+  st.active = null;
+  st.pauseCombat = false;
+  st.nextAllowedAt = performance.now() + randi(45000, 90000);
+  const title = ev.title || randomEventTitleForType(ev.type);
+  if (ev.kind === 'combat') {
+    const mid = ev.monsterId;
+    if (ev.type === 'abyssalPortal') {
+      G.monsters = (G.monsters || []).filter(m => !m.isAbyssalPortalElite);
+      st.portalUntil = 0;
+    } else {
+      G.monsters = (G.monsters || []).filter(m => m.id !== mid);
+    }
+    logEscapedFromEvent(title);
+    if (G.monsters.length === 0) G.nextSpawnAt = performance.now() + spawnDelay(G.zone);
+    updateUI();
+    return;
+  }
+  logEscapedFromEvent(title);
+  if (G.monsters.length === 0) G.nextSpawnAt = performance.now() + 1000;
+  updateUI();
+}
+function clearRandomEventCombatForMonster(m) {
+  const st = randomEventState();
+  const ev = st.active;
+  if (!ev || ev.kind !== 'combat' || !m || ev.monsterId !== m.id) return;
+  hideRandomEventPopup();
+  st.active = null;
+  st.pauseCombat = false;
+}
+function applyRandomEventBuff(key, durationMs, value) {
+  if (!G.randomEventBuffs || typeof G.randomEventBuffs !== 'object') G.randomEventBuffs = {};
+  const now = performance.now();
+  G.randomEventBuffs[key] = { until: now + durationMs, value };
+  const names = { wealth:'Blessing of Wealth', growth:'Blessing of Growth', steel:'Blessing of Steel' };
+  log(`<span style="color:var(--yellow)">${names[key] || 'Blessing'} active for ${Math.round(durationMs/60000)} minutes.</span>`, 'system');
+}
+function getRandomEventBuffValue(key, ts=performance.now()) {
+  const b = G.randomEventBuffs && G.randomEventBuffs[key];
+  if (!b || ts >= (b.until || 0)) return 0;
+  return Number(b.value || 0);
+}
+function resolveTreasureChest(mode, scale) {
+  const mimicChance = mode === 'force' ? 0.35 : 0.15;
+  if (Math.random() < mimicChance) {
+    spawnMimicChestMonster(scale);
+    return;
+  }
+  const gold = randi(800, 1800) * scale * (mode === 'force' ? 1 : 0.75);
+  const ge = randi(8, 18) * scale;
+  G.gold += Math.round(gold);
+  G.gearEssence = (G.gearEssence || 0) + ge;
+  const itemRolls = mode === 'force' ? randi(1, 3) : randi(1, 2);
+  for (let i=0; i<itemRolls; i++) addItemToInventory(generateItem(null, false, scale >= 3 ? 'rare' : undefined));
+  log(`Treasure chest opened: +${fmtNum(gold)}g, +${ge} Gear Essence, ${itemRolls} equipment.`, 'itemdrop');
+}
+function spawnMimicChestMonster(scale=1) {
+  const now = performance.now();
+  const hp = Math.round(randi(180, 320) * scale);
+  const dmg = Math.round(8 * scale);
+  const monsterId = Date.now()+Math.random();
+  G.monsters = [{
+    id:monsterId, name:'Mimic Chest', baseName:'Mimic Chest', zone:G.zone, subZone:G.subZone,
+    maxHp:hp, hp, shield:0, arcaneShield:0,
+    dmgMin:dmg, dmgMax:Math.round(dmg*1.8), expMin:20*scale, expMax:35*scale,
+    atkMin:1200, atkMax:2400, isBoss:false, isElite:true, isMimic:true, isSwarm:false, tags:['VAMPIRIC'],
+    prefixData:PREFIXES[1], dmgMult:1, lastAttack:now
+  }];
+  const st = randomEventState();
+  st.active = { kind:'combat', type:'mimic', title:'Mimic Chest', monsterId, pauseCombat:false, startedAt:now };
+  st.pauseCombat = false;
+  showRandomEventPopup({ kind:'combat', type:'mimic', title:'Mimic Chest', monsterId, body:'The chest transforms into a Mimic. Your bot fights it automatically. Escape to skip the fight.', options:[] });
+  log('<span style="color:#d8b45a">The chest snaps open — it was a Mimic!</span>', 'system');
+  markFarmEncounterStart(now);
+}
+function triggerGuaranteedRouteEvent(ts=performance.now()) {
+  if (!isRandomEventBaseZoneEligible()) return 'none';
+  const type = rollGuaranteedRouteEventType();
+  if (G.config?.skipEvents) {
+    skipRandomEventType(type, 30000, 60000);
+    return 'replace';
+  }
+  if (type === 'lootGoblin') return spawnLootGoblinEvent() ? 'replace' : 'none';
+  if (type === 'shrine') return startChoiceRandomEvent('shrine') ? 'replace' : 'none';
+  if (type === 'chest') return startChoiceRandomEvent('chest') ? 'replace' : 'none';
+  if (type === 'abyssalPortal') return startChoiceRandomEvent('abyssalPortal') ? 'replace' : 'none';
+  return triggerZoneMiniEvent() ? 'continue' : 'none';
+}
+function shouldTriggerRouteEventTile(frTile, ts=performance.now()) {
+  if (!frTile || !frTile.eventTile) return false;
+  const st = randomEventState();
+  if (st.active || G.monsters.length > 0) return false;
+  if (st.lastEventTileAt && ts - st.lastEventTileAt < 500) return false;
+  st.lastEventTileAt = ts;
+  return true;
+}
+function maybeTriggerRandomEvent(ts=performance.now()) {
+  if (!randomEventCanTrigger(ts)) return false;
+  // Events are intentionally uncommon and never run in the Abyss.
+  if (Math.random() > 0.085) return false;
+  const type = rollRandomEventType();
+  if (G.config?.skipEvents) {
+    skipRandomEventType(type);
+    return false;
+  }
+  if (type === 'lootGoblin') return spawnLootGoblinEvent();
+  if (type === 'shrine') return startChoiceRandomEvent('shrine');
+  if (type === 'chest') return startChoiceRandomEvent('chest');
+  if (type === 'abyssalPortal') return startChoiceRandomEvent('abyssalPortal');
+  triggerZoneMiniEvent();
+  return true;
+}
+function spawnLootGoblinEvent() {
+  if (!isRandomEventZoneEligible()) return false;
+  const scale = randomEventZoneScale();
+  const now = performance.now();
+  const hitsRequired = 15;
+  const monsterId = Date.now()+Math.random();
+  G.monsters = [{
+    id:monsterId, name:'Loot Goblin', baseName:'Loot Goblin', zone:G.zone, subZone:G.subZone,
+    maxHp:hitsRequired, hp:hitsRequired, shield:0, arcaneShield:0,
+    dmgMin:0, dmgMax:0, expMin:12*scale, expMax:20*scale,
+    atkMin:1000, atkMax:1000, isBoss:false, isElite:false, isLootGoblin:true, isSwarm:false, tags:[],
+    prefixData:PREFIXES[1], dmgMult:0, lastAttack:now, lootGoblinFleeAt:now + 30000, lootGoblinHits:0, lootGoblinHitsRequired:hitsRequired
+  }];
+  const st = randomEventState();
+  st.active = { kind:'combat', type:'lootGoblin', title:'Loot Goblin', monsterId, pauseCombat:false, startedAt:now };
+  st.pauseCombat = false;
+  st.nextAllowedAt = now + randi(60000, 120000);
+  markFarmEncounterStart(now);
+  showRandomEventPopup({ kind:'combat', type:'lootGoblin', title:'Loot Goblin', monsterId, body:'A Loot Goblin is fleeing with a stuffed sack. Land 15 hits within 30 seconds to kill it. Escape to skip the event.', options:[] });
+  log('<span style="color:#d8b45a">💰 Loot Goblin appears! Land 15 hits within 30 seconds before it escapes.</span>', 'system');
+  return true;
+}
+function awardLootGoblinHitGold(m, dealt=0) {
+  if (!m || !m.isLootGoblin || dealt <= 0) return;
+  const scale = randomEventZoneScale();
+  const req = Math.max(1, Math.round(m.lootGoblinHitsRequired || 15));
+  m.lootGoblinHits = Math.min(req, Math.round((m.lootGoblinHits || 0) + 1));
+  m.hp = Math.max(0, req - m.lootGoblinHits);
+  m.maxHp = req;
+  const g = randi(25, 90) * scale;
+  G.gold += g;
+  log(`💰 Loot Goblin spills ${fmtNum(g)}g from hit ${m.lootGoblinHits}/${req}!`, 'golddrop');
+}
+function updateLootGoblinEscape(ts=performance.now()) {
+  const gob = G.monsters.find(m => m.isLootGoblin);
+  if (!gob) return false;
+  const left = (gob.lootGoblinFleeAt || 0) - ts;
+  if (left <= 0) {
+    G.monsters = G.monsters.filter(m => m !== gob);
+    clearRandomEventCombatForMonster(gob);
+    log('<span style="color:#d8b45a">💨 Loot Goblin escapes with its sack!</span>', 'system');
+    G.nextSpawnAt = ts + spawnDelay(G.zone);
+    return true;
+  }
+  const bucket = Math.ceil(left / 10000);
+  if (left <= 20000 && bucket !== gob.lootGoblinWarnBucket) {
+    gob.lootGoblinWarnBucket = bucket;
+    log(`Loot Goblin escape warning: ${Math.ceil(left/1000)}s left.`, 'system');
+  }
+  return false;
+}
+function triggerZoneMiniEvent() {
+  if (!isRandomEventZoneEligible() || !randomEventZoneMiniAllowed()) return false;
+  const scale = randomEventZoneScale();
+  const z = G.zone;
+  if (z === 'fields' && G.subZone === 'stormwind_fields') {
+    startThunderstormEvent();
+  } else if (z === 'fields') {
+    const gold = randi(500, 1200) * scale;
+    G.gold += gold;
+    const type = rollPotionForZone(G.zone, G.subZone);
+    addPotion(type, 1);
+    log(`<span style="color:#88cc66">Lost Farmer rescued during the route: +${fmtNum(gold)}g and 1 ${POTION_TYPES[type].name}.</span>`, 'system');
+  } else if (z === 'caves') {
+    if (G.subZone === 'forbidden_library') return false;
+    const ge = randi(20, 45) * scale;
+    G.gearEssence = (G.gearEssence || 0) + ge;
+    log(`<span style="color:#bb8855">Cave-in cleared while fighting: +${ge} Gear Essence from exposed ore.</span>`, 'system');
+  } else if (z === 'swamp') {
+    const exp = randi(40, 90) * scale;
+    G.exp += exp;
+    log(`<span style="color:#9977bb">Witch ritual interrupted by the ongoing fight: +${fmtNum(exp)} EXP.</span>`, 'system');
+  } else if (z === 'hoarspire') {
+    const gold = randi(900, 1800) * scale;
+    const ge = randi(10, 25) * scale;
+    G.gold += gold;
+    G.gearEssence = (G.gearEssence || 0) + ge;
+    log(`<span style="color:#88bbff">Frozen caravan supplies recovered: +${fmtNum(gold)}g and +${ge} Gear Essence.</span>`, 'system');
+  } else if (z === 'chaotic_chasm') {
+    const ge = randi(25, 55) * scale;
+    G.gearEssence = (G.gearEssence || 0) + ge;
+    log(`<span style="color:#77ff55">Chasm cache cracked open mid-fight: +${ge} Gear Essence.</span>`, 'system');
+  }
+  randomEventState().nextAllowedAt = performance.now() + randi(45000, 90000);
+  updateUI();
+  return true;
+}
+function startThunderstormEvent() {
+  const st = randomEventState();
+  const now = performance.now();
+  st.thunderstormUntil = now + 20000;
+  st.thunderstormNextAt = now + randi(1000, 2000);
+  st.thunderstormStrikes = 0;
+  log('<span style="color:#ffff88">⚡ Thunderstorm rolls over Stormwind Fields for 20 seconds.</span>', 'system');
+}
+function tickThunderstormEvent(ts=performance.now()) {
+  const st = randomEventState();
+  if (!st.thunderstormUntil || ts >= st.thunderstormUntil) {
+    if (st.thunderstormUntil) log('<span style="color:#bbbb88">⚡ The thunderstorm fades.</span>', 'system');
+    st.thunderstormUntil = 0;
+    st.thunderstormNextAt = 0;
+    return;
+  }
+  if (!st.thunderstormNextAt || ts < st.thunderstormNextAt) return;
+  st.thunderstormNextAt = ts + randi(1000, 2000);
+  st.thunderstormStrikes = (st.thunderstormStrikes || 0) + 1;
+  const target = (G.monsters || [])[0];
+  const scale = randomEventZoneScale();
+  if (target && target.hp > 0) {
+    const dmg = Math.max(1, Math.round(randi(28, 56) * scale));
+    visualCombatEvent('lightning', dmg, false, target);
+    target.hp -= dmg;
+    log(`<span style="color:#ffff88">⚡ Thunderstrike hits <span class="log-monster">${target.baseName || target.name}</span> for ${fmtNum(dmg)} damage.</span>`, 'spelldmg');
+    if (target.hp <= 0) killMonster(target, ts);
+  } else {
+    log('<span style="color:#ffff88">⚡ Thunderstrike crashes into the empty field.</span>', 'system');
+  }
+}
+function spawnAbyssalPortalElite(ts=performance.now()) {
+  const zc = getZoneConfig();
+  if (!zc || G.zone === 'abyss') return false;
+  const baseName = zc.monsters[randi(0, zc.monsters.length - 1)];
+  const prefix = rollPrefix(true);
+  const tags = rollEliteTags(zc.maxEliteTags || 1, true);
+  let baseHp = Math.round(randi(zc.hp[0], zc.hp[1]) * prefix.hpMult * 2.1);
+  const dmgMult = prefix.dmgMult * 1.25;
+  let atkMin = tags.includes('FAST') ? 1000 : 1000;
+  let atkMax = tags.includes('FAST') ? 1000 : 2000;
+  const shield = tags.includes('SHIELDED') ? Math.round(baseHp * 0.4) : 0;
+  const arcaneShield = tags.includes('ARCANE_SHIELDED') ? Math.round(baseHp * 0.4) : 0;
+  const monsterId = Date.now() + Math.random();
+  G.monsters = [{
+    id:monsterId,
+    name:`<span style="color:#aa66ff">[PORTAL]</span> ${formatMonsterName(prefix.name, baseName, true, tags)}`,
+    baseName, zone:G.zone, subZone:G.subZone,
+    maxHp:baseHp, hp:baseHp, shield, arcaneShield,
+    dmgMin:Math.round(zc.dmg[0] * dmgMult), dmgMax:Math.round(zc.dmg[1] * dmgMult),
+    expMin:Math.round(zc.exp[0] * prefix.expMult * 1.35), expMax:Math.round(zc.exp[1] * prefix.expMult * 1.35),
+    atkMin, atkMax,
+    isBoss:false, isElite:true, isSwarm:false, isAbyssalPortalElite:true, tags,
+    prefixData:prefix, dmgMult, lastAttack:ts
+  }];
+  const st = randomEventState();
+  if (st.active && st.active.type === 'abyssalPortal') st.active.monsterId = monsterId;
+  markFarmEncounterStart(ts);
+  log(`<span style="color:#aa66ff">Abyssal Portal elite appears: <span class="log-monster">${baseName}</span>.</span>`, 'system');
+  return true;
+}
+function startAbyssalPortalEvent(scale=1) {
+  const st = randomEventState();
+  const now = performance.now();
+  st.portalUntil = now + 40000;
+  st.portalKills = 0;
+  st.active = { kind:'combat', type:'abyssalPortal', title:'Abyssal Portal', monsterId:null, pauseCombat:false, startedAt:now, portalUntil:st.portalUntil };
+  st.pauseCombat = false;
+  st.nextAllowedAt = now + randi(90000, 150000);
+  showRandomEventPopup({ kind:'combat', type:'abyssalPortal', title:'Abyssal Portal', body:'The portal is open for 40 seconds. Elites spawn instantly after death. Escape to leave the portal.', options:[] });
+  log('<span style="color:#aa66ff">◆ Entered Abyssal Portal — 40-second elite rush begins!</span>', 'system');
+  spawnAbyssalPortalElite(now);
+}
+function tickAbyssalPortalEvent(ts=performance.now()) {
+  const st = randomEventState();
+  const ev = st.active;
+  if (!ev || ev.type !== 'abyssalPortal') return;
+  const left = Math.max(0, Math.ceil(((st.portalUntil || ts) - ts) / 1000));
+  const timer = document.getElementById('random-event-timer');
+  if (timer) timer.textContent = `Portal closes in ${left}s. Escape to leave.`;
+  if (ts < (st.portalUntil || 0)) return;
+  G.monsters = (G.monsters || []).filter(m => !m.isAbyssalPortalElite);
+  st.portalUntil = 0;
+  st.active = null;
+  st.pauseCombat = false;
+  hideRandomEventPopup();
+  log(`<span style="color:#aa66ff">◆ Abyssal Portal closes after ${st.portalKills || 0} elite kill${(st.portalKills || 0) === 1 ? '' : 's'}.</span>`, 'system');
+  if (G.monsters.length === 0) G.nextSpawnAt = ts + spawnDelay(G.zone);
+}
+function maybeContinueAbyssalPortal(ts=performance.now()) {
+  const st = randomEventState();
+  const ev = st.active;
+  if (!ev || ev.type !== 'abyssalPortal') return false;
+  st.portalKills = (st.portalKills || 0) + 1;
+  if (ts < (st.portalUntil || 0)) return spawnAbyssalPortalElite(ts);
+  return false;
+}
+
+function grantLootGoblinKillLoot(m) {
+  clearRandomEventCombatForMonster(m);
+  const count = randi(3, 7);
+  for (let i=0; i<count; i++) addItemToInventory(generateItem(null, false, i===0 ? 'rare' : undefined));
+  log(`<span style="color:#d8b45a">💰 Loot Goblin drops ${count} random equipment pieces!</span>`, 'itemdrop');
+}
+function grantMimicKillLoot(m) {
+  clearRandomEventCombatForMonster(m);
+  const scale = randomEventZoneScale();
+  const ge = randi(20, 40) * scale;
+  G.gearEssence = (G.gearEssence || 0) + ge;
+  const count = randi(2, 4);
+  for (let i=0; i<count; i++) addItemToInventory(generateItem(null, false, 'rare'));
+  log(`<span style="color:#d8b45a">Mimic defeated: +${ge} Gear Essence and ${count} equipment pieces.</span>`, 'itemdrop');
 }
 
 // ITEMS
@@ -4905,6 +5828,36 @@ function generatePaleFurisode() {
   });
 }
 
+function generateGuzmakGreed() {
+  const slot = 'armor';
+  const classStat = G.playerClass==='warrior'?'str':G.playerClass==='rogue'?'agi':'int';
+  const mainStats = {}; mainStats[classStat] = randi(24,40);
+  const subStats = {};
+  const keys = shuffle([...SUB_STATS]).slice(0,4);
+  for (const k of keys) subStats[k] = rollSubStatValue(k, 'mythic', slot);
+  const goldVal = calcItemGold({rarity:'mythic', mainStats, subStats});
+  return buildItemDesc({ id:Date.now()+Math.random(), name:'Guzmak Greed', slot, rarity:'mythic', mainStats, subStats, equipped:false, goldVal, rerollCount:0, mythicMod:'guzmak_greed', mythicClass:'general', mythicModDesc:'Increase gold drop from monsters by 10%' });
+}
+function generateVaalixTiara() {
+  const slot = 'helmet';
+  const classStat = G.playerClass==='warrior'?'str':G.playerClass==='rogue'?'agi':'int';
+  const mainStats = {}; mainStats[classStat] = randi(24,40);
+  const subStats = {};
+  const keys = shuffle([...SUB_STATS]).slice(0,4);
+  for (const k of keys) subStats[k] = rollSubStatValue(k, 'mythic', slot);
+  const goldVal = calcItemGold({rarity:'mythic', mainStats, subStats});
+  return buildItemDesc({ id:Date.now()+Math.random(), name:'Vaalix Tiara', slot, rarity:'mythic', mainStats, subStats, equipped:false, goldVal, rerollCount:0, mythicMod:'vaalix_tiara', mythicClass:'general', mythicModDesc:'Reduces healing and regeneration to bosses by 50%' });
+}
+function generateHeartOfKitarasque() {
+  const slot = 'offhand';
+  const mainStats = { str: randi(30,48) };
+  const subStats = {};
+  const keys = shuffle([...SUB_STATS]).slice(0,4);
+  for (const k of keys) subStats[k] = rollSubStatValue(k, 'mythic', slot);
+  const goldVal = calcItemGold({rarity:'mythic', mainStats, subStats});
+  return buildItemDesc({ id:Date.now()+Math.random(), name:'Heart of Kitarasque', slot, rarity:'mythic', mainStats, subStats, equipped:false, goldVal, rerollCount:0, mythicMod:'heart_of_kitarasque', mythicClass:'warrior', mythicModDesc:'Warrior-only trophy of Kitarasque, the Absolute Mass' });
+}
+
 function buildItemDesc(item) {
   let parts=[];
   for(const [k,v] of Object.entries(item.mainStats||{})){parts.push(`+${v} ${k.toUpperCase()}`);}
@@ -4952,6 +5905,9 @@ const POTION_TYPES = {
 
 // KEY ITEMS
 const KEY_ITEM_TYPES = {
+  scroll_of_chance: { name:'Scroll of Chance', icon:'📜', source:'Unique Bosses', flavor:'A rolled scroll that preserves Overgear stars after a failed gamble. Consumed on protected failure.' },
+  fang_of_necrodragon: { name:'Fang of the Necrodragon', icon:'🦷', source:'Vaalix, the Necrodragon', flavor:'A dark green fang that exhales a rotten wind when held.' },
+  blood_of_kitarasque: { name:'Blood of Kitarasque', icon:'🩸', source:'Kitarasque, the Absolute Mass', flavor:'A dark, pulsing drop of impossible mass that never stops beating.' },
   frost_dragon_bone: { name:'Bone of the Frost Dragon', icon:'🦴', source:'Aislong, the Winterfell', flavor:'A frostbitten dragon bone that never fully thaws.' },
   overlord_skull: { name:'Skull of the Overlord', icon:'💀', source:'Overlord, seer of the tomb', flavor:'A skull that still whispers from the shelves of the tomb.' },
   disaster_book: { name:'Book of Disasters', icon:'📕', source:'Witch of the Wastes', flavor:'A ruined book full of chants that should not be read aloud.' },
@@ -4996,6 +5952,15 @@ function consumeDarkYoungKeys() {
   for (const k of DARK_YOUNG_REQUIRED_KEYS) consumeKeyItem(k, 1);
   renderKeyItems();
   return true;
+}
+
+
+function tryDropScrollOfChance(m) {
+  if (!m || !getUniqueBossKey(m) || m.isAbyssBoss || m.zone === 'abyss') return;
+  if (Math.random() < 0.30) {
+    addKeyItem('scroll_of_chance', 1);
+    log(`<span style="color:var(--yellow)">📜 Scroll of Chance drops from ${m.baseName || UNIQUE_BOSS_REGISTRY[getUniqueBossKey(m)]?.name || 'the unique boss'}!</span>`, 'itemdrop');
+  }
 }
 
 function normalizePotions() {
@@ -5162,6 +6127,15 @@ function usePotion() {
   const count = potionCount(type);
   if(G.potionCooldown>0||count<=0)return;
   const heal=potionHeal();
+  if ((G.debuffs.necrorotUntil || 0) > performance.now()) {
+    G.hp = Math.max(0, G.hp - heal);
+    log(`☠ Necrorot converts potion healing into ${fmtNum(heal)} damage!`, 'dmgtaken');
+    setPotionCount(type, count-1);
+    G.potionCooldown=10000;
+    renderPotions(); renderStats();
+    if (G.hp <= 0) { G.hp = 0; die(); }
+    return;
+  }
   G.hp=Math.min(G.maxHp,G.hp+heal);
   if (type === 'shielding') {
     const shieldGain = Math.round(G.maxHp * 0.60);
@@ -5223,8 +6197,13 @@ function log(msg, category=null) {
     div.dataset.aislongFreezeCore = '1';
     div.classList.add('aislong-freeze-core');
   }
+  if (isNecrodragonBreathLogMessage(msg)) {
+    div.dataset.necrodragonBreathCore = '1';
+    div.classList.add('necrodragon-breath-core');
+  }
   el.prepend(div);
   applyAislongFreezeLogGradient();
+  applyNecrodragonBreathLogGradient();
   if (isLogDistorted()) {
     const original = div.innerHTML;
     div.dataset.originalHtml = original;
@@ -5234,6 +6213,7 @@ function log(msg, category=null) {
   applyLogScrollMode();
   while(el.children.length>400)el.removeChild(el.lastChild);
   applyAislongFreezeLogGradient();
+  applyNecrodragonBreathLogGradient();
 }
 
 function isAislongFreezeLogMessage(msg) {
@@ -5264,6 +6244,35 @@ function applyAislongFreezeLogGradient() {
       target.dataset.aislongFreezeAura = String(strength);
       target.classList.add(`aislong-freeze-aura-${strength}`);
       if (strength === 0) target.classList.add('aislong-freeze-core');
+    }
+  });
+}
+
+function isNecrodragonBreathLogMessage(msg) {
+  const text = String(msg || '').replace(/<[^>]*>/g, ' ');
+  return /Vaalix/i.test(text) && /Necrodragon Breath/i.test(text) && /dark green rot/i.test(text);
+}
+function applyNecrodragonBreathLogGradient() {
+  const el = document.getElementById('log-output');
+  if (!el) return;
+  const entries = Array.from(el.querySelectorAll('.log-entry'));
+  for (const entry of entries) {
+    for (let i = 0; i <= 7; i++) entry.classList.remove(`necrodragon-breath-aura-${i}`);
+    entry.classList.remove('necrodragon-breath-core');
+    delete entry.dataset.necrodragonBreathAura;
+  }
+  entries.forEach((entry, idx) => {
+    if (entry.dataset.necrodragonBreathCore !== '1') return;
+    for (let offset = -7; offset <= 7; offset++) {
+      const target = entries[idx + offset];
+      if (!target) continue;
+      const strength = Math.abs(offset);
+      const current = target.dataset.necrodragonBreathAura;
+      if (current !== undefined && Number(current) <= strength) continue;
+      for (let i = 0; i <= 7; i++) target.classList.remove(`necrodragon-breath-aura-${i}`);
+      target.dataset.necrodragonBreathAura = String(strength);
+      target.classList.add(`necrodragon-breath-aura-${strength}`);
+      if (strength === 0) target.classList.add('necrodragon-breath-core');
     }
   });
 }
@@ -5463,6 +6472,8 @@ function gameTick(ts) {
   const dt = Math.min(Math.max((ts-lastTick)/1000, 0), 0.5);
   lastTick=ts;
 
+  tickRandomEvent(ts);
+
   // Auto-heal
   if(G.config.autoheal&&G.potionCooldown<=0&&G.zone!=='town'){
     if(G.hp/G.maxHp*100<=G.config.healThreshold && potionCount(G.selectedPotion||'healing')>0){
@@ -5501,9 +6512,17 @@ function gameTick(ts) {
     return;
   }
 
+  // Random choice events such as Shrine/Chest pause combat until resolved or auto-picked.
+  if (randomEventState().pauseCombat) {
+    updateUI();
+    requestAnimationFrame(gameTick);
+    return;
+  }
+
   // Spawn
   if(G.monsters.length===0&&ts>=G.nextSpawnAt){
     G.lastSpawnCountdown=-1;
+    if (maybeTriggerRandomEvent(ts)) { updateUI(); requestAnimationFrame(gameTick); return; }
     spawnMonsters();
     applyChaosToEncounter();
     G.lastAttack=ts;
@@ -5573,6 +6592,10 @@ function gameTick(ts) {
     }
   }
 
+  if (updateLootGoblinEscape(ts)) { updateUI(); requestAnimationFrame(gameTick); return; }
+  if (updateAbominableSnowman(ts)) { updateUI(); requestAnimationFrame(gameTick); return; }
+  if (updateChaoticChasmBosses(ts, dt)) { updateUI(); requestAnimationFrame(gameTick); return; }
+
   if (updateSandwormBurrow(ts, dt)) return;
   if (updateFlamestealerFireball(ts)) {
     updateUI();
@@ -5611,6 +6634,16 @@ function gameTick(ts) {
         requestAnimationFrame(gameTick);
         return;
       }
+      if (rollAbominableSnowMiss('basic', target, ts)) {
+        updateUI();
+        requestAnimationFrame(gameTick);
+        return;
+      }
+      if (rollVaalixBasicMiss(target, ts)) {
+        updateUI();
+        requestAnimationFrame(gameTick);
+        return;
+      }
 
       let dmg=applyFervorBasicDamage(calcDamage() + calcInfinityBladeBasicBonus(), ts);
 
@@ -5644,6 +6677,8 @@ function gameTick(ts) {
       } else {
         visualCombatEvent('basic', dmg, isCrit, target);
         target.hp -= dmg;
+        onMonsterTakesPlayerHit(target, 'basic', dmg, ts);
+        awardLootGoblinHitGold(target, dmg);
         log(`${fmtNum(dmg)}${isCrit?' [CRIT]':''} dmg to <span class="log-monster">${target.baseName||target.name}</span> (${fmtNum(Math.max(0,target.hp))}/${target.maxHp})`, 'basicattack');
         // Reflect: 15% dmg back on every 3rd basic attack taken from the player
         if (target.tags && target.tags.includes('REFLECT')) {
@@ -5677,6 +6712,8 @@ function gameTick(ts) {
             for (let sh = 0; sh < shadowHits; sh++) {
               const shadowDmg = applyTargetDamageMods(target, Math.round(applyFervorBasicDamage(calcDamage(), ts) * 0.5), ts);
               target.hp -= shadowDmg;
+              onMonsterTakesPlayerHit(target, 'basic', shadowDmg, ts);
+              awardLootGoblinHitGold(target, shadowDmg);
               log(`${sh === 0 ? 'Shadowstep' : 'Phantom Dagger echo'}! +${fmtNum(shadowDmg)} bonus hit`, 'basicattack');
               if (target.hp <= 0) { killMonster(target, ts); break; }
             }
@@ -5733,6 +6770,9 @@ function gameTick(ts) {
           updateUI();
           requestAnimationFrame(gameTick);
           return;
+        }
+        if (target && rollAbominableSnowMiss('skill', target, ts)) {
+          break;
         }
 
         const str=effStat('str'), agi=effStat('agi'), int_=effStat('int');
@@ -6010,6 +7050,7 @@ function gameTick(ts) {
             if (res.shieldAbsorbed > 0) log(`[${v.name}] removes ${fmtNum(res.shieldAbsorbed)} Shield (${fmtNum(res.remainingShield)} left)`, 'spelldmg');
             if (res.dealt > 0) {
               visualCombatEvent(k, res.dealt, k==='cheapshot', target);
+              awardLootGoblinHitGold(target, res.dealt);
               log(`[${v.name}] hits <span class="log-monster">${target.baseName||target.name}</span> for ${fmtNum(res.dealt)} dmg${skillNote.includes('[CRIT]')?' [CRIT]':''}${skillNote.includes('[OVERLOAD')?' '+skillNote.match(/<span[^>]*>\[OVERLOAD[^<]*<\/span>/)?.[0]:''}`, 'spelldmg');
               if(target.hp <= 0) killMonster(target, ts);
             }
@@ -6073,7 +7114,21 @@ function gameTick(ts) {
             }
           }
         }
-        if (m.isBanditto) {
+        if (m.isLootGoblin) {
+    grantLootGoblinKillLoot(m);
+    recordObservedFarmGain(exp, 0, ts);
+    if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
+    return;
+  }
+
+  if (m.isMimic) {
+    grantMimicKillLoot(m);
+    recordObservedFarmGain(exp, 0, ts);
+    if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
+    return;
+  }
+
+  if (m.isBanditto) {
           const currentGold = Math.max(0, Math.round(G.gold || 0));
           const stolen = currentGold > 0 ? Math.max(1, Math.floor(currentGold * 0.07)) : 0;
           if (stolen > 0) {
@@ -6150,6 +7205,13 @@ function gameTick(ts) {
           } else {
             G.hp -= mdmg;
             log(`<span class="log-monster">${m.baseName||m.name}</span> hits you for ${fmtNum(mdmg)}`, 'dmgtaken');
+            if (m.tags && m.tags.includes('VAMPIRIC') && mdmg > 0) {
+              const vampHeal = Math.max(1, Math.round(mdmg * 2.0));
+              const beforeVamp = m.hp;
+              m.hp = Math.min(m.maxHp, m.hp + vampHeal);
+              const restoredVamp = Math.max(0, Math.round(m.hp - beforeVamp));
+              if (restoredVamp > 0) log(`<span class="log-monster">${m.baseName||m.name}</span> [VAMPIRIC] heals ${fmtNum(restoredVamp)} HP`, 'dmgtaken');
+            }
             applyKitarasqueHeartHeal(mdmg);
             if (m.isQuel && mdmg > 0) {
               m.quelAttackCount = (m.quelAttackCount || 0) + 1;
@@ -6319,6 +7381,10 @@ const UNIQUE_BOSS_REGISTRY = {
   witch_of_the_wastes: { name:'Witch of the Wastes', zone:'Witch Coven', icon:'☽' },
   quel: { name:'Quel, The Defiled Beast', zone:'The Crimson Rot', icon:'☣' },
   sandworm_arrakes: { name:'Great Sandworm of Arrakes', zone:'Deep Tunnels', icon:'〰' },
+  abominable_snowman: { name:'Abominable Snowman', zone:'Sheercold Terrace', icon:'☃️' },
+  guzmak_devourer: { name:'Guzmak, the Devourer', zone:'The Maw', icon:'🍖' },
+  vaalix_necrodragon: { name:'Vaalix, the Necrodragon', zone:'Madwind Pass', icon:'☠️' },
+  kitarasque_absolute_mass: { name:'Kitarasque, the Absolute Mass', zone:'Last Breach', icon:'🫀' },
   shuuna_yuki_musume: { name:'Shuuna, the Yuki Musume', zone:'Pale Hollow', icon:'❄️' },
   aislong_winterfell: { name:'Aislong, the Winterfell', zone:'Frozen Dragon Grave', icon:'🐉' },
   eye_dark_young: { name:'Eye of the Dark Young', zone:'Cursed Hollow', icon:'👁️' },
@@ -6335,6 +7401,10 @@ function getUniqueBossKey(m) {
   if (m.isWitchOfTheWastes) return 'witch_of_the_wastes';
   if (m.isQuel) return 'quel';
   if (m.isSandworm) return 'sandworm_arrakes';
+  if (m.isAbominableSnowman) return 'abominable_snowman';
+  if (m.isGuzmak) return 'guzmak_devourer';
+  if (m.isVaalix) return 'vaalix_necrodragon';
+  if (m.isKitarasque) return 'kitarasque_absolute_mass';
   if (m.isShuuna) return 'shuuna_yuki_musume';
   if (m.isAislong) return 'aislong_winterfell';
   if (m.isEyeDarkYoung) return 'eye_dark_young';
@@ -6404,19 +7474,16 @@ function renderUniqueBossLog() {
   const list = document.getElementById('unique-boss-log');
   const countEl = document.getElementById('unique-boss-count');
   if (!list) return;
-  const entries = Object.entries(G.achievements.uniqueBossKills || {})
-    .filter(([,v]) => v && (v.count || 0) > 0)
-    .sort((a,b) => (b[1].lastKilledAt || 0) - (a[1].lastKilledAt || 0));
-  if (countEl) countEl.textContent = entries.length;
-  if (!entries.length) {
-    list.innerHTML = '<div class="achievement-empty">No unique bosses defeated yet.</div>';
-    return;
-  }
-  list.innerHTML = entries.map(([key, entry]) => {
-    const known = UNIQUE_BOSS_REGISTRY[key] || {};
-    const icon = escapeHtml(entry.icon || known.icon || '◆');
-    const name = escapeHtml(entry.name || known.name || key);
-    const zone = escapeHtml(entry.zone || known.zone || 'Unknown zone');
+  const kills = G.achievements.uniqueBossKills || {};
+  const registryEntries = Object.entries(UNIQUE_BOSS_REGISTRY || {});
+  const attainedCount = registryEntries.filter(([key]) => kills[key] && (kills[key].count || 0) > 0).length;
+  if (countEl) countEl.textContent = attainedCount + '/' + registryEntries.length;
+  list.innerHTML = registryEntries.map(([key, known]) => {
+    const entry = kills[key] || {};
+    const attained = (entry.count || 0) > 0;
+    const icon = escapeHtml((attained ? entry.icon : '') || known.icon || '◆');
+    const name = escapeHtml((attained ? entry.name : '') || known.name || key);
+    const zone = escapeHtml((attained ? entry.zone : '') || known.zone || 'Unknown zone');
     const count = entry.count || 0;
     const first = escapeHtml(formatAchievementDate(entry.firstKilledAt));
     const last = escapeHtml(formatAchievementDate(entry.lastKilledAt));
@@ -6427,10 +7494,11 @@ function renderUniqueBossLog() {
     const highestChaosLabel = chaosLevelName(highestChaosLevel);
     const lastChaosLabel = chaosLevelName(lastChaosLevel);
     const chaosTip = chaosKills > 0 ? ' · Chaos Level: ' + highestChaosLabel + ' · Chaos kills x' + chaosKills + ' · Last chaos kill: ' + lastChaosLabel + ' at ' + lastChaos : '';
-    const tip = zone + ' · First killed ' + first + ' · Last killed ' + last + chaosTip;
-    const chaosClass = chaosKills > 0 ? ' chaos-kill' : '';
-    const chaosBadge = chaosKills > 0 ? '<div class="achievement-chaos-badge">' + escapeHtml(highestChaosLabel.replace('Chaos ', 'C')) + '</div>' : '';
-    return '<div class="achievement-row' + chaosClass + '" data-zone="' + tip + '" title="' + tip + '">' +
+    const tip = attained ? (zone + ' · First killed ' + first + ' · Last killed ' + last + chaosTip) : (zone + ' · Not defeated yet');
+    const chaosClass = attained && chaosKills > 0 ? ' chaos-kill' : '';
+    const lockedClass = attained ? '' : ' achievement-locked';
+    const chaosBadge = attained && chaosKills > 0 ? '<div class="achievement-chaos-badge">' + escapeHtml(highestChaosLabel.replace('Chaos ', 'C')) + '</div>' : '';
+    return '<div class="achievement-row' + chaosClass + lockedClass + '" data-zone="' + tip + '" title="' + tip + '">' +
       chaosBadge +
       '<div class="achievement-icon" aria-label="' + name + '">' + icon + '</div>' +
       '<div class="achievement-name">' + name + '</div>' +
@@ -6446,6 +7514,7 @@ function killMonster(m, ts) {
   if (m.isElite) G.eliteKills = (G.eliteKills || 0) + 1;
   if (m.isBoss) G.bossKills = (G.bossKills || 0) + 1;
   recordUniqueBossKill(m);
+  tryDropScrollOfChance(m);
   updateKillDisplays();
   if (G.zone==='abyss') G.abyssKills++;
   if (G.subZone==='pale_hollow' && !m.isShuuna && /ice kitsune/i.test(m.baseName || '')) {
@@ -6499,6 +7568,17 @@ function killMonster(m, ts) {
   const idx = G.monsters.indexOf(m);
   if (idx>-1) G.monsters.splice(idx,1);
 
+  if (m.isMassBlob) {
+    const dmg = 100;
+    G.hp = Math.max(0, G.hp - dmg);
+    applyKitarasqueHeartHeal(dmg);
+    log('<span style="color:#cc6688">Mass Blob ruptures for 100 damage!</span>', 'dmgtaken');
+    if (G.hp <= 0) { die(); return; }
+    if (G.monsters.length === 0) G.nextSpawnAt = ts + spawnDelay(G.zone);
+    updateUI();
+    return;
+  }
+
   // Witch of the Wastes: after all 3 Elder Witches die, curse skill casting for 15s.
   if (m.isElderWitch) {
     const witchBoss = G.monsters.find(x => x && x.isWitchOfTheWastes && x.hp > 0);
@@ -6533,15 +7613,34 @@ function killMonster(m, ts) {
     G.combat.sandwormMissUntil = 0;
     G.combat.sandwormBurrowTickAt = 0;
     G.combat.everlastingWinterAttacks = 0;
+    G.combat.vaalixEffluviumUntil = 0;
+    G.combat.necrodragonPausedUntil = 0;
   }
 
   let exp = randi(m.expMin, m.expMax);
   if (m.isSwarm) exp = Math.round(exp*1.1);
+  const growthBuff = getRandomEventBuffValue('growth', ts);
+  if (growthBuff > 0) exp = Math.round(exp * (1 + growthBuff));
   G.exp += exp;
   let observedGoldGain = 0;
   log(`Slain: <span class="log-monster">${m.baseName||m.name}</span> +${exp} EXP`);
+  const abyssalPortalContinued = m.isAbyssalPortalElite ? maybeContinueAbyssalPortal(ts) : false;
 
   if (m.isDarkYoungMinion) {
+    recordObservedFarmGain(exp, 0, ts);
+    if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
+    return;
+  }
+
+  if (m.isLootGoblin) {
+    grantLootGoblinKillLoot(m);
+    recordObservedFarmGain(exp, 0, ts);
+    if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
+    return;
+  }
+
+  if (m.isMimic) {
+    grantMimicKillLoot(m);
     recordObservedFarmGain(exp, 0, ts);
     if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
     return;
@@ -6567,7 +7666,8 @@ function killMonster(m, ts) {
 
   // Gold drop — goblin camp gets 1.6x multiplier
   const goldMult = G.subZone==='goblin_camp' ? 1.6 : G.subZone==='dusty_outskirts' ? 1.4 : 1.0;
-  const goldDrop = Math.round(m.maxHp * (0.8 + Math.random()*0.4) * goldMult);
+  const wealthBuff = getRandomEventBuffValue('wealth', ts);
+  const goldDrop = Math.round(m.maxHp * (0.8 + Math.random()*0.4) * goldMult * (hasMythicMod('guzmak_greed') ? 1.10 : 1) * (1 + wealthBuff));
   G.gold += goldDrop;
   observedGoldGain += goldDrop;
   log(`+${goldDrop}g`, 'golddrop');
@@ -6610,6 +7710,21 @@ function killMonster(m, ts) {
     addItemToInventory(generateTempleTitanCrown());
     for (let i=1; i<10 * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
     log(`<span style="color:var(--unique)">Hakam drops Hakam's Helm and 9 more equipment pieces!</span>`, 'itemdrop');
+  } else if (m.isAbominableSnowman) {
+    for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
+    for (let i=0; i<chaosDropMult; i++) addItemToInventory(generateItem('legendary'));
+    log('<span style="color:var(--legendary)">Abominable Snowman drops bonus legendary equipment!</span>', 'itemdrop');
+  } else if (m.isGuzmak) {
+    if (Math.random() < 0.70) { addItemToInventory(generateGuzmakGreed()); log('<span style="color:var(--unique)">Guzmak drops Guzmak Greed!</span>', 'itemdrop'); }
+    for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
+  } else if (m.isVaalix) {
+    addKeyItem('fang_of_necrodragon', 1);
+    if (Math.random() < 0.70) { addItemToInventory(generateVaalixTiara()); log('<span style="color:var(--unique)">Vaalix drops Vaalix Tiara!</span>', 'itemdrop'); }
+    for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
+  } else if (m.isKitarasque) {
+    addKeyItem('blood_of_kitarasque', 1);
+    if (G.playerClass === 'warrior') { addItemToInventory(generateHeartOfKitarasque()); log('<span style="color:var(--unique)">Kitarasque drops Heart of Kitarasque!</span>', 'itemdrop'); }
+    for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isShuuna) {
     if (Math.random() < 0.50) {
       addItemToInventory(generatePaleFurisode());
@@ -6667,6 +7782,12 @@ function killMonster(m, ts) {
       }
     }
   }
+  }
+
+  const steelBuff = getRandomEventBuffValue('steel', ts);
+  if (steelBuff > 0 && !m.isDarkYoungMinion && Math.random() < steelBuff) {
+    addItemToInventory(generateItem(null, false, m.isElite || m.isBoss ? 'rare' : undefined));
+    log('<span style="color:var(--yellow)">Blessing of Steel produces a bonus equipment drop.</span>', 'itemdrop');
   }
 
   // Potion drops
@@ -7183,6 +8304,15 @@ function syncEquippedOvergearItem(item) {
   G.equipped[item.slot] = item;
   item.equipped = true;
 }
+function isCurrentlyEquippedItem(item) {
+  if (!item) return false;
+  if (item.equipped) return true;
+  if (item.slot && G.equipped && G.equipped[item.slot] && G.equipped[item.slot].id === item.id) return true;
+  return false;
+}
+function eqBadgeHtml(item) {
+  return isCurrentlyEquippedItem(item) ? ' <span class="eq-badge" style="color:#ffcc66;font-size:8px;font-weight:bold;letter-spacing:1px;text-transform:lowercase;text-shadow:0 0 5px rgba(255,204,102,0.45);">eq.</span>' : '';
+}
 function renderOvergearList() {
   const list = document.getElementById('overgear-item-list');
   const empty = document.getElementById('overgear-empty');
@@ -7202,7 +8332,7 @@ function renderOvergearList() {
     row.innerHTML = `
       <div style="flex:1;min-width:0;">
         ${overgearStarHtml(item)}
-        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}</div>
+        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div>
         <div style="font-size:8px;color:#666;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl || 0}</div>
         <div style="font-size:8px;color:#888;margin-top:2px;">Next: +0.25% normal stats · +0.10% regen · +0.1% Crit · +10% CritDmg · Cost ${fmtNum(cost)}g</div>
       </div>
@@ -7247,13 +8377,13 @@ function renderOvergearGambleList() {
     row.className = 'overgear-card';
     row.style.cssText = `padding:7px 9px;background:${selected ? '#100818' : 'var(--bg3)'};border:1px solid ${selected ? '#d8c7ff' : 'rgba(180,140,255,0.45)'};cursor:pointer;`;
     row.onclick = () => { overgearGambleSelectedItemId = item.id; renderOvergearGambleList(); };
-    row.innerHTML = `${overgearStarHtml(item)}<div style="font-size:11px;color:${RC[item.rarity]};">${item.name}</div><div style="font-size:8px;color:#666;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl}</div>`;
+    row.innerHTML = `${overgearStarHtml(item)}<div style="font-size:11px;color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div><div style="font-size:8px;color:#666;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl}</div>`;
     list.appendChild(row);
   }
   if (actions) actions.style.display = overgearGambleSelectedItemId ? 'block' : 'none';
   const selected = (G.inventory || []).find(i => i.id === overgearGambleSelectedItemId);
   const selEl = document.getElementById('overgear-gamble-selected');
-  if (selEl && selected) selEl.innerHTML = `Selected: <span style="color:${RC[selected.rarity]};">${selected.name}</span> · ${fmtOvergearLabel(selected)}`;
+  if (selEl && selected) selEl.innerHTML = `Selected: <span style="color:${RC[selected.rarity]};">${selected.name}${eqBadgeHtml(selected)}</span> · ${fmtOvergearLabel(selected)}`;
 }
 function doOvergearGamble(chance) {
   const item = (G.inventory || []).find(i => i.id === overgearGambleSelectedItemId);
@@ -7274,11 +8404,19 @@ function doOvergearGamble(chance) {
     log(`✦ Overgear Gamble ${msg}`, 'system');
     if (last) last.textContent = msg;
   } else {
-    removeOvergearStatBoost(item, 2);
-    syncEquippedOvergearItem(item);
-    const msg = `Failed (${chance}%): ${item.name} dropped from Overgear ${oldLevel} to ${getOvergearLevel(item)}.`;
-    log(`✦ Overgear Gamble ${msg}`, 'system');
-    if (last) last.textContent = msg;
+    if (keyItemCount('scroll_of_chance') > 0) {
+      consumeKeyItem('scroll_of_chance', 1);
+      renderKeyItems();
+      const msg = `Failed (${chance}%): Scroll of Chance protected ${item.name}; Overgear remains ${oldLevel}.`;
+      log(`✦ Overgear Gamble ${msg}`, 'system');
+      if (last) last.textContent = msg;
+    } else {
+      removeOvergearStatBoost(item, 2);
+      syncEquippedOvergearItem(item);
+      const msg = `Failed (${chance}%): ${item.name} dropped from Overgear ${oldLevel} to ${getOvergearLevel(item)}.`;
+      log(`✦ Overgear Gamble ${msg}`, 'system');
+      if (last) last.textContent = msg;
+    }
   }
   updateDerived(); renderEquipSlots(); renderInventory(); renderStats(); renderOvergearGambleList(); renderOvergearList(); updateGambleUI();
 }
@@ -7349,7 +8487,7 @@ function renderUpgradeList() {
 
     row.innerHTML = `
       <div style="flex:1;min-width:0;">
-        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}</div>
+        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div>
         <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()}</div>
         ${ascLabel}
       </div>
@@ -7697,8 +8835,8 @@ function buildBsRerollList() {
     row.innerHTML = `
       <div class="reroll-main">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${essenceTag}</div>
-          <div style="font-size:8px;color:#555;">${item.slot ? item.slot.toUpperCase() : ''} · ${item.rarity.toUpperCase()}${item.equipped ? ' · <span style="color:#886633;">EQUIPPED</span>' : ''}</div>
+          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${eqBadgeHtml(item)}${essenceTag}</div>
+          <div style="font-size:8px;color:#555;">${item.slot ? item.slot.toUpperCase() : ''} · ${item.rarity.toUpperCase()}</div>
         </div>
         <button onclick="event.stopPropagation();bsUnifiedSelectItem(${item.id})" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:2px 7px;cursor:pointer;flex-shrink:0;white-space:nowrap;letter-spacing:1px;">SELECT</button>
       </div>
@@ -9265,7 +10403,7 @@ function switchTab(tab) {
 function setZoneBase(zone) {
   // Clicking a zone header: expand sub-zone dropdown and switch to base.
   G.uiTownCollapsed = false;
-  ['fields','caves','swamp','hoarspire'].forEach(z => {
+  ['fields','caves','swamp','hoarspire','chaotic_chasm'].forEach(z => {
     const row = document.getElementById(`subzone-${z}`);
     if (row) row.style.display = z===zone ? 'block' : 'none';
   });
@@ -9293,6 +10431,10 @@ function getZoneBossFlavor(zone, subZone) {
     witch_coven: 'The Witch Coven whispers through the reeds. A wandering witch may answer trespass with curses and flame...',
     crimson_rot: 'The Crimson Rot reeks of old hunger. Somewhere in the mire, a defiled beast may catch your scent...',
     hoarspire: 'The Hoarspire winds cut through bone. Every swing feels heavier in the cold...',
+    chaotic_chasm: 'The Chaotic Chasm warps every spell. Skill damage is reduced by 15% here...',
+    maw: 'The Maw gurgles with greed. Guzmak, the Devourer may answer repeated trespass...',
+    madwind_pass: 'Madwind Pass stinks of green rot. Vaalix, the Necrodragon circles somewhere above...',
+    last_breach: 'The Last Breach pulses with absolute mass. Kitarasque may answer the heartbeat...',
     pale_hollow: 'Pale Hollow is silent beneath the snow. The Ice Kitsune are said to herald a woman in white...',
     frozen_dragon_grave: 'The Frozen Dragon Grave creaks with old bones. Something winged and winter-dead may stir beneath the frost...',
     abyss: 'The Abyss counts every kill. On certain floors, something vast may answer from the dark...'
@@ -9316,7 +10458,7 @@ function setZone(zone, silent=false, subZone=undefined) {
   if (zone!=='town') { G.prevCombatZone=zone; G.prevCombatSubZone=G.subZone; }
   G.zone=zone;
   G.monsters=[];
-  G.debuffs = { plagued:0, freezing:false, crimsonRot:0, curseOfCoven:0, blackPoolUntil:0 };
+  G.debuffs = { plagued:0, freezing:false, crimsonRot:0, curseOfCoven:0, blackPoolUntil:0, necrorotUntil:0 };
   G.combat.sandwormMissUntil = 0;
   G.combat.sandwormBurrowTickAt = 0;
   G.combat.everlastingWinterAttacks = 0;
@@ -9324,7 +10466,7 @@ function setZone(zone, silent=false, subZone=undefined) {
   resetObservedFarmRates();
 
   // Sync config zone selector
-  if(zone==='fields'||zone==='caves'||zone==='swamp'||zone==='hoarspire'||zone==='abyss'){
+  if(zone==='fields'||zone==='caves'||zone==='swamp'||zone==='hoarspire'||zone==='chaotic_chasm'||zone==='abyss'){
     const el=document.getElementById('cfg-zone');
     if(el)el.value=zone;
   }
@@ -9355,13 +10497,13 @@ function setZoneFromConfig() {
 }
 
 function updateZoneUI() {
-  ['fields','caves','swamp','hoarspire','abyss','town'].forEach(z=>{
+  ['fields','caves','swamp','hoarspire','chaotic_chasm','abyss','town'].forEach(z=>{
     const el=document.getElementById(`zone-${z}`);
     if(!el)return;
     el.classList.toggle('active-zone',G.zone===z);
   });
   // Show/hide subzone button rows
-  ['fields','caves','swamp','hoarspire'].forEach(z=>{
+  ['fields','caves','swamp','hoarspire','chaotic_chasm'].forEach(z=>{
     const row=document.getElementById(`subzone-${z}`);
     if(row) row.style.display = G.zone===z ? 'flex' : 'none';
   });
@@ -9451,6 +10593,10 @@ function setupStatHoldAllocation() {
 function toggleConfig(key) {
   G.config[key]=!G.config[key];
   document.getElementById(`toggle-${key}`).classList.toggle('on',G.config[key]);
+  if (key === 'skipEvents' && G.config[key]) {
+    const ev = randomEventState().active;
+    if (ev) escapeActiveRandomEvent();
+  }
 }
 function togglePause() {
   G.config.paused=!G.config.paused;
@@ -9585,7 +10731,7 @@ function initClassSetup(cls) {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
     G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
-  const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
+  const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
   G.logFilter = {pixelgraphics:true,basicattack:true,dmgdealt:true,dmgtaken:true,golddrop:true,itemdrop:true,goldsell:true,spawncountdown:true,spellcast:true,spelldmg:true,mpcost:true,system:true,reverseTextScroll:false};
   G.logColors = {};
@@ -9825,7 +10971,7 @@ function buildSalvageSelect() {
     mythic:{legEssence:3,gearEssence:20}
   };
 
-  const salvageable = G.inventory.filter(i => !i.equipped && !i.locked);
+  const salvageable = G.inventory.filter(i => !i.locked);
   if (salvageable.length === 0) {
     if (empty) { empty.style.display='block'; empty.textContent='No items available to salvage.'; }
     return;
@@ -9846,10 +10992,10 @@ function buildSalvageSelect() {
     row.innerHTML = `
       <div class="salvage-main">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${eqBadgeHtml(item)}</div>
           <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · Sell ${fmtNum(item.goldVal || calcItemGold(item))}g · <span style="color:#44bbaa;">${rewardStr}</span></div>
         </div>
-        <button onclick="event.stopPropagation();doSalvage(${item.id})" style="background:#000;border:1px solid #886633;color:#aa8833;font-family:inherit;font-size:8px;padding:2px 7px;cursor:pointer;flex-shrink:0;white-space:nowrap;">SALVAGE</button>
+        <button onclick="event.stopPropagation();doSalvage(${item.id})" style="background:#000;border:1px solid ${isCurrentlyEquippedItem(item) ? '#333' : '#886633'};color:${isCurrentlyEquippedItem(item) ? '#555' : '#aa8833'};font-family:inherit;font-size:8px;padding:2px 7px;cursor:${isCurrentlyEquippedItem(item) ? 'not-allowed' : 'pointer'};flex-shrink:0;white-space:nowrap;" ${isCurrentlyEquippedItem(item) ? 'disabled' : ''}>${isCurrentlyEquippedItem(item) ? 'EQ.' : 'SALVAGE'}</button>
       </div>
       <div class="salvage-stats">
         ${statsHtml}
@@ -10497,7 +11643,7 @@ function serializeClassState() {
     bsRerollCounts: G.bsRerollCounts, passives: G.passives, skills: G.skills,
     legendaryEssence: G.legendaryEssence, gearEssence: G.gearEssence,
     uniqueBossCooldownUntil: G.combat?.uniqueBossCooldownUntil || 0,
-    abyssKills: G.abyssKills, hoarspire: G.hoarspire || { iceKitsuneKills:0, pendingShuuna:false }, swamp: G.swamp || { cursedHollowKills:0, pendingDarkYoung:false }, abyssBosses: G.abyssBosses, abyssDifficulty: G.abyssDifficulty,
+    abyssKills: G.abyssKills, hoarspire: G.hoarspire || { iceKitsuneKills:0, pendingShuuna:false }, chaoticChasm: G.chaoticChasm || { guzmakKills:0, vaalixKills:0 }, swamp: G.swamp || { cursedHollowKills:0, pendingDarkYoung:false }, abyssBosses: G.abyssBosses, abyssDifficulty: G.abyssDifficulty,
     farmRoutes: G.farmRoutes || { routes:[], equippedId:null, botStep:0, shopStock:[] },
     config: G.config, logFilter: G.logFilter, logColors: G.logColors,
     tutorialDone: !!G.tutorialDone,
@@ -10707,6 +11853,7 @@ function applyClassData(data) {
   G.gearEssence = data.gearEssence||0;
   G.abyssKills = data.abyssKills||0;
   G.hoarspire = data.hoarspire || { iceKitsuneKills:0, pendingShuuna:false };
+  G.chaoticChasm = data.chaoticChasm || { guzmakKills:0, vaalixKills:0 };
   G.swamp = data.swamp || { cursedHollowKills:0, pendingDarkYoung:false };
   G.abyssBosses = data.abyssBosses||0;
   G.abyssDifficulty = data.abyssDifficulty||1;
@@ -10927,14 +12074,14 @@ function resetGameState() {
   G.equipped={helmet:null,armor:null,legging:null,weapon:null,offhand:null};
   G.potions={healing:0}; G.potionDiscovered={healing:true}; G.selectedPotion='healing'; G.potionCooldown=0; G.potionBuffs={arcanicUntil:0,fervorUntil:0};
   G.skills={}; G.passives={}; G.skillCooldowns={};
-  G.abyssKills=0; G.hoarspire={iceKitsuneKills:0,pendingShuuna:false}; G.swamp={cursedHollowKills:0,pendingDarkYoung:false}; G.abyssBosses=0; G.abyssDifficulty=1;
+  G.abyssKills=0; G.hoarspire={iceKitsuneKills:0,pendingShuuna:false}; G.chaoticChasm={guzmakKills:0,vaalixKills:0}; G.swamp={cursedHollowKills:0,pendingDarkYoung:false}; G.abyssBosses=0; G.abyssDifficulty=1;
   G.farmRoutes={routes:[],equippedId:null,botStep:0,shopStock:[]};
   G.monsters=[]; G.nextSpawnAt=0; G.lastAttack=0; G.lastSpawnCountdown=-1;
   G.debuffs={plagued:0,freezing:false,crimsonRot:0,curseOfCoven:0,blackPoolUntil:0};
   G.combat={battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0};
   G.dead=false; G.deathStartedAt=0; G.respawnReady=false;
   G.bsSelectedItem=null; G.bsSelectedStat=null; G.bsSelectedStatType=null; G.bsRerollCounts={};
-  G.merchantStock=[]; G.config={paused:false};
+  G.merchantStock=[]; G.config={paused:false, skipEvents:false};
 }
 
 function swapClass() {
@@ -11063,11 +12210,14 @@ setInterval(() => {
     return;
   }
   if (G.config.paused) return;
+  if ((G.combat?.necrodragonPausedUntil || 0) > performance.now()) return;
   const dt = 0.25;
   // Regen
   if (G.zone !== 'town') {
-    const regenMult = (G.debuffs.blackPoolUntil || 0) > performance.now() ? 0 : (G.subZone==='cursed_hollow' ? 0.7 : 1);
-    G.hp = Math.min(G.maxHp, G.hp + G.hpRegen * dt * regenMult);
+    const nowRegen = performance.now();
+    const regenMult = (G.debuffs.blackPoolUntil || 0) > nowRegen ? 0 : (G.subZone==='cursed_hollow' ? 0.7 : 1);
+    const flatRegenPenalty = (G.combat?.vaalixEffluviumUntil || 0) > nowRegen ? 10 : 0;
+    G.hp = Math.min(G.maxHp, G.hp + Math.max(0, G.hpRegen * regenMult - flatRegenPenalty) * dt);
     G.mp = Math.min(G.maxMp, G.mp + G.mpRegen * dt);
   } else {
     G.hp = Math.min(G.maxHp, G.hp + G.hpRegen * dt * 5);
@@ -11083,6 +12233,7 @@ setInterval(() => {
   const now = performance.now();
   if (G.debuffs.plagued > 0 && G.debuffs.plagued < now) G.debuffs.plagued = 0;
   if (G.debuffs.crimsonRot > 0 && G.debuffs.crimsonRot < now) G.debuffs.crimsonRot = 0;
+  if (G.debuffs.necrorotUntil > 0 && G.debuffs.necrorotUntil < now) G.debuffs.necrorotUntil = 0;
 }, 250);
 
 // OFFLINE PROGRESS
@@ -11290,6 +12441,7 @@ const FR_TILE_TYPES = {
   elite:       { id:'elite',       label:'Elite',        spawnMult:1.0,  bossChance:0,   forceElite:true,  eliteSwarm:false, dead:false },
   elite_swarm: { id:'elite_swarm', label:'Elite Swarm',  spawnMult:1.0,  bossChance:0,   forceElite:true,  eliteSwarm:true,  dead:false },
   boss:        { id:'boss',        label:'Boss',         spawnMult:1.0,  bossChance:0.4, forceElite:false, eliteSwarm:false, dead:false },
+  event:       { id:'event',       label:'Event',        spawnMult:1.0,  bossChance:0,   forceElite:false, eliteSwarm:false, dead:false, eventTile:true },
   dead:        { id:'dead',        label:'Terrain',      spawnMult:0,    bossChance:0,   forceElite:false, eliteSwarm:false, dead:true  },
 };
 
@@ -11300,6 +12452,7 @@ const FR_START_TILES = {
   caves:     { deep_tunnels:1, bat_cave:0, forbidden_library:0, echoing_chasm:0 },
   swamp:     { murk_depths:3, crimson_rot:5, witch_coven:0, cursed_hollow:1 },
   hoarspire: { sheercold_terrace:0, pale_hollow:0, frozen_dragon_grave:4 },
+  chaotic_chasm: { maw:0, madwind_pass:0 },
   abyss:     { abyss: 2 },
 };
 
@@ -11562,6 +12715,49 @@ const FR_ZONE_LAYOUTS = {
     ]
   },
 
+  chaotic_chasm_maw: {
+    cols:9, rows:9, zone:'chaotic_chasm', subZone:'maw', label:'The Maw',
+    tiles:[
+      'fast','normal','normal','slow','dead','slow','normal','normal','fast',
+      'normal','event','normal','slow','dead','slow','normal','event','normal',
+      'normal','elite','normal','normal','slow','normal','normal','elite','normal',
+      'slow','normal','elite','normal','boss','normal','elite','normal','slow',
+      'dead','slow','normal','boss','boss','boss','normal','slow','dead',
+      'slow','normal','elite','normal','boss','normal','elite','normal','slow',
+      'normal','elite_swarm','normal','normal','slow','normal','normal','elite_swarm','normal',
+      'normal','event','normal','slow','dead','slow','normal','event','normal',
+      'fast','normal','normal','slow','dead','slow','normal','normal','fast',
+    ]
+  },
+  chaotic_chasm_madwind_pass: {
+    cols:10, rows:9, zone:'chaotic_chasm', subZone:'madwind_pass', label:'Madwind Pass',
+    tiles:[
+      'normal','fast','normal','dead','slow','slow','dead','normal','fast','normal',
+      'normal','event','elite','normal','slow','slow','normal','elite','event','normal',
+      'slow','normal','normal','elite','normal','normal','elite','normal','normal','slow',
+      'slow','dead','normal','normal','boss','boss','normal','normal','dead','slow',
+      'normal','slow','elite','boss','boss','boss','boss','elite','slow','normal',
+      'slow','dead','normal','normal','boss','boss','normal','normal','dead','slow',
+      'slow','normal','normal','elite_swarm','normal','normal','elite_swarm','normal','normal','slow',
+      'normal','event','elite','normal','slow','slow','normal','elite','event','normal',
+      'normal','fast','normal','dead','slow','slow','dead','normal','fast','normal',
+    ]
+  },
+  chaotic_chasm_last_breach: {
+    cols:11, rows:9, zone:'chaotic_chasm', subZone:'last_breach', label:'Last Breach',
+    tiles:[
+      'dead','normal','normal','slow','dead','boss','dead','slow','normal','normal','dead',
+      'normal','event','elite','normal','slow','boss','slow','normal','elite','event','normal',
+      'normal','elite_swarm','normal','elite','normal','boss','normal','elite','normal','elite_swarm','normal',
+      'slow','normal','elite','normal','boss','boss','boss','normal','elite','normal','slow',
+      'dead','slow','normal','boss','boss','boss','boss','boss','normal','slow','dead',
+      'slow','normal','elite','normal','boss','boss','boss','normal','elite','normal','slow',
+      'normal','elite_swarm','normal','elite','normal','boss','normal','elite','normal','elite_swarm','normal',
+      'normal','event','elite','normal','slow','boss','slow','normal','elite','event','normal',
+      'dead','normal','normal','slow','dead','boss','dead','slow','normal','normal','dead',
+    ]
+  },
+
   abyss_abyss: {
     cols:9, rows:9, zone:'abyss', subZone:'abyss', label:'The Abyss',
     tiles:[
@@ -11579,6 +12775,23 @@ const FR_ZONE_LAYOUTS = {
 
 };
 
+function frInjectEventTilesIntoLayouts() {
+  for (const layout of Object.values(FR_ZONE_LAYOUTS)) {
+    if (!layout || layout.zone === 'abyss' || !Array.isArray(layout.tiles)) continue;
+    if (layout.tiles.includes('event')) continue;
+    const start = frGetStartTile(layout.zone, layout.subZone);
+    const preferred = [];
+    for (let i = 0; i < layout.tiles.length; i++) {
+      const t = layout.tiles[i];
+      if (i === start) continue;
+      if (t === 'normal' || t === 'fast' || t === 'slow') preferred.push(i);
+    }
+    if (!preferred.length) continue;
+    const pick = preferred[Math.min(preferred.length - 1, Math.max(0, Math.floor(preferred.length * 0.45)))];
+    layout.tiles[pick] = 'event';
+  }
+}
+frInjectEventTilesIntoLayouts();
 
 function frLayoutKey(zone, subZone) {
   if (!subZone) return null;  // no base zones
@@ -11986,6 +13199,24 @@ const FR_ZONE_BG = {
     }
   },
 
+  chaotic_chasm(ctx, W, H, seed) {
+    this.caves(ctx, W, H, seed);
+    const rnd = mulberry32(seed + 991);
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = '#123b18';
+    for (let i=0;i<18;i++) {
+      const x = rnd()*W, y = rnd()*H;
+      ctx.fillRect(x, y, 2+rnd()*8, 1+rnd()*4);
+    }
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = '#77ff55';
+    for (let i=0;i<7;i++) {
+      ctx.beginPath(); ctx.moveTo(rnd()*W, rnd()*H); ctx.lineTo(rnd()*W, rnd()*H); ctx.stroke();
+    }
+    ctx.restore();
+  },
+
   abyss(ctx, W, H, seed) {
     // Pure void
     ctx.fillStyle = '#020004';
@@ -12179,6 +13410,7 @@ const FREditor = {
         cell.classList.add('fr-cell-dead');
       } else {
         cell.classList.add('fr-walkable');
+        if (tInfo.eventTile) cell.classList.add('fr-event-tile');
         if (i === startTile) cell.classList.add('fr-start');
 
         // Reachable highlight (only in route mode)
@@ -12214,6 +13446,14 @@ const FREditor = {
     this.lastDragCell = idx;
     const tType = this.gridTiles[idx];
     const tInfo = FR_TILE_TYPES[tType] || FR_TILE_TYPES.normal;
+
+    if (this.tool === 'event') {
+      if (tInfo.dead) return;
+      this.gridTiles[idx] = tType === 'event' ? 'normal' : 'event';
+      this.renderGrid();
+      this.updateStats();
+      return;
+    }
 
     if (this.tool === 'erase') {
       // Only allow erasing the last tile in path (maintain contiguous chain)
@@ -12289,19 +13529,20 @@ const FREditor = {
   updateStats() {
     const steps = this.routePath.length;
     const maxSteps = this.getMaxSteps();
-    let bossCount = 0, eliteCount = 0, eliteSwarmCount = 0, fastCount = 0;
+    let bossCount = 0, eliteCount = 0, eliteSwarmCount = 0, fastCount = 0, eventCount = 0;
     for (const idx of this.routePath) {
       const t = FR_TILE_TYPES[this.gridTiles[idx]] || FR_TILE_TYPES.normal;
       if (t.bossChance > 0) bossCount++;
       if (t.forceElite && !t.eliteSwarm) eliteCount++;
       if (t.eliteSwarm) eliteSwarmCount++;
       if (t.spawnMult < 1.0 && !t.dead) fastCount++;
+      if (t.eventTile) eventCount++;
     }
     const rating = frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
     const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
     set('frs-steps', steps);
     set('frs-max-steps', maxSteps);
-    set('frs-rating', rating);
+    set('frs-rating', eventCount ? `${rating} · ${eventCount} event` : rating);
   },
 };
 
@@ -12330,6 +13571,11 @@ const FR_SUBZONE_OPTIONS = {
     { value:'pale_hollow',          label:'Pale Hollow' },
     { value:'frozen_dragon_grave',  label:'Frozen Dragon Grave' },
   ],
+  chaotic_chasm: [
+    { value:'maw',          label:'The Maw' },
+    { value:'madwind_pass', label:'Madwind Pass' },
+    { value:'last_breach', label:'Last Breach' },
+  ],
   // Abyss has no maps — removed from editor
 };
 
@@ -12354,13 +13600,14 @@ function frChangeEditorZone() {
 function frSetTool(tool) {
   if (tool === 'paint') tool = 'route';
   FREditor.tool = tool;
-  ['route','erase'].forEach(t => {
+  ['route','event','erase'].forEach(t => {
     const btn = document.getElementById(`fr-tool-${t}`);
     if (btn) btn.classList.toggle('active', t === tool);
   });
   const hint = document.getElementById('fr-editor-hint');
   if (hint) {
     if (tool === 'route') hint.textContent = 'Start at S, then step onto highlighted adjacent tiles only. Path must stay connected.';
+    else if (tool === 'event') hint.textContent = 'Click any walkable tile to toggle an Event tile. Event tiles guarantee one random event for this zone when the bot steps on them.';
     else hint.textContent = 'Click the last path tile to step back. ERASE removes one tile at a time.';
     hint.style.color = '';
   }
@@ -12444,23 +13691,25 @@ function frSaveRoute() {
   const name = (nameEl ? nameEl.value.trim() : '') || 'Unnamed Route';
   const layout = FREditor.getLayout();
 
-  let bossCount = 0, eliteCount = 0, eliteSwarmCount = 0, fastCount = 0;
+  let bossCount = 0, eliteCount = 0, eliteSwarmCount = 0, fastCount = 0, eventCount = 0;
   for (const idx of path) {
     const t = FR_TILE_TYPES[FREditor.gridTiles[idx]] || FR_TILE_TYPES.normal;
     if (t.bossChance > 0) bossCount++;
     if (t.forceElite && !t.eliteSwarm) eliteCount++;
     if (t.eliteSwarm) eliteSwarmCount++;
     if (t.spawnMult < 1.0 && !t.dead) fastCount++;
+    if (t.eventTile) eventCount++;
   }
   const steps = path.length;
   const rating = frComputeRating(steps, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
 
-  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',abyss:'Abyss'};
+  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',chaotic_chasm:'Chaotic Chasm',abyss:'Abyss'};
   const subZoneNames = {
     dusty_outskirts:'Dusty Outskirts', goblin_camp:'Goblin Camp', golem_temple:'Golem Temple', stormwind_fields:'Stormwind Fields',
     deep_tunnels:'Deep Tunnels', bat_cave:'Bat Cave', forbidden_library:'Forbidden Library', echoing_chasm:'Echoing Chasm',
     murk_depths:'Murk Depths', crimson_rot:'Crimson Rot', witch_coven:'Witch Coven', cursed_hollow:'Cursed Hollow',
     sheercold_terrace:'Sheercold Terrace', pale_hollow:'Pale Hollow', frozen_dragon_grave:'Frozen Dragon Grave',
+    maw:'The Maw', madwind_pass:'Madwind Pass', last_breach:'Last Breach',
   };
 
   const route = {
@@ -12474,6 +13723,7 @@ function frSaveRoute() {
     bossCount,
     eliteCount,
     eliteSwarmCount,
+    eventCount,
     createdAt: Date.now(),
     maxSteps: frMaxSteps(layout),
     selfMade: true,  // self-made routes always show rating
@@ -12531,8 +13781,9 @@ function frRenderLiveGrid() {
     cell.className = 'fr-live-cell';
     if (tInfo.dead) {
       cell.classList.add('fr-live-dead');
-    } else if (i === startTile) {
-      cell.classList.add('fr-live-start');
+    } else {
+      if (tInfo.eventTile) cell.classList.add('fr-live-event');
+      if (i === startTile) cell.classList.add('fr-live-start');
     }
     const stepIdx = route.path.indexOf(i);
     if (stepIdx >= 0 && i !== curTileIdx) {
@@ -12592,7 +13843,10 @@ function frRenderCombatLiveGrid() {
     cell.style.width = CELL + 'px';
     cell.style.height = CELL + 'px';
     if (tInfo.dead) cell.classList.add('fr-combat-live-dead');
-    else if (i === startTile) cell.classList.add('fr-combat-live-start');
+    else {
+      if (tInfo.eventTile) cell.classList.add('fr-combat-live-event');
+      if (i === startTile) cell.classList.add('fr-combat-live-start');
+    }
     const stepIdx = route.path.indexOf(i);
     if (stepIdx >= 0 && i !== curTileIdx) cell.classList.add('fr-combat-live-step');
     if (i === curTileIdx) cell.classList.add('fr-combat-live-player');
@@ -12637,12 +13891,13 @@ function renderFarmRouteList() {
   }
   if (noRoutes) noRoutes.style.display = 'none';
 
-  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',abyss:'Abyss'};
+  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',chaotic_chasm:'Chaotic Chasm',abyss:'Abyss'};
   const subZoneNames = {
     dusty_outskirts:'Dusty Outskirts', goblin_camp:'Goblin Camp', golem_temple:'Golem Temple', stormwind_fields:'Stormwind Fields',
     deep_tunnels:'Deep Tunnels', bat_cave:'Bat Cave', forbidden_library:'Forbidden Library', echoing_chasm:'Echoing Chasm',
     murk_depths:'Murk Depths', crimson_rot:'Crimson Rot', witch_coven:'Witch Coven', cursed_hollow:'Cursed Hollow',
     sheercold_terrace:'Sheercold Terrace', pale_hollow:'Pale Hollow', frozen_dragon_grave:'Frozen Dragon Grave',
+    maw:'The Maw', madwind_pass:'Madwind Pass', last_breach:'Last Breach',
   };
   const ratingColors = {'S':'#ffcc44','A+':'#ccaa44','A':'#bbaa44','B+':'#88aa66','B':'#77aa66','C+':'#888','C':'#888','D':'#cc4444'};
 
@@ -12667,9 +13922,11 @@ function renderFarmRouteList() {
       : '';
 
     const isBlank = route.blank;
+    const eventTiles = (route.path||[]).filter(idx => (FR_TILE_TYPES[(route.gridTiles||[])[idx]] || {}).eventTile).length;
+    const eventInfo = eventTiles ? ` · <span style="color:#d8b45a;">${eventTiles} event</span>` : '';
     const stepInfo = isBlank
       ? `<span style="font-size:9px;color:#444;font-style:italic;">Empty — fill in editor</span>`
-      : `<span style="font-size:9px;color:#555;">${(route.path||[]).length} steps</span>`;
+      : `<span style="font-size:9px;color:#555;">${(route.path||[]).length} steps${eventInfo}</span>`;
 
     card.innerHTML = `
       <div style="flex:1;min-width:0;">
@@ -12810,7 +14067,7 @@ function frUpdateConfigDisplay() {
     if (unequipBtn) unequipBtn.style.display = 'none';
     return;
   }
-  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',abyss:'Abyss'};
+  const zoneNames = {fields:'Fields',caves:'Dark Cave',swamp:'Swamp',hoarspire:'Hoarspire',chaotic_chasm:'Chaotic Chasm',abyss:'Abyss'};
   const ratingColors = {'S':'#ffcc44','A+':'#ccaa44','A':'#bbaa44','B+':'#88aa66','B':'#77aa66','C+':'#888','C':'#888','D':'#cc4444'};
   const rc = ratingColors[route.rating] || '#888';
   const pathLen = (route.path || []).length;
@@ -12869,6 +14126,14 @@ const FR_SHOP_POOL = [
   { name:"Pale Walk",          zone:'hoarspire', subZone:'pale_hollow',                desc:"The pale hollow is quiet. That's never a good sign.", char:'elite' },
   { name:"Glacial Loop",       zone:'hoarspire', subZone:null,                         desc:"Follows a glacier's edge. Chunks break off unpredictably.", char:'fast' },
 
+  // Chaotic Chasm
+  { name:"Abyssmouth Trace",  zone:'chaotic_chasm', subZone:null,           desc:"A route along the chasm lip where skills feel weaker.", char:'elite' },
+  { name:"Maw Circuit",       zone:'chaotic_chasm', subZone:'maw',          desc:"A greedy loop through The Maw. Something devours footprints here.", char:'boss' },
+  { name:"Madwind Spiral",    zone:'chaotic_chasm', subZone:'madwind_pass', desc:"Wind howls through bone-white arches. The air tastes rotten.", char:'boss' },
+  { name:"Last Breach Pulse", zone:'chaotic_chasm', subZone:'last_breach', desc:"A route across breathing flesh and impossible mass.", char:'boss' },
+  { name:"Rift Maw Run",      zone:'chaotic_chasm', subZone:'maw',          desc:"Event-heavy route through ravenous terrain.", char:'elite' },
+  { name:"Necro Pass",        zone:'chaotic_chasm', subZone:'madwind_pass', desc:"A route for hunters chasing the Necrodragon.", char:'boss' },
+
   // Abyss
   { name:"Void Walk",          zone:'abyss', subZone:'abyss', desc:"Entry-level abyss route. The darkness watches back.", char:'fast' },
   { name:"Rift March",         zone:'abyss', subZone:'abyss', desc:"Follows the rift lines. Something tears at the air here.", char:'elite' },
@@ -12893,7 +14158,41 @@ const FR_SHOP_POOL = [
 ];
 
 // Generate a shop route object procedurally from a layout
-function frGenerateShopRoute(zone, subZone, forceS) {
+function frEventRouteTargetCount(pathLength) {
+  if (!pathLength || pathLength <= 0) return 0;
+  return Math.min(pathLength, Math.max(5, Math.ceil(pathLength * 0.30)));
+}
+
+function frApplyEventCenteredTiles(route) {
+  if (!route || route.zone === 'abyss' || !Array.isArray(route.path) || !Array.isArray(route.gridTiles)) return route;
+  const target = frEventRouteTargetCount(route.path.length);
+  if (target <= 0) return route;
+
+  // Spread event tiles across the route instead of clumping them at the front.
+  const candidates = route.path.filter(idx => idx != null && !FR_TILE_TYPES[route.gridTiles[idx]]?.dead);
+  const chosen = new Set();
+  const usableTarget = Math.min(target, candidates.length);
+  for (let i = 0; i < usableTarget; i++) {
+    const pos = Math.min(candidates.length - 1, Math.floor(((i + 0.5) / usableTarget) * candidates.length));
+    chosen.add(candidates[pos]);
+  }
+
+  // Fill any duplicates caused by short paths.
+  for (const idx of candidates) {
+    if (chosen.size >= usableTarget) break;
+    chosen.add(idx);
+  }
+
+  for (const idx of chosen) route.gridTiles[idx] = 'event';
+  route.eventCount = chosen.size;
+  route.eventCentered = true;
+  route.name = route.name.includes('Event') ? route.name : `Event ${route.name}`;
+  route.desc = `Event-centered map. Contains ${chosen.size} guaranteed event tile${chosen.size === 1 ? '' : 's'} for this zone. ${route.desc || ''}`.trim();
+  return route;
+}
+
+// Generate a shop route object procedurally from a layout
+function frGenerateShopRoute(zone, subZone, forceS, forceEventCentered=false) {
   const layout = frGetLayout(zone, subZone);
   const tiles = layout.tiles;
   const cols = layout.cols;
@@ -12957,13 +14256,15 @@ function frGenerateShopRoute(zone, subZone, forceS) {
     visited.add(candidates[0]);
   }
 
-  let bossCount=0, eliteCount=0, eliteSwarmCount=0, fastCount=0;
+  let bossCount=0, eliteCount=0, eliteSwarmCount=0, fastCount=0, eventCount=0;
+  const gridTiles = [...tiles];
   for (const idx of path) {
-    const t = FR_TILE_TYPES[tiles[idx]] || FR_TILE_TYPES.normal;
+    const t = FR_TILE_TYPES[gridTiles[idx]] || FR_TILE_TYPES.normal;
     if (t.bossChance > 0) bossCount++;
     if (t.forceElite && !t.eliteSwarm) eliteCount++;
     if (t.eliteSwarm) eliteSwarmCount++;
     if (t.spawnMult < 1.0 && !t.dead) fastCount++;
+    if (t.eventTile) eventCount++;
   }
   let rating = frComputeRating(path.length, bossCount, eliteCount, eliteSwarmCount, fastCount, false);
   let spawnBoost = false;
@@ -12977,7 +14278,9 @@ function frGenerateShopRoute(zone, subZone, forceS) {
     if (sEntries.length) { const se = sEntries[Math.floor(Math.random()*sEntries.length)]; name=se.name; desc=se.desc; }
   }
 
-  return { name, desc, zone, subZone: subZone||null, path, gridTiles:[...tiles], rating, bossCount, eliteCount, eliteSwarmCount, spawnBoost, maxSteps, fromShop:true, selfMade:false };
+  let route = { name, desc, zone, subZone: subZone||null, path, gridTiles, rating, bossCount, eliteCount, eliteSwarmCount, eventCount, spawnBoost, maxSteps, fromShop:true, selfMade:false };
+  if (forceEventCentered) route = frApplyEventCenteredTiles(route);
+  return route;
 }
 
 function refreshFarmRouteShop(free=false) {
@@ -12990,7 +14293,10 @@ function refreshFarmRouteShop(free=false) {
   }
   const allZoneSubs = Object.keys(FR_ZONE_LAYOUTS).map(key => ({ zone:FR_ZONE_LAYOUTS[key].zone, subZone:FR_ZONE_LAYOUTS[key].subZone }));
   const shuffled = allZoneSubs.sort(() => Math.random()-0.5).slice(0, 4);
-  fr.shopStock = shuffled.map((zs,i) => ({ ...frGenerateShopRoute(zs.zone, zs.subZone, false), stockId:`stock_${Date.now()}_${i}` }));
+  fr.shopStock = shuffled.map((zs,i) => {
+    const eventCentered = zs.zone !== 'abyss' && Math.random() < 0.30;
+    return { ...frGenerateShopRoute(zs.zone, zs.subZone, false, eventCentered), stockId:`stock_${Date.now()}_${i}` };
+  });
   renderFarmRouteShop();
   updateShopGoldDisplay();
 }
@@ -13009,12 +14315,12 @@ function renderFarmRouteShop() {
     return;
   }
   grid.innerHTML = '';
-  const zoneNames = {fields:'The Fields',caves:'Dark Cave',swamp:'Bleakmoor Swamp',hoarspire:'Hoarspire Valley',abyss:'The Abyss'};
+  const zoneNames = {fields:'The Fields',caves:'Dark Cave',swamp:'Bleakmoor Swamp',hoarspire:'Hoarspire Valley',chaotic_chasm:'Chaotic Chasm',abyss:'The Abyss'};
   const subZoneLabels = {
     dusty_outskirts:'Dusty Outskirts',goblin_camp:'Goblin Camp',golem_temple:'Golem Temple',stormwind_fields:'Stormwind Fields',
     deep_tunnels:'Deep Tunnels',bat_cave:'Bat Cave',forbidden_library:'Forbidden Library',echoing_chasm:'Echoing Chasm',
     murk_depths:'Murk Depths',crimson_rot:'Crimson Rot',witch_coven:'Witch Coven',cursed_hollow:'Cursed Hollow',
-    sheercold_terrace:'Sheercold Terrace',pale_hollow:'Pale Hollow',frozen_dragon_grave:'Frozen Dragon Grave',
+    sheercold_terrace:'Sheercold Terrace',pale_hollow:'Pale Hollow',frozen_dragon_grave:'Frozen Dragon Grave',maw:'The Maw',madwind_pass:'Madwind Pass', last_breach:'Last Breach',
   };
 
   for (const item of fr.shopStock) {
@@ -13022,12 +14328,15 @@ function renderFarmRouteShop() {
     const card = document.createElement('div');
     card.className = 'fr-shop-card';
     if (item.spawnBoost) card.style.cssText += ';border-color:#aa8800;';
+    if (item.eventCentered) card.style.cssText += ';border-color:#d8b45a;box-shadow:inset 0 0 14px rgba(216,180,90,0.08);';
     const loc = item.subZone ? subZoneLabels[item.subZone]||item.subZone : zoneNames[item.zone]||item.zone;
     const pathLen = (item.path||[]).length;
-    const nameColor = item.spawnBoost ? 'var(--legendary)' : 'var(--white)';
+    const eventTiles = item.eventCount || (item.path||[]).filter(idx => (FR_TILE_TYPES[(item.gridTiles||[])[idx]] || {}).eventTile).length;
+    const nameColor = item.spawnBoost ? 'var(--legendary)' : (item.eventCentered ? '#d8b45a' : 'var(--white)');
+    const badges = `${item.spawnBoost ? ` <span style="color:#aa8800;font-size:8px;">✦</span>` : ''}${item.eventCentered ? ` <span style="color:#d8b45a;font-size:8px;">EVENT</span>` : ''}`;
     card.innerHTML = `
-      <div class="fr-shop-name" style="color:${nameColor};">${item.name}${item.spawnBoost ? ` <span style="color:#aa8800;font-size:8px;">✦</span>` : '' }</div>
-      <div class="fr-shop-zone">${loc} &middot; ${pathLen} steps</div>
+      <div class="fr-shop-name" style="color:${nameColor};">${item.name}${badges}</div>
+      <div class="fr-shop-zone">${loc} &middot; ${pathLen} steps${eventTiles ? ` &middot; <span style="color:#d8b45a;">${eventTiles} events</span>` : ''}</div>
       <div class="fr-shop-desc">${item.desc||''}</div>
       <div class="fr-shop-price">&#x2B21; 50k</div>
       <button class="fr-shop-buy-btn" ${G.gold<50000?'disabled':''} onclick="frBuyShopRoute('${item.stockId}')">BUY</button>
@@ -13091,6 +14400,8 @@ function frBuyShopRoute(stockId) {
     path:item.path||[], gridTiles:item.gridTiles||[],
     rating:item.rating, bossCount:item.bossCount||0,
     eliteCount:item.eliteCount||0, eliteSwarmCount:item.eliteSwarmCount||0,
+    eventCount:item.eventCount || (item.path||[]).filter(idx => (FR_TILE_TYPES[(item.gridTiles||[])[idx]] || {}).eventTile).length,
+    eventCentered:item.eventCentered||false,
     spawnBoost:item.spawnBoost||false,
     createdAt:Date.now(), fromShop:true, selfMade:false,
     maxSteps:item.maxSteps||0,
@@ -13099,7 +14410,8 @@ function frBuyShopRoute(stockId) {
   renderFarmRouteShop();
   renderFarmRouteList();
   saveGame(false);
-  log(`Purchased route: "${item.name}" (${(item.path||[]).length} steps) for 50k gold`, 'system');
+  const boughtEventTiles = item.eventCount || (item.path||[]).filter(idx => (FR_TILE_TYPES[(item.gridTiles||[])[idx]] || {}).eventTile).length;
+  log(`Purchased route: "${item.name}" (${(item.path||[]).length} steps${boughtEventTiles ? `, ${boughtEventTiles} event tiles` : ''}) for 50k gold`, 'system');
 }
 
 
@@ -13120,6 +14432,7 @@ function frGetCurrentTileModifiers() {
       bossChance: Math.min(0.80, base.bossChance > 0 ? base.bossChance * 2.0 : 0),
       forceElite: base.forceElite,   // elite tiles still guarantee elites
       eliteSwarm: base.eliteSwarm,   // elite swarm tiles still swarm
+      eventTile: base.eventTile,
     };
   }
   return base;
@@ -13270,7 +14583,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
     G.started = true;
     document.getElementById('class-select-screen').style.cssText = 'display:none';
     initClassUI();
-    ['autoheal','lootfilter','autoequip','autosell','townRun'].forEach(k => {
+    ['autoheal','lootfilter','autoequip','autosell','townRun','skipEvents'].forEach(k => {
       document.getElementById(`toggle-${k}`)?.classList.toggle('on', !!G.config[k]);
     });
     const hi = document.getElementById('cfg-heal-threshold'); if(hi) hi.value = G.config.healThreshold;
