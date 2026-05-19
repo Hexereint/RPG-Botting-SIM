@@ -3992,7 +3992,14 @@ function spawnKitarasqueBoss(zc) {
   log('<span style="color:#cc3355">The Last Breach pulses. Kitarasque, the Absolute Mass, begins to grow...</span>', 'system');
 }
 function spawnKitarasqueMassBlobs(boss, ts=performance.now()) {
-  for (let i=0; i<5; i++) {
+  const maxBlobs = 10;
+  const existingBlobs = G.monsters.filter(m => m && m.kitarasqueBlob).length;
+  const spawnCount = Math.max(0, Math.min(5, maxBlobs - existingBlobs));
+  if (spawnCount <= 0) {
+    log('<span style="color:#cc6688">Kitarasque casts Flesh Tumor — but the mass is already at its limit!</span>', 'dmgtaken');
+    return;
+  }
+  for (let i=0; i<spawnCount; i++) {
     const blob = {
       id:Date.now()+Math.random()+i, name:'<span style="color:#cc6688">Mass Blob</span>', baseName:'Mass Blob',
       zone:G.zone, subZone:G.subZone, maxHp:1000, hp:1000, shield:0, arcaneShield:0,
@@ -4001,7 +4008,7 @@ function spawnKitarasqueMassBlobs(boss, ts=performance.now()) {
     };
     G.monsters.push(blob);
   }
-  log('<span style="color:#cc6688">Kitarasque casts Flesh Tumor — 5 Mass Blobs split from its body!</span>', 'dmgtaken');
+  log(`<span style="color:#cc6688">Kitarasque casts Flesh Tumor — ${spawnCount} Mass Blob${spawnCount>1?'s':''} split from its body!</span>`, 'dmgtaken');
 }
 function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
   if (!monster || amount <= 0) return;
@@ -4011,7 +4018,7 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
     monster.hp = Math.min(monster.maxHp, monster.hp + heal);
     if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
     monster.kitarasqueHitsTaken = (monster.kitarasqueHitsTaken || 0) + 1;
-    if (monster.kitarasqueHitsTaken >= 5) {
+    if (monster.kitarasqueHitsTaken >= 10) {
       monster.kitarasqueHitsTaken = 0;
       spawnKitarasqueMassBlobs(monster, ts);
     }
