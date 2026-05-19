@@ -2568,42 +2568,7 @@ function effectiveCooldown(baseCd, skillKey) {
   if (skillKey==='frostnova' && hasMythicMod('ethereal')) cd *= 0.6;
   // Hiddenblade of Sin: Assassinate cooldown -50%
   if (skillKey==='assassinate' && hasMythicMod('hiddenblade_sin')) cd *= 0.5;
-  // Berserker's Boots: War Cry cooldown -50%
-  if (skillKey==='warcry' && hasMythicMod('berserker_boots')) cd *= 0.5;
   return Math.max(500, cd);
-}
-
-function dealWhirlwindDamage(ts=performance.now(), label='Whirlwind') {
-  // AOE — 40% falloff per extra target. Snapshot targets because kills remove monsters.
-  const str = effStat('str');
-  const sp = G.skills?.whirlwind?.skillPts || 0;
-  let total = 0;
-  let mult = 1.0;
-  const targets = [...G.monsters];
-  for (let i=0; i<targets.length; i++) {
-    const t = targets[i];
-    if (!t || t.hp <= 0) { mult *= 0.6; continue; }
-    const d = Math.round((calcDamage()*(0.25+str*0.003)*3) * (1 + sp*0.010) * mult);
-    const res = dealSkillDamageToMonster(t, d, ts);
-    total += res.dealt;
-    if(t.hp<=0) killMonster(t,ts);
-    mult *= 0.6;
-  }
-  if (targets.length > 0 && label !== null) log(`${label}: ${fmtNum(total)} dmg to ${targets.length} target${targets.length>1?'s':''}`, 'skill');
-  return { total, count: targets.length };
-}
-
-function updateSpinCleaverWhirlwind(ts=performance.now()) {
-  if (!hasMythicMod('spin_cleaver')) {
-    G.combat.whirlwindUntil = 0;
-    G.combat.nextWhirlwindTickAt = 0;
-    return false;
-  }
-  if ((G.combat.whirlwindUntil || 0) <= ts || !G.monsters.length) return false;
-  if (ts < (G.combat.nextWhirlwindTickAt || 0)) return false;
-  G.combat.nextWhirlwindTickAt = ts + 1000;
-  dealWhirlwindDamage(ts, 'Spin Cleaver whirlwind');
-  return true;
 }
 
 function dealFireballDamage(fbDmg, ts=performance.now(), label='Fireball', overloadText='') {
@@ -5581,14 +5546,10 @@ const MYTHIC_ITEMS = {
       { name:"Warlord's Pauldron",  mod:'warlord',        desc:'Battle Hardened damage reduction stacks only reset on death',                 val:null },
       { name:'Heart of the Kitarasque', mod:'kitarasque_heart', desc:'Restores 5% max HP upon taking damage',                         val:5    },
     ],
-    legging:[
-      { name:"Titan's Girdle",      mod:'titan_girdle',   desc:'Fortify costs 0 MP',                                         val:0    },
-      { name:"Berserker's Boots",   mod:'berserker_boots', desc:"Reduce War Cry's cooldown by 50%",                         val:50   },
-    ],
+    legging:{ name:"Titan's Girdle",      mod:'titan_girdle',   desc:'Fortify costs 0 MP',                                         val:0    },
     weapon: [
       { name:"Executioner's Edge",  mod:'executioner',    desc:'Execute threshold raised to %val%%%',                        val:50   },
       { name:'The Wall',             mod:'the_wall',      desc:'Shield Bash deals +30% current HP damage; costs 25% current HP', val:null },
-      { name:'Spin Cleaver',         mod:'spin_cleaver',  desc:'Whirlwind lasts for 5s',                                      val:5    },
     ],
     offhand:[
       { name:'Bloodsoaked Brandish', mod:'bloodsoaked',    desc:'Attacks restore HP equal to %val%% of damage dealt',         val:10   },
@@ -6660,7 +6621,6 @@ function gameTick(ts) {
 
   // Combat
   if(G.monsters.length>0){
-    updateSpinCleaverWhirlwind(ts);
     const flamestealerCasting = isFlamestealerCasting(ts);
     if ((G.combat.aislongFrozenUntil || 0) > ts || flamestealerCasting) {
       // Frozen or channeling Flamestealer: player cannot attack or cast skills, but enemies continue attacking.
@@ -6860,15 +6820,19 @@ function gameTick(ts) {
             target.stunResetAt = ts;
           }
         } else if(k==='whirlwind'){
-          const res = dealWhirlwindDamage(ts, null);
-          if (hasMythicMod('spin_cleaver')) {
-            G.combat.whirlwindUntil = ts + 5000;
-            G.combat.nextWhirlwindTickAt = ts + 1000;
-            skillNote = `${res.total} dmg to ${res.count} target${res.count>1?'s':''} · Spin Cleaver active for 5s`;
-          } else {
-            skillNote = `${res.total} dmg to ${res.count} target${res.count>1?'s':''}`;
+          // AOE — 40% falloff per extra target
+          let total = 0;
+          let mult = 1.0;
+          const targets = [...G.monsters];
+          for (let i=0; i<targets.length; i++) {
+            const d = Math.round((calcDamage()*(0.25+str*0.003)*3) * (1 + sp*0.010) * mult);
+            const res = dealSkillDamageToMonster(targets[i], d, ts);
+            total += res.dealt;
+            if(targets[i].hp<=0) killMonster(targets[i],ts);
+            mult *= 0.6;
           }
           skillDmg = 0; // handled above
+          skillNote = `${total} dmg to ${targets.length} target${targets.length>1?'s':''}`;
         } else if(k==='warcry'){
           const pct = Math.min(80, (10 + str * 0.3 + sp * 0.35));
           const dur = 10 + sp * 0.08;
@@ -10103,14 +10067,12 @@ function skillDamagePreview(k) {
   }
   if(k==='whirlwind') {
     const dmg=Math.round(base*(0.25+str*0.003)*3*(1+sp*0.010));
-    const spinText = hasMythicMod('spin_cleaver') ? ' · Spin Cleaver: repeats every 1s for 5s' : '';
-    return `~${fmtNum(dmg)} dmg all targets${condStr} · skill pts: +1% dmg each${spinText}`;
+    return `~${fmtNum(dmg)} dmg all targets${condStr} · skill pts: +1% dmg each`;
   }
   if(k==='warcry') {
     const pct=Math.min(80,(10+str*0.3+sp*0.35)).toFixed(0);
     const dur=(10+sp*0.08).toFixed(1);
-    const bootsText = hasMythicMod('berserker_boots') ? ' · Berserker's Boots: cooldown -50%' : '';
-    return `+${pct}% dmg for ${dur}s · can be cast without a target · skill pts improve buff and duration${bootsText}`;
+    return `+${pct}% dmg for ${dur}s · can be cast without a target · skill pts improve buff and duration`;
   }
   if(k==='fortify') {
     const dur=(6+effStat('vit')*0.05+sp*0.10).toFixed(1);
