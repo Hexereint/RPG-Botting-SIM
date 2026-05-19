@@ -714,7 +714,7 @@ select.config-input { width:auto; cursor:pointer; }
   .equip-unequip { width:28px; min-width:28px; max-width:28px; }
 }
 
- (max-width:700px) {
+@media (max-width:700px) {
   #combat-status { align-items:flex-start; flex-direction:column; gap:2px; }
   #combat-info { white-space:normal; width:100%; }
   #combat-rates { width:100%; text-align:left; font-size:9px; }
@@ -1565,10 +1565,10 @@ body.chaos-active #map-panel .subzone-row,
       </div>
       <div class="subzone-row" id="subzone-fields" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;display:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-fields-base" onclick="setSubZone('fields','')">Open Plains</button>
-        <button class="subzone-btn" id="sz-fields-dusty_outskirts" onclick="setSubZone('fields','dusty_outskirts')">Dusty Outskirts<span class="sz-desc">Bandits steal gold on hit</span></button>
+        <button class="subzone-btn" id="sz-fields-dusty_outskirts" onclick="setSubZone('fields','dusty_outskirts')">Dusty Outskirts<span class="sz-desc">Zone hazard: Bandits steal gold on hit</span></button>
         <button class="subzone-btn" id="sz-fields-goblin_camp" onclick="setSubZone('fields','goblin_camp')">Goblin Camp<span class="sz-desc">Swarms of goblins, high gold</span></button>
         <button class="subzone-btn" id="sz-fields-golem_temple" onclick="setSubZone('fields','golem_temple')">Golem Temple<span class="sz-desc">Slow armoured constructs</span></button>
-        <button class="subzone-btn" id="sz-fields-stormwind_fields" onclick="setSubZone('fields','stormwind_fields')">Stormwind Fields<span class="sz-desc">Lightning strikes, stormcharged enemies</span></button>
+        <button class="subzone-btn" id="sz-fields-stormwind_fields" onclick="setSubZone('fields','stormwind_fields')">Stormwind Fields<span class="sz-desc">Zone hazard: Lightning strikes, stormcharged enemies</span></button>
       </div>
 
       <div class="map-zone zone-caves" id="zone-caves" onclick="setZoneBase('caves')">
@@ -1577,7 +1577,7 @@ body.chaos-active #map-panel .subzone-row,
       </div>
       <div class="subzone-row" id="subzone-caves" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-caves-base" onclick="setSubZone('caves','')">Cave Entrance</button>
-        <button class="subzone-btn" id="sz-caves-deep_tunnels" onclick="setSubZone('caves','deep_tunnels')">Deep Tunnels<span class="sz-desc">Reduced crit, monsters miss</span></button>
+        <button class="subzone-btn" id="sz-caves-deep_tunnels" onclick="setSubZone('caves','deep_tunnels')">Deep Tunnels<span class="sz-desc">Zone hazard: Reduced crit, monsters miss</span></button>
         <button class="subzone-btn" id="sz-caves-bat_cave" onclick="setSubZone('caves','bat_cave')">Bat Cave<span class="sz-desc">Swarms of weak bats</span></button>
         <button class="subzone-btn" id="sz-caves-forbidden_library" onclick="setSubZone('caves','forbidden_library')">Forbidden Library<span class="sz-desc">Liches — fragile but deadly</span></button>
         <button class="subzone-btn" id="sz-caves-echoing_chasm" onclick="setSubZone('caves','echoing_chasm')">Echoing Chasm<span class="sz-desc">Monsters call reinforcements over time</span></button>
@@ -1590,9 +1590,9 @@ body.chaos-active #map-panel .subzone-row,
       <div class="subzone-row" id="subzone-swamp" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-swamp-base" onclick="setSubZone('swamp','')">Bog Shallows</button>
         <button class="subzone-btn" id="sz-swamp-murk_depths" onclick="setSubZone('swamp','murk_depths')">Murk Depths<span class="sz-desc">Potions drop often; special potions only</span></button>
-        <button class="subzone-btn" id="sz-swamp-crimson_rot" onclick="setSubZone('swamp','crimson_rot')">The Crimson Rot<span class="sz-desc">Bleed stacks, guaranteed drops</span></button>
-        <button class="subzone-btn" id="sz-swamp-witch_coven" onclick="setSubZone('swamp','witch_coven')">Witch Coven<span class="sz-desc">Witches and their minions</span></button>
-        <button class="subzone-btn" id="sz-swamp-cursed_hollow" onclick="setSubZone('swamp','cursed_hollow')">Cursed Hollow<span class="sz-desc">All healing reduced 30%</span></button>
+        <button class="subzone-btn" id="sz-swamp-crimson_rot" onclick="setSubZone('swamp','crimson_rot')">The Crimson Rot<span class="sz-desc">Zone hazard: Bleed stacks, guaranteed drops</span></button>
+        <button class="subzone-btn" id="sz-swamp-witch_coven" onclick="setSubZone('swamp','witch_coven')">Witch Coven<span class="sz-desc">Zone hazard: Witches and their minions</span></button>
+        <button class="subzone-btn" id="sz-swamp-cursed_hollow" onclick="setSubZone('swamp','cursed_hollow')">Cursed Hollow<span class="sz-desc">Zone hazard: All healing reduced 30%</span></button>
       </div>
 
       <div class="map-zone zone-hoarspire" id="zone-hoarspire" onclick="setZoneBase('hoarspire')">
@@ -1600,10 +1600,10 @@ body.chaos-active #map-panel .subzone-row,
         <div class="map-zone-desc">Frozen valley. Bitter winds slow your attacks across every locale.</div>
       </div>
       <div class="subzone-row" id="subzone-hoarspire" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
-        <button class="subzone-btn" id="sz-hoarspire-base" onclick="setSubZone('hoarspire','')">Snowwind Plains<span class="sz-desc">Ice beasts and Snowdevil Rabbit swarms</span></button>
-        <button class="subzone-btn" id="sz-hoarspire-sheercold_terrace" onclick="setSubZone('hoarspire','sheercold_terrace')">Sheercold Terrace<span class="sz-desc">Harsher cold and rabbit swarms</span></button>
-        <button class="subzone-btn" id="sz-hoarspire-pale_hollow" onclick="setSubZone('hoarspire','pale_hollow')">Pale Hollow<span class="sz-desc">Ghostly ice monsters and Ice Kitsune omens</span></button>
-        <button class="subzone-btn" id="sz-hoarspire-frozen_dragon_grave" onclick="setSubZone('hoarspire','frozen_dragon_grave')">Frozen Dragon Grave<span class="sz-desc">Ice drakes and dragon bones</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-base" onclick="setSubZone('hoarspire','')">Snowwind Plains<span class="sz-desc">Zone hazard: Ice beasts and Snowdevil Rabbit swarms</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-sheercold_terrace" onclick="setSubZone('hoarspire','sheercold_terrace')">Sheercold Terrace<span class="sz-desc">Zone hazard: Harsher cold and rabbit swarms</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-pale_hollow" onclick="setSubZone('hoarspire','pale_hollow')">Pale Hollow<span class="sz-desc">Zone hazard: Ghostly ice monsters and Ice Kitsune omens</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-frozen_dragon_grave" onclick="setSubZone('hoarspire','frozen_dragon_grave')">Frozen Dragon Grave<span class="sz-desc">Zone hazard: Ice drakes and dragon bones</span></button>
       </div>
 
       <div class="map-zone zone-chaotic" id="zone-chaotic_chasm" onclick="setZoneBase('chaotic_chasm')">
@@ -7178,20 +7178,12 @@ function gameTick(ts) {
           }
         }
         if (m.isLootGoblin) {
-    grantLootGoblinKillLoot(m);
-    recordObservedFarmGain(exp, 0, ts);
-    if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
-    return;
-  }
+          // Loot Goblins do not attack; they only flee on their timer.
+          // Do not resolve kill loot here, or combat can freeze before killMonster() runs.
+          continue;
+        }
 
-  if (m.isMimic) {
-    grantMimicKillLoot(m);
-    recordObservedFarmGain(exp, 0, ts);
-    if (G.monsters.length===0) G.nextSpawnAt = ts + spawnDelay(G.zone);
-    return;
-  }
-
-  if (m.isBanditto) {
+        if (m.isBanditto) {
           const currentGold = Math.max(0, Math.round(G.gold || 0));
           const stolen = currentGold > 0 ? Math.max(1, Math.floor(currentGold * 0.07)) : 0;
           if (stolen > 0) {
@@ -10499,15 +10491,15 @@ function getZoneBossFlavor(zone, subZone) {
     stormwind_fields: 'Stormclouds gather over Stormwind Fields. Enough blood spilled beneath the thunder may call down its lord...',
     deep_tunnels: 'The Deep Tunnels tremble beneath your feet. Something enormous may be listening from below...',
     forbidden_library: 'Intruding the Forbidden Library might bring the wrath of a certain powerful lich...',
-    witch_coven: 'The Witch Coven whispers through the reeds. A wandering witch may answer trespass with curses and flame...',
-    crimson_rot: 'The Crimson Rot reeks of old hunger. Somewhere in the mire, a defiled beast may catch your scent...',
-    hoarspire: 'The Hoarspire winds cut through bone. Every swing feels heavier in the cold...',
-    chaotic_chasm: 'Abyssmouth yawns like a green-lit wound at the chasm edge. Zone gimmick: all skill damage is reduced by 15% here.',
-    maw: 'The Maw gurgles with greed. Treasure, bone, and breath vanish into its endless throat. Zone gimmick: all skill damage is reduced by 15% here.',
-    madwind_pass: 'Madwind Pass stinks of green rot. The air itself feels cursed, and every gust carries a dead-winged rasp. Zone gimmick: all skill damage is reduced by 15% here.',
-    last_breach: 'The Last Breach pulses with absolute mass. The ground feels alive, swollen, and hungry beneath each step. Zone gimmick: all skill damage is reduced by 15% here.',
-    pale_hollow: 'Pale Hollow is silent beneath the snow. The Ice Kitsune are said to herald a woman in white...',
-    frozen_dragon_grave: 'The Frozen Dragon Grave creaks with old bones. Something winged and winter-dead may stir beneath the frost...',
+    witch_coven: 'The Witch Coven whispers through the reeds. Zone hazard: witches fight with minions and may answer trespass with curses and flame...',
+    crimson_rot: 'The Crimson Rot reeks of old hunger. Zone hazard: bleed stacks can build here, and a defiled beast may catch your scent...',
+    hoarspire: 'The Hoarspire winds cut through bone. Zone hazard: every swing feels heavier in the cold...',
+    chaotic_chasm: 'Abyssmouth yawns like a green-lit wound at the chasm edge. Zone hazard: all skill damage is reduced by 15% here.',
+    maw: 'The Maw gurgles with greed. Treasure, bone, and breath vanish into its endless throat. Zone hazard: all skill damage is reduced by 15% here.',
+    madwind_pass: 'Madwind Pass stinks of green rot. The air itself feels cursed, and every gust carries a dead-winged rasp. Zone hazard: all skill damage is reduced by 15% here.',
+    last_breach: 'The Last Breach pulses with absolute mass. The ground feels alive, swollen, and hungry beneath each step. Zone hazard: all skill damage is reduced by 15% here.',
+    pale_hollow: 'Pale Hollow is silent beneath the snow. Zone hazard: Ice Kitsune omens can herald a woman in white...',
+    frozen_dragon_grave: 'The Frozen Dragon Grave creaks with old bones. Zone hazard: something winged and winter-dead may stir beneath the frost...',
     abyss: 'The Abyss counts every kill. On certain floors, something vast may answer from the dark...'
   };
   return flavors[key] || '';
