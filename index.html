@@ -2089,6 +2089,10 @@ const G = {
     darkYoungWailAt: 0,
     darkYoungWailWarned: false,
     lastGlobalSkillCastAt: 0,
+    spinCleaverWhirlwindUntil: 0,
+    spinCleaverWhirlwindNextAt: 0,
+    spinCleaverWhirlwindStr: 0,
+    spinCleaverWhirlwindSp: 0,
     uniqueBossCooldownUntil: 0,
     pendingAbominableSnowman: false,
     abominableSnowmanKills: 0
@@ -2568,7 +2572,48 @@ function effectiveCooldown(baseCd, skillKey) {
   if (skillKey==='frostnova' && hasMythicMod('ethereal')) cd *= 0.6;
   // Hiddenblade of Sin: Assassinate cooldown -50%
   if (skillKey==='assassinate' && hasMythicMod('hiddenblade_sin')) cd *= 0.5;
+  // Berserker's Boots: War Cry cooldown -50%
+  if (skillKey==='warcry' && hasMythicMod('berserker_boots')) cd *= 0.5;
   return Math.max(500, cd);
+}
+
+function performWhirlwindHit(ts=performance.now(), str=effStat('str'), sp=0, label='Whirlwind') {
+  // AOE — 40% falloff per extra target.
+  let total = 0;
+  let mult = 1.0;
+  let hitCount = 0;
+  const targets = [...G.monsters];
+  for (let i=0; i<targets.length; i++) {
+    const t = targets[i];
+    if (!t || t.hp <= 0) { mult *= 0.6; continue; }
+    const d = Math.round((calcDamage()*(0.25+str*0.003)*3) * (1 + sp*0.010) * mult);
+    const res = dealSkillDamageToMonster(t, d, ts);
+    total += res.dealt;
+    if (res.dealt > 0) hitCount++;
+    if (t.hp<=0) killMonster(t,ts);
+    mult *= 0.6;
+  }
+  return { total, targetCount: targets.length, hitCount, label };
+}
+
+function tickSpinCleaverWhirlwind(ts=performance.now()) {
+  if (!G.combat || (G.combat.spinCleaverWhirlwindUntil || 0) <= ts) return;
+  if (!hasMythicMod('spin_cleaver') || G.monsters.length <= 0) {
+    G.combat.spinCleaverWhirlwindUntil = 0;
+    G.combat.spinCleaverWhirlwindNextAt = 0;
+    return;
+  }
+  if ((G.combat.spinCleaverWhirlwindNextAt || 0) > ts) return;
+  const str = G.combat.spinCleaverWhirlwindStr ?? effStat('str');
+  const sp = G.combat.spinCleaverWhirlwindSp ?? 0;
+  const hit = performWhirlwindHit(ts, str, sp, 'Spin Cleaver');
+  if (hit.targetCount > 0) {
+    log(`[Spin Cleaver] Whirlwind continues: ${fmtNum(hit.total)} dmg to ${hit.targetCount} target${hit.targetCount>1?'s':''}`, 'spelldmg');
+  }
+  G.combat.spinCleaverWhirlwindNextAt = ts + 1000;
+  if ((G.combat.spinCleaverWhirlwindNextAt || 0) > (G.combat.spinCleaverWhirlwindUntil || 0)) {
+    G.combat.spinCleaverWhirlwindNextAt = G.combat.spinCleaverWhirlwindUntil || 0;
+  }
 }
 
 function dealFireballDamage(fbDmg, ts=performance.now(), label='Fireball', overloadText='') {
@@ -5546,10 +5591,14 @@ const MYTHIC_ITEMS = {
       { name:"Warlord's Pauldron",  mod:'warlord',        desc:'Battle Hardened damage reduction stacks only reset on death',                 val:null },
       { name:'Heart of the Kitarasque', mod:'kitarasque_heart', desc:'Restores 5% max HP upon taking damage',                         val:5    },
     ],
-    legging:{ name:"Titan's Girdle",      mod:'titan_girdle',   desc:'Fortify costs 0 MP',                                         val:0    },
+    legging:[
+      { name:"Titan's Girdle",      mod:'titan_girdle',   desc:'Fortify costs 0 MP',                                         val:0    },
+      { name:"Berserker's Boots",   mod:'berserker_boots', desc:"War Cry cooldown reduced by 50%",                           val:50   },
+    ],
     weapon: [
       { name:"Executioner's Edge",  mod:'executioner',    desc:'Execute threshold raised to %val%%%',                        val:50   },
       { name:'The Wall',             mod:'the_wall',      desc:'Shield Bash deals +30% current HP damage; costs 25% current HP', val:null },
+      { name:'Spin Cleaver',         mod:'spin_cleaver',  desc:'Whirlwind lasts for 5s',                                      val:5    },
     ],
     offhand:[
       { name:'Bloodsoaked Brandish', mod:'bloodsoaked',    desc:'Attacks restore HP equal to %val%% of damage dealt',         val:10   },
@@ -6489,6 +6538,7 @@ function gameTick(ts) {
   lastTick=ts;
 
   tickRandomEvent(ts);
+  tickSpinCleaverWhirlwind(ts);
 
   // Auto-heal
   if(G.config.autoheal&&G.potionCooldown<=0&&G.zone!=='town'){
@@ -6820,19 +6870,16 @@ function gameTick(ts) {
             target.stunResetAt = ts;
           }
         } else if(k==='whirlwind'){
-          // AOE — 40% falloff per extra target
-          let total = 0;
-          let mult = 1.0;
-          const targets = [...G.monsters];
-          for (let i=0; i<targets.length; i++) {
-            const d = Math.round((calcDamage()*(0.25+str*0.003)*3) * (1 + sp*0.010) * mult);
-            const res = dealSkillDamageToMonster(targets[i], d, ts);
-            total += res.dealt;
-            if(targets[i].hp<=0) killMonster(targets[i],ts);
-            mult *= 0.6;
-          }
+          const hit = performWhirlwindHit(ts, str, sp);
           skillDmg = 0; // handled above
-          skillNote = `${total} dmg to ${targets.length} target${targets.length>1?'s':''}`;
+          skillNote = `${fmtNum(hit.total)} dmg to ${hit.targetCount} target${hit.targetCount>1?'s':''}`;
+          if (hasMythicMod('spin_cleaver')) {
+            G.combat.spinCleaverWhirlwindUntil = ts + 5000;
+            G.combat.spinCleaverWhirlwindNextAt = ts + 1000;
+            G.combat.spinCleaverWhirlwindStr = str;
+            G.combat.spinCleaverWhirlwindSp = sp;
+            skillNote += ` <span style="color:#aa4466">[Spin Cleaver 5s]</span>`;
+          }
         } else if(k==='warcry'){
           const pct = Math.min(80, (10 + str * 0.3 + sp * 0.35));
           const dur = 10 + sp * 0.08;
@@ -11872,7 +11919,7 @@ function applyClassData(data) {
   G.passives = data.passives||{};
   G.skills = data.skills||{};
   G.skillCooldowns = {};
-  G.combat = {battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0,flamestealerFireball:null,darkYoungWailAt:0,darkYoungWailWarned:false};
+  G.combat = {battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0,flamestealerFireball:null,darkYoungWailAt:0,darkYoungWailWarned:false,spinCleaverWhirlwindUntil:0,spinCleaverWhirlwindNextAt:0,spinCleaverWhirlwindStr:0,spinCleaverWhirlwindSp:0};
   G.legendaryEssence = data.legendaryEssence||0;
   G.gearEssence = data.gearEssence||0;
   G.abyssKills = data.abyssKills||0;
@@ -12102,7 +12149,7 @@ function resetGameState() {
   G.farmRoutes={routes:[],equippedId:null,botStep:0,shopStock:[]};
   G.monsters=[]; G.nextSpawnAt=0; G.lastAttack=0; G.lastSpawnCountdown=-1;
   G.debuffs={plagued:0,freezing:false,crimsonRot:0,curseOfCoven:0,blackPoolUntil:0};
-  G.combat={battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0};
+  G.combat={battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0,spinCleaverWhirlwindUntil:0,spinCleaverWhirlwindNextAt:0,spinCleaverWhirlwindStr:0,spinCleaverWhirlwindSp:0};
   G.dead=false; G.deathStartedAt=0; G.respawnReady=false;
   G.bsSelectedItem=null; G.bsSelectedStat=null; G.bsSelectedStatType=null; G.bsRerollCounts={};
   G.merchantStock=[]; G.config={paused:false, skipEvents:false};
