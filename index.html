@@ -429,7 +429,7 @@ select.config-input { width:auto; cursor:pointer; }
 .rarity-tag.mythic { color:var(--unique); border-color:var(--unique); }
 
 /* CLASS SELECT */
-#class-select-screen { display:flex; position:fixed; inset:0; background:#000; z-index:300; align-items:center; justify-content:center; flex-direction:column; gap:20px; }
+#class-select-screen { display:none; position:fixed; inset:0; background:#000; z-index:300; align-items:center; justify-content:center; flex-direction:column; gap:20px; }
 .cs-title { font-size:18px; font-weight:bold; color:var(--white); letter-spacing:5px; text-transform:uppercase; }
 .cs-sub { color:var(--muted); font-size:11px; letter-spacing:3px; text-transform:uppercase; }
 .class-cards { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
@@ -11961,7 +11961,10 @@ function loadGame() {
 
 // CLASS SLOT SCREEN
 function renderClassSlotScreen() {
+  const screen = document.getElementById('class-select-screen');
+  if (screen) screen.style.cssText = 'display:flex';
   const container = document.getElementById('class-slot-cards');
+  if (!container) return;
   container.innerHTML = '';
   let save = {};
   try { save = JSON.parse(localStorage.getItem(SAVE_KEY_V2)||'{}'); } catch(e){}
@@ -12111,6 +12114,11 @@ function swapClass() {
   saveGame();
   renderClassSlotScreen();
   document.getElementById('class-select-screen').style.cssText = 'display:flex !important';
+}
+function hideClassSelectIfStarted() {
+  const screen = document.getElementById('class-select-screen');
+  if (!screen) return;
+  if (G && G.started && G.playerClass) screen.style.cssText = 'display:none';
 }
 let pendingStashItemId = null;
 
@@ -14605,6 +14613,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
   if (ok) {
     G.started = true;
     document.getElementById('class-select-screen').style.cssText = 'display:none';
+    hideClassSelectIfStarted();
     initClassUI();
     ['autoheal','lootfilter','autoequip','autosell','townRun','skipEvents'].forEach(k => {
       document.getElementById(`toggle-${k}`)?.classList.toggle('on', !!G.config[k]);
@@ -14640,7 +14649,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
   }
 })();
 
-
+hideClassSelectIfStarted();
 
 requestAnimationFrame(gameTick);
 setUiFontSize(G?.config?.uiFontSize || 18);
