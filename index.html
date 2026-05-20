@@ -2163,7 +2163,7 @@ const G = {
   selectedPotion: 'healing',
   potionCooldown: 0,
   potionShield: 0,
-  potionBuffs: { arcanicUntil:0, fervorUntil:0 },
+  potionBuffs: { arcanicUntil:0, fervorUntil:0, vitalityUntil:0, vitalityStartedAt:0, swiftnessUntil:0, swiftnessStartedAt:0 },
   dead: false,
   deathStartedAt: 0,
   stash: [null,null,null,null,null],
@@ -2443,6 +2443,7 @@ function calcMaxHp() {
   // Ascension bonus: ascmaxhp (percentage)
   const ascHpPct = totalAscendStat('ascmaxhp');
   if (ascHpPct > 0) hp = Math.round(hp * (1 + ascHpPct / 100));
+  if (isVitalityPotionActive()) hp += 1000;
   return Math.max(10, Math.round(hp));
 }
 function calcMaxMp() {
@@ -2595,6 +2596,8 @@ function calcAtkInterval() {
   let base = Math.max(0.5, 2 - agi * agiAtkIntervalReductionPerPoint());
   if (G.zone === 'hoarspire') base += 0.5;
   if ((G.combat?.everlastingWinterAttacks || 0) > 0) base += 2.0;
+  if (isSwiftnessPotionActive()) base -= 1.0;
+  base = Math.max(0.5, base);
   return +base.toFixed(2);
 }
 function calcRawCritChance() {
@@ -2629,6 +2632,8 @@ function effectiveCooldown(baseCd, skillKey) {
   if (skillKey==='assassinate' && hasMythicMod('hiddenblade_sin')) cd *= 0.5;
   // Berserker's Boots: War Cry cooldown -50%
   if (skillKey==='warcry' && hasMythicMod('berserker_boots')) cd *= 0.5;
+  // Potion of Swiftness: skill cooldowns recover 40% faster for 5s.
+  if (isSwiftnessPotionActive()) cd *= 0.6;
   return Math.max(500, cd);
 }
 
@@ -3557,6 +3562,11 @@ function updatePlayerStatusIcons(now=fxNow()) {
     const maxShield = Math.max(1, G.potionShieldMax || G.potionShield || 1);
     icons.push(playerStatusIcon('SH', '#99ee99', Math.max(10, Math.min(100, (G.potionShield / maxShield) * 100)), 'Potion shield', 'buff'));
   }
+  ensurePotionBuffs();
+  if ((G.potionBuffs?.arcanicUntil || 0) > now) icons.push(playerStatusIcon('ARC', '#b077ff', playerStatusPctFromUntil(G.potionBuffs.arcanicUntil, G.potionBuffs.arcanicStartedAt, 15000, now), 'Arcanic Potion: INT-scaling skills +20%', 'buff'));
+  if ((G.potionBuffs?.fervorUntil || 0) > now) icons.push(playerStatusIcon('FV', '#ff5555', playerStatusPctFromUntil(G.potionBuffs.fervorUntil, G.potionBuffs.fervorStartedAt, 10000, now), 'Potion of Fervor: basic damage +20%', 'buff'));
+  if ((G.potionBuffs?.vitalityUntil || 0) > now) icons.push(playerStatusIcon('VIT', '#ff8888', playerStatusPctFromUntil(G.potionBuffs.vitalityUntil, G.potionBuffs.vitalityStartedAt, 5000, now), 'Potion of Vitality: +1000 Max HP', 'buff'));
+  if ((G.potionBuffs?.swiftnessUntil || 0) > now) icons.push(playerStatusIcon('SPD', '#77ddff', playerStatusPctFromUntil(G.potionBuffs.swiftnessUntil, G.potionBuffs.swiftnessStartedAt, 5000, now), 'Potion of Swiftness: faster attacks and 40% CDR', 'buff'));
   if ((G.combat?.smokeBombCharges || 0) > 0) icons.push(playerStatusIcon('SM', '#777777', Math.min(100, (G.combat.smokeBombCharges / 7) * 100), `Smoke Bomb: ${G.combat.smokeBombCharges} charge(s)`, 'buff'));
   if ((G.debuffs?.plagued || 0) > now) icons.push(playerStatusIcon('PL', '#55cc55', playerStatusPctFromUntil(G.debuffs.plagued, G.debuffs.plaguedStartedAt, 10000, now), 'Plagued', 'debuff'));
   if ((G.debuffs?.necrorotUntil || 0) > now) icons.push(playerStatusIcon('ROT', '#55aa55', playerStatusPctFromUntil(G.debuffs.necrorotUntil, G.debuffs.necrorotStartedAt, 10000, now), 'Necro Rot', 'debuff'));
@@ -6121,10 +6131,12 @@ function itemStatTotal(item) {
 // POTIONS
 const POTION_MAX = 99;
 const POTION_TYPES = {
-  healing:  { name:'Potion of Healing',   icon:'🧪', color:'#77dd77', desc:'Heals 35% Max HP' },
-  shielding:{ name:'Potion of Shielding', icon:'🛡️', color:'#99ee99', desc:'Heals 35% Max HP and grants a shield equal to 60% Max HP for this encounter' },
-  arcanic:  { name:'Arcanic Potion',      icon:'◆',  color:'#b077ff', desc:'Heals 35% Max HP and boosts INT-scaling skill effects by 20% for 15s' },
-  fervor:   { name:'Potion of Fervor',    icon:'♦',  color:'#ff5555', desc:'Heals 35% Max HP and boosts basic damage by 20% for 10s' },
+  healing:  { name:'Potion of Healing',   icon:'🧪', color:'#77dd77', desc:'Heals 40% Max HP' },
+  shielding:{ name:'Potion of Shielding', icon:'🛡️', color:'#99ee99', desc:'Heals 40% Max HP and grants a shield equal to 60% Max HP for this encounter' },
+  arcanic:  { name:'Arcanic Potion',      icon:'◆',  color:'#b077ff', desc:'Heals 40% Max HP and boosts INT-scaling skill effects by 20% for 15s' },
+  fervor:   { name:'Potion of Fervor',    icon:'♦',  color:'#ff5555', desc:'Heals 40% Max HP and boosts basic damage by 20% for 10s' },
+  vitality: { name:'Potion of Vitality',  icon:'♥',  color:'#ff8888', desc:'Heals 40% Max HP and increases Max HP by 1000 for 5s' },
+  swiftness:{ name:'Potion of Swiftness', icon:'⏩', color:'#77ddff', desc:'Heals 40% Max HP, reduces attack interval by 1.0s, and grants 40% skill CDR for 5s' },
 };
 
 // KEY ITEMS
@@ -6242,17 +6254,21 @@ function weightedPotionRoll(pool, fallback='healing') {
 }
 function rollPotion() {
   return weightedPotionRoll([
-    ['healing', 55],
-    ['shielding', 15],
-    ['arcanic', 15],
-    ['fervor', 15],
+    ['healing', 48],
+    ['shielding', 13],
+    ['arcanic', 13],
+    ['fervor', 13],
+    ['vitality', 7],
+    ['swiftness', 6],
   ], 'healing');
 }
 function rollSpecialPotion() {
   return weightedPotionRoll([
-    ['shielding', 1],
-    ['arcanic', 1],
-    ['fervor', 1],
+    ['shielding', 3],
+    ['arcanic', 3],
+    ['fervor', 3],
+    ['vitality', 2],
+    ['swiftness', 2],
   ], 'shielding');
 }
 function rollNonHealingPotion() {
@@ -6267,17 +6283,23 @@ function rollPotionForZone(zone=G.zone, subZone=G.subZone) {
   return zoneCanDropAdvancedPotions(zone) ? rollPotion() : 'healing';
 }
 function potionHeal() {
-  const base = G.maxHp * 0.35;
+  const base = G.maxHp * 0.40;
   return G.subZone==='cursed_hollow' ? base * 0.7 : base;
 }
 function ensurePotionBuffs() {
-  if (!G.potionBuffs || typeof G.potionBuffs !== 'object') G.potionBuffs = { arcanicUntil:0, fervorUntil:0 };
+  if (!G.potionBuffs || typeof G.potionBuffs !== 'object') G.potionBuffs = { arcanicUntil:0, fervorUntil:0, vitalityUntil:0, vitalityStartedAt:0, swiftnessUntil:0, swiftnessStartedAt:0 };
   G.potionBuffs.arcanicUntil = Math.max(0, G.potionBuffs.arcanicUntil || 0);
   G.potionBuffs.fervorUntil = Math.max(0, G.potionBuffs.fervorUntil || 0);
+  G.potionBuffs.vitalityUntil = Math.max(0, G.potionBuffs.vitalityUntil || 0);
+  G.potionBuffs.vitalityStartedAt = Math.max(0, G.potionBuffs.vitalityStartedAt || 0);
+  G.potionBuffs.swiftnessUntil = Math.max(0, G.potionBuffs.swiftnessUntil || 0);
+  G.potionBuffs.swiftnessStartedAt = Math.max(0, G.potionBuffs.swiftnessStartedAt || 0);
   return G.potionBuffs;
 }
 function isArcanicPotionActive(now=performance.now()) { return ensurePotionBuffs().arcanicUntil > now; }
 function isFervorPotionActive(now=performance.now()) { return ensurePotionBuffs().fervorUntil > now; }
+function isVitalityPotionActive(now=performance.now()) { return ensurePotionBuffs().vitalityUntil > now; }
+function isSwiftnessPotionActive(now=performance.now()) { return ensurePotionBuffs().swiftnessUntil > now; }
 function applyIntSkillPotionBuff(value, now=performance.now()) {
   return isArcanicPotionActive(now) ? Math.round(value * 1.20) : value;
 }
@@ -6368,11 +6390,24 @@ function usePotion() {
     G.potionShieldMax = Math.max(G.potionShieldMax || 0, G.potionShield);
     log(`🛡 Used Potion of Shielding (+${fmtNum(heal)} HP, ${fmtNum(G.potionShield)} shield)`);
   } else if (type === 'arcanic') {
-    ensurePotionBuffs().arcanicUntil = performance.now() + 15000;
+    { const buffs = ensurePotionBuffs(); const now = performance.now(); buffs.arcanicStartedAt = now; buffs.arcanicUntil = now + 15000; }
     log(`◆ Used Arcanic Potion (+${fmtNum(heal)} HP, INT-scaling skills +20% for 15s)`);
   } else if (type === 'fervor') {
-    ensurePotionBuffs().fervorUntil = performance.now() + 10000;
+    { const buffs = ensurePotionBuffs(); const now = performance.now(); buffs.fervorStartedAt = now; buffs.fervorUntil = now + 10000; }
     log(`♦ Used Potion of Fervor (+${fmtNum(heal)} HP, basic damage +20% for 10s)`);
+  } else if (type === 'vitality') {
+    const buffs = ensurePotionBuffs();
+    const now = performance.now();
+    buffs.vitalityStartedAt = now;
+    buffs.vitalityUntil = now + 5000;
+    updateDerived();
+    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP for 5s)`);
+  } else if (type === 'swiftness') {
+    const buffs = ensurePotionBuffs();
+    const now = performance.now();
+    buffs.swiftnessStartedAt = now;
+    buffs.swiftnessUntil = now + 5000;
+    log(`⏩ Used Potion of Swiftness (+${fmtNum(heal)} HP, -1.0s attack interval and 40% CDR for 5s)`);
   } else {
     log(`⚗ Used Potion of Healing (+${fmtNum(heal)} HP)`);
   }
@@ -8857,7 +8892,7 @@ function refreshMerchant() {
 }
 
 const POTION_SHOP = [
-  { tier:'healing', price:50, label:'Potion of Healing', color:'#77dd77', desc:'Heals 35% Max HP · Max 99' },
+  { tier:'healing', price:50, label:'Potion of Healing', color:'#77dd77', desc:'Heals 40% Max HP · Max 99' },
 ];
 
 const GAMBLE_TIERS = [
@@ -10005,30 +10040,16 @@ function renderPotions() {
       grid.innerHTML = html;
       grid.querySelectorAll('[data-potion-type]').forEach(cell => {
         const potionType = () => cell.dataset.potionType || 'healing';
-        let singleClickTimer = null;
         cell.addEventListener('click', e => {
           e.preventDefault();
           e.stopPropagation();
-          if (singleClickTimer) {
-            clearTimeout(singleClickTimer);
-            singleClickTimer = null;
-          }
-          if (e.detail >= 2) {
-            manualUsePotionType(potionType());
-            return;
-          }
-          singleClickTimer = setTimeout(() => {
-            singleClickTimer = null;
-            selectPotion(potionType());
-          }, 220);
+          // Single-click should always be responsive on desktop: select immediately.
+          // A follow-up dblclick event will still perform the manual use below.
+          selectPotion(potionType());
         });
         cell.addEventListener('dblclick', e => {
           e.preventDefault();
           e.stopPropagation();
-          if (singleClickTimer) {
-            clearTimeout(singleClickTimer);
-            singleClickTimer = null;
-          }
           manualUsePotionType(potionType());
         });
         cell.addEventListener('keydown', e => {
@@ -10049,6 +10070,8 @@ function renderPotions() {
     if (G.potionCooldown>0) parts.push(`Cooldown: ${(G.potionCooldown/1000).toFixed(1)}s`);
     if (G.potionBuffs.arcanicUntil > now) parts.push(`Arcanic: ${((G.potionBuffs.arcanicUntil-now)/1000).toFixed(1)}s`);
     if (G.potionBuffs.fervorUntil > now) parts.push(`Fervor: ${((G.potionBuffs.fervorUntil-now)/1000).toFixed(1)}s`);
+    if (G.potionBuffs.vitalityUntil > now) parts.push(`Vitality: ${((G.potionBuffs.vitalityUntil-now)/1000).toFixed(1)}s`);
+    if (G.potionBuffs.swiftnessUntil > now) parts.push(`Swiftness: ${((G.potionBuffs.swiftnessUntil-now)/1000).toFixed(1)}s`);
     cd.textContent = parts.join(' · ');
   }
 }
@@ -12099,7 +12122,7 @@ function applyClassData(data) {
   for (const item of Object.values(G.equipped || {})) { if (item && getOvergearLevel(item) > 0) { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
   G.potions = data.potions||{healing:0};
   G.potionDiscovered = data.potionDiscovered || {};
-  G.potionBuffs = { arcanicUntil:0, fervorUntil:0 };
+  G.potionBuffs = { arcanicUntil:0, fervorUntil:0, vitalityUntil:0, vitalityStartedAt:0, swiftnessUntil:0, swiftnessStartedAt:0 };
   G.selectedPotion = data.selectedPotion || 'healing';
   normalizePotions();
   G.bsRerollCounts = data.bsRerollCounts||{};
@@ -12331,7 +12354,7 @@ function resetGameState() {
   G.prevCombatZone='fields'; G.prevCombatSubZone=null;
   G.inventory=[]; G.invMax=50; G.invUpgradeCount=0; G.keyItems={}; G.keyItemsDiscovered={};
   G.equipped={helmet:null,armor:null,legging:null,weapon:null,offhand:null};
-  G.potions={healing:0}; G.potionDiscovered={healing:true}; G.selectedPotion='healing'; G.potionCooldown=0; G.potionBuffs={arcanicUntil:0,fervorUntil:0};
+  G.potions={healing:0}; G.potionDiscovered={healing:true}; G.selectedPotion='healing'; G.potionCooldown=0; G.potionBuffs={arcanicUntil:0,fervorUntil:0,vitalityUntil:0,vitalityStartedAt:0,swiftnessUntil:0,swiftnessStartedAt:0};
   G.skills={}; G.passives={}; G.skillCooldowns={};
   G.abyssKills=0; G.hoarspire={iceKitsuneKills:0,pendingShuuna:false}; G.chaoticChasm={guzmakKills:0,vaalixKills:0}; G.swamp={cursedHollowKills:0,pendingDarkYoung:false}; G.abyssBosses=0; G.abyssDifficulty=1;
   G.farmRoutes={routes:[],equippedId:null,botStep:0,shopStock:[]};
