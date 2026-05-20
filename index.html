@@ -571,6 +571,9 @@ select.config-input { width:auto; cursor:pointer; }
 #cvp-hp-fill { height:100%; transition:width 0.16s linear; }
 #cvp-shield-bar { width:100%; height:4px; background:rgba(0,0,0,0.60); margin-bottom:3px; border:1px solid rgba(255,255,255,0.08); display:none; }
 #cvp-shield-fill { height:100%; background:#aaaaaa; transition:width 0.16s linear; }
+#cvp-cast-bar { width:100%; height:8px; background:rgba(0,0,0,0.70); margin-bottom:3px; border:1px solid rgba(255,255,255,0.10); display:none; overflow:hidden; position:relative; }
+#cvp-cast-fill { height:100%; width:0%; background:linear-gradient(90deg, #553388, #cc88ff); box-shadow:0 0 10px rgba(204,136,255,0.55); transition:width 0.08s linear; }
+#cvp-cast-label { font-size:8px; color:rgba(255,255,255,0.72); line-height:1.15; margin-bottom:3px; display:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #cvp-stats { font-size:8px; color:rgba(255,255,255,0.46); line-height:1.25; }
 #cvp-swarm { display:flex; flex-wrap:wrap; gap:5px; max-width:118px; align-self:center; justify-content:flex-end; }
 #cvp-swarm canvas {
@@ -1983,6 +1986,8 @@ body.chaos-active #map-panel .subzone-row,
             <div id="cvp-name"></div>
             <div id="cvp-hp-bar"><div id="cvp-hp-fill"></div></div>
             <div id="cvp-shield-bar"><div id="cvp-shield-fill"></div></div>
+            <div id="cvp-cast-label"></div>
+            <div id="cvp-cast-bar"><div id="cvp-cast-fill"></div></div>
             <div id="cvp-stats"></div>
           </div>
           <div id="cvp-swarm"></div>
@@ -3433,6 +3438,47 @@ function resizeCombatCanvasesToViewport() {
   }
 }
 
+function getBossCastBarState(monster, ts=fxNow()) {
+  if (!monster) return null;
+  const makeTimer = (label, startedAt, endsAt, color) => {
+    startedAt = Number(startedAt || 0);
+    endsAt = Number(endsAt || 0);
+    if (!startedAt || !endsAt || endsAt <= ts) return null;
+    const total = Math.max(1, endsAt - startedAt);
+    const remaining = Math.max(0, endsAt - ts);
+    const pct = Math.max(0, Math.min(100, 100 - (remaining / total * 100)));
+    return { label:`${label} ${(remaining/1000).toFixed(1)}s`, pct, color };
+  };
+  if (monster.isGuzmak) {
+    const active = makeTimer("Guzmak's Gluttony — absorbing skill damage", monster.guzmakGluttonyStartedAt, monster.guzmakGluttonyUntil, '#77ff55');
+    if (active) return active;
+  }
+  if (monster.isVaalix) {
+    const channel = makeTimer('Necrodragon Breath — casting', monster.vaalixBreathCastStartedAt, monster.vaalixBreathResolveAt, '#55aa55');
+    if (channel) return channel;
+    const warning = makeTimer('Necrodragon Breath — impact soon', monster.vaalixBreathWarnStartedAt, monster.vaalixBreathAt, '#88dd88');
+    if (warning) return warning;
+  }
+  if (monster.isKitarasque) {
+    const growth = makeTimer('Desperate Growth — kill before it completes', monster.kitarasqueDesperateGrowthStartedAt, monster.kitarasqueDesperateGrowthAt, '#cc3355');
+    if (growth) return growth;
+  }
+  if (monster.isAislong && monster.aislongBlastStage) {
+    const count = Math.max(0, Math.min(7, Number(monster.aislongBlastCounter || 0)));
+    const stageText = monster.aislongBlastStage === '30' ? 'second Frost Dragon Blast' : 'Frost Dragon Blast';
+    return {
+      label: `${stageText} — ${count}/7 attacks`,
+      pct: Math.max(0, Math.min(100, count / 7 * 100)),
+      color: '#bfe8ff'
+    };
+  }
+  if (monster.isEyeDarkYoung) {
+    const wail = makeTimer('Wail of the Dark Young — incoming', monster.wailWarnStartedAt, monster.wailAt, '#cc88ff');
+    if (wail) return wail;
+  }
+  return null;
+}
+
 function updateCombatViewport() {
   const vp = document.getElementById('combat-viewport');
   if (!vp) return;
@@ -3511,6 +3557,23 @@ function updateCombatViewport() {
     shieldBar.style.display='block';
     document.getElementById('cvp-shield-fill').style.width = Math.min(100,totalShield/(m.maxHp*0.4 || 1)*100)+'%';
   } else { shieldBar.style.display='none'; }
+
+  const castState = getBossCastBarState(m, now);
+  const castBar = document.getElementById('cvp-cast-bar');
+  const castFill = document.getElementById('cvp-cast-fill');
+  const castLabel = document.getElementById('cvp-cast-label');
+  if (castState && castBar && castFill && castLabel) {
+    castLabel.style.display = 'block';
+    castBar.style.display = 'block';
+    castLabel.textContent = castState.label;
+    castFill.style.width = `${castState.pct}%`;
+    castFill.style.background = `linear-gradient(90deg, rgba(0,0,0,0.10), ${castState.color || '#cc88ff'})`;
+    castFill.style.boxShadow = `0 0 10px ${castState.color || '#cc88ff'}`;
+  } else {
+    if (castLabel) { castLabel.style.display = 'none'; castLabel.textContent = ''; }
+    if (castBar) castBar.style.display = 'none';
+    if (castFill) castFill.style.width = '0%';
+  }
 
   let statParts=[`HP: ${Math.max(0,Math.round(m.hp))}/${m.maxHp}`];
   if ((m.arcaneShield||0)>0) statParts.push(`Arcane Shield: ${Math.round(m.arcaneShield)}`);
@@ -3996,7 +4059,7 @@ function spawnGuzmakBoss(zc) {
     dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
     expMin:520, expMax:760, atkMin:1000, atkMax:3000,
     isBoss:true, isElite:false, isGuzmak:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
-    lastAttack:now, uniqueBossKey:'guzmak_devourer', guzmakHitThreshold:9, guzmakHitsTaken:0, guzmakRegenTick:0
+    lastAttack:now, uniqueBossKey:'guzmak_devourer', guzmakHitThreshold:5, guzmakHitsTaken:0, guzmakRegenTick:0
   };
   G.monsters = [m];
   logEncounterFlavor(m, 1, false, true, 'maw');
@@ -4082,12 +4145,13 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
       if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'dmgtaken');
     } else if (!monster.guzmakEternalHunger && (monster.guzmakGluttonyUntil || 0) <= ts) {
       monster.guzmakHitsTaken = (monster.guzmakHitsTaken || 0) + 1;
-      const threshold = Math.max(3, monster.guzmakHitThreshold || 9);
+      const threshold = 5;
+      monster.guzmakHitThreshold = threshold;
       if (monster.guzmakHitsTaken >= threshold) {
         monster.guzmakHitsTaken = 0;
-        monster.guzmakHitThreshold = Math.max(3, threshold - 1);
+        monster.guzmakGluttonyStartedAt = ts;
         monster.guzmakGluttonyUntil = ts + 5000;
-        log(`<span style="color:#77ff55">Guzmak casts Guzmak's Gluttony! Skill damage is absorbed for 5s. Next cast after ${monster.guzmakHitThreshold} hits.</span>`, 'dmgtaken');
+        log(`<span style="color:#77ff55">Guzmak casts Guzmak's Gluttony! Skill damage is absorbed for 5s. Next cast after ${threshold} attacks taken.</span>`, 'dmgtaken');
       }
     }
   }
@@ -4101,6 +4165,7 @@ function rollVaalixBasicMiss(target, ts=performance.now()) {
 function vaalixCastNecrodragonBreath(m, ts=performance.now(), immediate=false) {
   if (!m || !m.isVaalix) return false;
   G.combat.necrodragonPausedUntil = ts + (immediate ? 800 : 1500);
+  m.vaalixBreathCastStartedAt = ts;
   m.vaalixBreathResolveAt = G.combat.necrodragonPausedUntil;
   m.vaalixBreathPending = true;
   log('<span style="color:#55aa55">Vaalix inhales — Necrodragon Breath freezes the battle in rotten silence...</span>', 'dmgtaken');
@@ -4134,6 +4199,7 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     }
     if (!kit.kitarasqueDesperateGrowthCast && hpPct <= 10) {
       kit.kitarasqueDesperateGrowthCast = true;
+      kit.kitarasqueDesperateGrowthStartedAt = ts;
       kit.kitarasqueDesperateGrowthAt = ts + 10000;
       log('<span style="color:#cc3355">Kitarasque casts Desperate Growth — kill it within 10 seconds or it regains 20% max HP!</span>', 'dmgtaken');
     }
@@ -4158,6 +4224,7 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
   const hpPct = (v.hp / Math.max(1, v.maxHp)) * 100;
   if (!v.vaalixBreathWarned70 && hpPct <= 70) {
     v.vaalixBreathWarned70 = true;
+    v.vaalixBreathWarnStartedAt = ts;
     v.vaalixBreathAt = ts + 10000;
     log('<span style="color:#55aa55">Vaalix gathers Necrodragon Breath — impact in 10 seconds!</span>', 'dmgtaken');
   }
@@ -6316,7 +6383,12 @@ function applyAislongFreezeLogGradient() {
 
 function isNecrodragonBreathLogMessage(msg) {
   const text = String(msg || '').replace(/<[^>]*>/g, ' ');
-  return /Vaalix/i.test(text) && /Necrodragon Breath/i.test(text) && /dark green rot/i.test(text);
+  // Mark the actual impact/exhale line as the core so seven log lines above and below
+  // receive the green Necrodragon Breath aura. Older text looked for "dark green rot",
+  // but the current breath log says "grave-wind"/"battlefield drowns" instead.
+  return /Vaalix/i.test(text)
+    && /Necrodragon Breath/i.test(text)
+    && /(exhales|grave-wind|battlefield drowns|dark green rot)/i.test(text);
 }
 function applyNecrodragonBreathLogGradient() {
   const el = document.getElementById('log-output');
@@ -6625,6 +6697,7 @@ function gameTick(ts) {
     }
     if (!darkYoung.wailWarned && hpPct <= 30) {
       darkYoung.wailWarned = true;
+      darkYoung.wailWarnStartedAt = ts;
       darkYoung.wailAt = ts + 3000;
       log(`<span style="color:#cc88ff">The Eye dilates. Wail of the Dark Young is about to be cast!</span>`, 'dmgtaken');
     }
@@ -10340,12 +10413,6 @@ function currentSkillMpCost(k) {
 function requestManualSkillCast(k) {
   const v = G.skills?.[k];
   if (!v) return;
-  if (!v.enabled) {
-    v.enabled = true;
-    log(`Skill enabled: ${v.name}`, 'system');
-    renderSkills();
-    return;
-  }
   const now = performance.now();
   if (skillNeedsTarget(k) && (!G.monsters || G.monsters.length <= 0)) { log(`No target for manual ${v.name}.`, 'system'); return; }
   if ((G.combat.aislongFrozenUntil || 0) > now || isFlamestealerCasting(now)) { log(`Cannot manually cast ${v.name} right now.`, 'system'); return; }
@@ -10411,13 +10478,13 @@ function renderSkills() {
           <span class="skill-meta" id="skill-effcd-${k}">${effCd===0?'<span style="color:#cc44ff">NO CD</span>':(effCd/1000).toFixed(1)+'s CD'}</span>
           <span class="skill-meta" style="color:#667744;" id="skill-preview-${k}">${preview}</span>
           <span class="skill-meta" id="skill-pts-${k}">Pts: ${sp}</span>
-          ${v.enabled?`<button type="button" class="skill-upgrade-btn" data-cast="${k}">CAST</button>`:''}
+          <button type="button" class="skill-upgrade-btn" data-cast="${k}">CAST</button>
           ${canUpgrade?`<button type="button" class="skill-upgrade-btn" data-upgrade="${k}">+1 pt</button>`:''}
         </div>
       </div>
     `;
     wireSkillControl(div.querySelector(`#stog-${k}`), () => toggleSkill(k));
-    if (v.enabled) wireSkillControl(div.querySelector('[data-cast]'), () => requestManualSkillCast(k));
+    wireSkillControl(div.querySelector('[data-cast]'), () => requestManualSkillCast(k));
     if (canUpgrade) wireSkillHoldControl(div.querySelector('[data-upgrade]'), () => upgradeSkill(k));
     aList.appendChild(div);
   }
