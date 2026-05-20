@@ -4124,6 +4124,26 @@ function spawnSandwormBoss(zc) {
   log(`<span style="color:#d6b06a">〰 Great Sandworm of Arrakes erupts from the Deep Tunnels!</span>`, 'system');
 }
 
+
+function spawnSwampConcoctionBoss(zc) {
+  const now = performance.now();
+  const maxHp = 20000;
+  const dmgMult = 1.2; // Murk Depths elite-equivalent damage
+  G.monsters.push({
+    id:Date.now()+Math.random(),
+    name:`<span style="color:${TAG_COLORS.ELITE}">[BOSS]</span> Swamp Concoction`,
+    baseName:'Swamp Concoction', zone:G.zone, subZone:G.subZone,
+    maxHp, hp:maxHp, shield:0, arcaneShield:0,
+    dmgMin:Math.round(zc.dmg[0]*dmgMult), dmgMax:Math.round(zc.dmg[1]*dmgMult),
+    expMin:520, expMax:760,
+    atkMin:1000, atkMax:3000,
+    isBoss:true, isAbyssBoss:false, isSwampConcoction:true, uniqueBossKey:'swamp_concoction', isElite:false, isSwarm:false, tags:[],
+    prefixData:PREFIXES[1], dmgMult,
+    lastAttack:now
+  });
+  log(`<span style="color:#77dd77">⚗ Swamp Concoction bubbles out of the Murk Depths! Potion healing is suppressed while it lives.</span>`, 'system');
+}
+
 function spawnSnowdevilRabbitSwarm(zc) {
   const count = randi(8, 12);
   const now = performance.now();
@@ -4678,6 +4698,7 @@ function spawnRouteUniqueBossForCurrentZone(zc) {
   if (special === 'golem_temple') { spawnHakamBoss(zc); return true; }
   if (special === 'stormwind_fields') { spawnRainougaBoss(zc); return true; }
   if (special === 'deep_tunnels') { spawnSandwormBoss(zc); return true; }
+  if (special === 'murk_depths') { spawnSwampConcoctionBoss(zc); return true; }
   if (special === 'forbidden_library') { spawnOverlordBoss(zc); return true; }
   if (special === 'crimson_rot') { spawnQuelBoss(zc); return true; }
   if (special === 'witch_coven') { spawnWitchOfTheWastesBoss(zc); return true; }
@@ -4801,6 +4822,11 @@ function spawnMonsters() {
 
   if (special==='crimson_rot' && !isUniqueBossCooldownActive() && Math.random() < 0.10) {
     spawnQuelBoss(zc);
+    return;
+  }
+
+  if (special==='murk_depths' && !isUniqueBossCooldownActive() && Math.random() < 0.10) {
+    spawnSwampConcoctionBoss(zc);
     return;
   }
 
@@ -6271,6 +6297,10 @@ function rollSpecialPotion() {
     ['swiftness', 2],
   ], 'shielding');
 }
+function rollAnyPotionUniform() {
+  const types = Object.keys(POTION_TYPES);
+  return types[randi(0, types.length - 1)] || 'healing';
+}
 function rollNonHealingPotion() {
   return rollSpecialPotion();
 }
@@ -6368,11 +6398,20 @@ function applyKitarasqueHeartHeal(damageTaken) {
   if (G.hp > before) log(`Heart of the Kitarasque restores ${fmtNum(G.hp - before)} HP after taking damage`, 'dmgtaken');
 }
 
+
+function isSwampConcoctionActive() {
+  return Array.isArray(G.monsters) && G.monsters.some(m => m && m.isSwampConcoction && m.hp > 0);
+}
+
 function usePotion() {
   normalizePotions();
   const type = POTION_TYPES[G.selectedPotion] ? G.selectedPotion : 'healing';
   const count = potionCount(type);
   if(G.potionCooldown>0||count<=0)return;
+  if (isSwampConcoctionActive()) {
+    log('<span style="color:#77dd77">⚗ Swamp Concoction suppresses potion healing during this encounter!</span>', 'dmgtaken');
+    return;
+  }
   const heal=potionHeal();
   if ((G.debuffs.necrorotUntil || 0) > performance.now()) {
     G.hp = Math.max(0, G.hp - heal);
@@ -7643,6 +7682,7 @@ const UNIQUE_BOSS_REGISTRY = {
   witch_of_the_wastes: { name:'Witch of the Wastes', zone:'Witch Coven', icon:'☽' },
   quel: { name:'Quel, The Defiled Beast', zone:'The Crimson Rot', icon:'☣' },
   sandworm_arrakes: { name:'Great Sandworm of Arrakes', zone:'Deep Tunnels', icon:'〰' },
+  swamp_concoction: { name:'Swamp Concoction', zone:'Murk Depths', icon:'⚗' },
   abominable_snowman: { name:'Abominable Snowman', zone:'Sheercold Terrace', icon:'☃️' },
   guzmak_devourer: { name:'Guzmak, the Devourer', zone:'The Maw', icon:'🍖' },
   vaalix_necrodragon: { name:'Vaalix, the Necrodragon', zone:'Madwind Pass', icon:'☠️' },
@@ -7663,6 +7703,7 @@ function getUniqueBossKey(m) {
   if (m.isWitchOfTheWastes) return 'witch_of_the_wastes';
   if (m.isQuel) return 'quel';
   if (m.isSandworm) return 'sandworm_arrakes';
+  if (m.isSwampConcoction) return 'swamp_concoction';
   if (m.isAbominableSnowman) return 'abominable_snowman';
   if (m.isGuzmak) return 'guzmak_devourer';
   if (m.isVaalix) return 'vaalix_necrodragon';
@@ -8086,6 +8127,15 @@ function killMonster(m, ts) {
     const potionType = rollPotionForZone(G.zone, G.subZone);
     const count = addPotion(potionType, 15);
     log(`☣ Quel dropped: ${POTION_TYPES[potionType].name} (x15, now ${count})`, 'itemdrop');
+  }
+  if (m.isSwampConcoction) {
+    const awarded = [];
+    for (let i=0; i<5; i++) {
+      const potionType = rollAnyPotionUniform();
+      addPotion(potionType, 1);
+      awarded.push(POTION_TYPES[potionType]?.name || 'Potion');
+    }
+    log(`<span style="color:#77dd77">⚗ Swamp Concoction bursts into 5 random potions: ${awarded.join(', ')}.</span>`, 'itemdrop');
   }
 
   // Abyss boss scaling only
