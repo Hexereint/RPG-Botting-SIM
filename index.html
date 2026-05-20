@@ -1565,10 +1565,10 @@ body.chaos-active #map-panel .subzone-row,
       </div>
       <div class="subzone-row" id="subzone-fields" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;display:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-fields-base" onclick="setSubZone('fields','')">Open Plains</button>
-        <button class="subzone-btn" id="sz-fields-dusty_outskirts" onclick="setSubZone('fields','dusty_outskirts')">Dusty Outskirts<span class="sz-desc">Zone hazard: Bandits steal gold on hit</span></button>
+        <button class="subzone-btn" id="sz-fields-dusty_outskirts" onclick="setSubZone('fields','dusty_outskirts')">Dusty Outskirts<span class="sz-desc">Zone Hazard: Bandits steal gold on hit</span></button>
         <button class="subzone-btn" id="sz-fields-goblin_camp" onclick="setSubZone('fields','goblin_camp')">Goblin Camp<span class="sz-desc">Swarms of goblins, high gold</span></button>
         <button class="subzone-btn" id="sz-fields-golem_temple" onclick="setSubZone('fields','golem_temple')">Golem Temple<span class="sz-desc">Slow armoured constructs</span></button>
-        <button class="subzone-btn" id="sz-fields-stormwind_fields" onclick="setSubZone('fields','stormwind_fields')">Stormwind Fields<span class="sz-desc">Zone hazard: Lightning strikes, stormcharged enemies</span></button>
+        <button class="subzone-btn" id="sz-fields-stormwind_fields" onclick="setSubZone('fields','stormwind_fields')">Stormwind Fields<span class="sz-desc">Zone Hazard: Lightning strikes, stormcharged enemies</span></button>
       </div>
 
       <div class="map-zone zone-caves" id="zone-caves" onclick="setZoneBase('caves')">
@@ -1577,7 +1577,7 @@ body.chaos-active #map-panel .subzone-row,
       </div>
       <div class="subzone-row" id="subzone-caves" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-caves-base" onclick="setSubZone('caves','')">Cave Entrance</button>
-        <button class="subzone-btn" id="sz-caves-deep_tunnels" onclick="setSubZone('caves','deep_tunnels')">Deep Tunnels<span class="sz-desc">Zone hazard: Reduced crit, monsters miss</span></button>
+        <button class="subzone-btn" id="sz-caves-deep_tunnels" onclick="setSubZone('caves','deep_tunnels')">Deep Tunnels<span class="sz-desc">Darkness swallows every sure strike</span></button>
         <button class="subzone-btn" id="sz-caves-bat_cave" onclick="setSubZone('caves','bat_cave')">Bat Cave<span class="sz-desc">Swarms of weak bats</span></button>
         <button class="subzone-btn" id="sz-caves-forbidden_library" onclick="setSubZone('caves','forbidden_library')">Forbidden Library<span class="sz-desc">Liches — fragile but deadly</span></button>
         <button class="subzone-btn" id="sz-caves-echoing_chasm" onclick="setSubZone('caves','echoing_chasm')">Echoing Chasm<span class="sz-desc">Monsters call reinforcements over time</span></button>
@@ -1589,10 +1589,10 @@ body.chaos-active #map-panel .subzone-row,
       </div>
       <div class="subzone-row" id="subzone-swamp" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-swamp-base" onclick="setSubZone('swamp','')">Bog Shallows</button>
-        <button class="subzone-btn" id="sz-swamp-murk_depths" onclick="setSubZone('swamp','murk_depths')">Murk Depths<span class="sz-desc">Potions drop often; special potions only</span></button>
-        <button class="subzone-btn" id="sz-swamp-crimson_rot" onclick="setSubZone('swamp','crimson_rot')">The Crimson Rot<span class="sz-desc">Zone hazard: Bleed stacks, guaranteed drops</span></button>
-        <button class="subzone-btn" id="sz-swamp-witch_coven" onclick="setSubZone('swamp','witch_coven')">Witch Coven<span class="sz-desc">Zone hazard: Witches and their minions</span></button>
-        <button class="subzone-btn" id="sz-swamp-cursed_hollow" onclick="setSubZone('swamp','cursed_hollow')">Cursed Hollow<span class="sz-desc">Zone hazard: All healing reduced 30%</span></button>
+        <button class="subzone-btn" id="sz-swamp-murk_depths" onclick="setSubZone('swamp','murk_depths')">Murk Depths<span class="sz-desc">Sunken waters hide rare brews</span></button>
+        <button class="subzone-btn" id="sz-swamp-crimson_rot" onclick="setSubZone('swamp','crimson_rot')">The Crimson Rot<span class="sz-desc">Red spores make every wound linger</span></button>
+        <button class="subzone-btn" id="sz-swamp-witch_coven" onclick="setSubZone('swamp','witch_coven')">Witch Coven<span class="sz-desc">Hexfire circles call lesser familiars</span></button>
+        <button class="subzone-btn" id="sz-swamp-cursed_hollow" onclick="setSubZone('swamp','cursed_hollow')">Cursed Hollow<span class="sz-desc">A hollow curse withers every cure</span></button>
       </div>
 
       <div class="map-zone zone-hoarspire" id="zone-hoarspire" onclick="setZoneBase('hoarspire')">
@@ -1600,10 +1600,10 @@ body.chaos-active #map-panel .subzone-row,
         <div class="map-zone-desc">Frozen valley. Bitter winds slow your attacks across every locale.</div>
       </div>
       <div class="subzone-row" id="subzone-hoarspire" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
-        <button class="subzone-btn" id="sz-hoarspire-base" onclick="setSubZone('hoarspire','')">Snowwind Plains<span class="sz-desc">Zone hazard: Ice beasts and Snowdevil Rabbit swarms</span></button>
-        <button class="subzone-btn" id="sz-hoarspire-sheercold_terrace" onclick="setSubZone('hoarspire','sheercold_terrace')">Sheercold Terrace<span class="sz-desc">Zone hazard: Harsher cold and rabbit swarms</span></button>
-        <button class="subzone-btn" id="sz-hoarspire-pale_hollow" onclick="setSubZone('hoarspire','pale_hollow')">Pale Hollow<span class="sz-desc">Zone hazard: Ghostly ice monsters and Ice Kitsune omens</span></button>
-        <button class="subzone-btn" id="sz-hoarspire-frozen_dragon_grave" onclick="setSubZone('hoarspire','frozen_dragon_grave')">Frozen Dragon Grave<span class="sz-desc">Zone hazard: Ice drakes and dragon bones</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-base" onclick="setSubZone('hoarspire','')">Snowwind Plains<span class="sz-desc">Snowdevil tracks cross the frozen plain</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-sheercold_terrace" onclick="setSubZone('hoarspire','sheercold_terrace')">Sheercold Terrace<span class="sz-desc">White terraces crawl with frostfangs</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-pale_hollow" onclick="setSubZone('hoarspire','pale_hollow')">Pale Hollow<span class="sz-desc">Silent snow hides foxfire omens</span></button>
+        <button class="subzone-btn" id="sz-hoarspire-frozen_dragon_grave" onclick="setSubZone('hoarspire','frozen_dragon_grave')">Frozen Dragon Grave<span class="sz-desc">Ancient bones creak beneath the ice</span></button>
       </div>
 
       <div class="map-zone zone-chaotic" id="zone-chaotic_chasm" onclick="setZoneBase('chaotic_chasm')">
@@ -1611,10 +1611,10 @@ body.chaos-active #map-panel .subzone-row,
         <div class="map-zone-desc">A fractured ravine where reality splinters into green-lit depths.</div>
       </div>
       <div class="subzone-row" id="subzone-chaotic_chasm" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;gap:4px;flex-wrap:wrap;">
-        <button class="subzone-btn" id="sz-chaotic_chasm-base" onclick="setSubZone('chaotic_chasm','')">Abyssmouth<span class="sz-desc">A green-lit wound at the chasm's edge where hungry shapes crawl from below</span></button>
-        <button class="subzone-btn" id="sz-chaotic_chasm-maw" onclick="setSubZone('chaotic_chasm','maw')">The Maw<span class="sz-desc">A greedy gorge that swallows gold, flesh, and every careless footstep</span></button>
-        <button class="subzone-btn" id="sz-chaotic_chasm-madwind_pass" onclick="setSubZone('chaotic_chasm','madwind_pass')">Madwind Pass<span class="sz-desc">Rot-green winds howl through bone-white cliffs and broken dragon nests</span></button>
-        <button class="subzone-btn" id="sz-chaotic_chasm-last_breach" onclick="setSubZone('chaotic_chasm','last_breach')">Last Breach<span class="sz-desc">The chasm floor pulses like living meat beneath impossible weight</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-base" onclick="setSubZone('chaotic_chasm','')">Abyssmouth<span class="sz-desc">Green-lit depths swallow spellfire</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-maw" onclick="setSubZone('chaotic_chasm','maw')">The Maw<span class="sz-desc">A greedy throat devours every art</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-madwind_pass" onclick="setSubZone('chaotic_chasm','madwind_pass')">Madwind Pass<span class="sz-desc">Rotten gales scatter focused power</span></button>
+        <button class="subzone-btn" id="sz-chaotic_chasm-last_breach" onclick="setSubZone('chaotic_chasm','last_breach')">Last Breach<span class="sz-desc">Living stone smothers every technique</span></button>
       </div>
 
       <div class="map-zone zone-abyss" id="zone-abyss" onclick="setZone('abyss')">
@@ -4583,6 +4583,7 @@ function updateObservedFarmRateDisplay() {
 
 
 function spawnMonsters() {
+  if (G.config?.paused) return;
   if (G.zone==='town') return;
   const zc = getZoneConfig();
   if (!zc) return;
@@ -7196,7 +7197,7 @@ function gameTick(ts) {
           visualPlayerHit(0, m);
           continue;
         }
-        // Deep Tunnels: 15% chance monster misses
+        // Deep Tunnels: 15% chance player attacks miss
         if (G.subZone==='deep_tunnels' && !m.isSandworm && Math.random()<0.15) {
           log(`<span class="log-monster">${m.baseName||m.name}</span> misses!`, 'dmgtaken');
           m.lastAttack = ts; continue;
@@ -10481,25 +10482,26 @@ function getZoneBossFlavor(zone, subZone) {
   const key = subZone || zone;
   if (key === 'cursed_hollow') {
     return hasDarkYoungKeys()
-      ? 'The bleat of the dark young calls nearby... A spawn is imminent'
-      : 'A strange presence is in the area, a foreboding aura of an entity unknown... If you present the Skull and Bone with a chant from the disastrous book, your call shall be heard.';
+      ? 'The bleat of the dark young calls nearby... A spawn is imminent. Zone Hazard: all healing is reduced by 30%.'
+      : 'A strange presence is in the area, a foreboding aura of an entity unknown... If you present the Skull and Bone with a chant from the disastrous book, your call shall be heard. Zone Hazard: all healing is reduced by 30%.';
   }
   const flavors = {
     dusty_outskirts: 'A sly shadow watches the roads. Lingering too long in the Dusty Outskirts might draw the attention of a notorious pocket picker...',
     goblin_camp: 'The Goblin Camp grows restless. A crude crown may rise above the rabble if the camp is stirred enough...',
     golem_temple: 'The stones of the Golem Temple grind like old teeth. Something titanic may wake beneath the ruins...',
-    stormwind_fields: 'Stormclouds gather over Stormwind Fields. Enough blood spilled beneath the thunder may call down its lord...',
-    deep_tunnels: 'The Deep Tunnels tremble beneath your feet. Something enormous may be listening from below...',
+    stormwind_fields: 'Stormclouds gather over Stormwind Fields. Enough blood spilled beneath the thunder may call down its lord... Zone Hazard: lightning may strike during combat.',
+    deep_tunnels: 'The Deep Tunnels tremble beneath your feet. Something enormous may be listening from below... Zone Hazard: your attacks may miss in the dark, and your crit chance is reduced here.',
     forbidden_library: 'Intruding the Forbidden Library might bring the wrath of a certain powerful lich...',
-    witch_coven: 'The Witch Coven whispers through the reeds. Zone hazard: witches fight with minions and may answer trespass with curses and flame...',
-    crimson_rot: 'The Crimson Rot reeks of old hunger. Zone hazard: bleed stacks can build here, and a defiled beast may catch your scent...',
-    hoarspire: 'The Hoarspire winds cut through bone. Zone hazard: every swing feels heavier in the cold...',
-    chaotic_chasm: 'Abyssmouth yawns like a green-lit wound at the chasm edge. Zone hazard: all skill damage is reduced by 15% here.',
-    maw: 'The Maw gurgles with greed. Treasure, bone, and breath vanish into its endless throat. Zone hazard: all skill damage is reduced by 15% here.',
-    madwind_pass: 'Madwind Pass stinks of green rot. The air itself feels cursed, and every gust carries a dead-winged rasp. Zone hazard: all skill damage is reduced by 15% here.',
-    last_breach: 'The Last Breach pulses with absolute mass. The ground feels alive, swollen, and hungry beneath each step. Zone hazard: all skill damage is reduced by 15% here.',
-    pale_hollow: 'Pale Hollow is silent beneath the snow. Zone hazard: Ice Kitsune omens can herald a woman in white...',
-    frozen_dragon_grave: 'The Frozen Dragon Grave creaks with old bones. Zone hazard: something winged and winter-dead may stir beneath the frost...',
+    murk_depths: 'The Murk Depths pull at every step. Foul water clings to your wounds, and the swamp itself seems eager to keep you bleeding. Zone Hazard: only special potions drop here.',
+    witch_coven: 'The Witch Coven whispers through the reeds. Crooked lights dance between the trees, and every curse feels like it already knows your name.',
+    crimson_rot: 'The Crimson Rot reeks of old hunger. The mire bubbles with spoiled blood, and something defiled stalks the red mist for your scent. Zone Hazard: bleed stacks can build here, and normal enemies guarantee drops.',
+    hoarspire: 'The Hoarspire winds cut through bone. Zone Hazard: every swing feels heavier in the cold...',
+    chaotic_chasm: 'Abyssmouth yawns like a green-lit wound at the chasm edge. Shapes gather below the rift, and deeper horrors answer prolonged bloodshed. Zone Hazard: all skill damage is reduced by 15% here.',
+    maw: 'The Maw gurgles with greed. Treasure, bone, and breath vanish into its endless throat. Something vast and gluttonous may notice every offering of flesh and gold. Zone Hazard: all skill damage is reduced by 15% here.',
+    madwind_pass: 'Madwind Pass stinks of green rot. The air itself feels cursed, and every gust carries the dead-winged rasp of an ancient dragon. Zone Hazard: all skill damage is reduced by 15% here.',
+    last_breach: 'The Last Breach pulses with absolute mass. The ground feels alive, swollen, and hungry beneath each step, as if something impossible is growing under the skin of the world. Zone Hazard: all skill damage is reduced by 15% here.',
+    pale_hollow: 'Pale Hollow is silent beneath the snow. Zone Hazard: Ice Kitsune omens can herald a woman in white...',
+    frozen_dragon_grave: 'The Frozen Dragon Grave creaks with old bones. Zone Hazard: something winged and winter-dead may stir beneath the frost...',
     abyss: 'The Abyss counts every kill. On certain floors, something vast may answer from the dark...'
   };
   return flavors[key] || '';
@@ -10535,15 +10537,25 @@ function setZone(zone, silent=false, subZone=undefined) {
   }
   if(zone==='town'){
     if(!silent)log('Arrived in Ironhaven Town.');
-    if(!G.config.paused){ G.config.paused=true; log('⏸ Bot paused in Town.'); }
+    if(!G.config.paused){
+      G.config.paused=true;
+      G.config.manualPause=false;
+      log('⏸ Bot paused in Town.');
+    }
     refreshMerchant();
     buildBsItemSelect();
     buildSalvageSelect();
     updateGambleUI();
     processTownRunFilters(false);
   } else {
-    // Leaving town or switching combat zones — always unpause
-    if(G.config.paused){ G.config.paused=false; G.nextSpawnAt=performance.now()+500; lastTick=performance.now(); if(!silent)log('▶ Bot resumed.'); }
+    // Zone changes should never override a manual pause toggle.
+    // Only resume automatically when the pause was created by the town safety pause.
+    if(G.config.paused && !G.config.manualPause){
+      G.config.paused=false;
+      G.nextSpawnAt=performance.now()+500;
+      lastTick=performance.now();
+      if(!silent)log('▶ Bot resumed.');
+    }
   }
   updateZoneUI();
   // Sub-zone display name for log
@@ -10663,6 +10675,7 @@ function toggleConfig(key) {
 }
 function togglePause() {
   G.config.paused=!G.config.paused;
+  G.config.manualPause = G.config.paused;
   document.getElementById('toggle-paused').classList.toggle('on',G.config.paused);
   if(G.config.paused){
     // Manual pause should freeze the current fight exactly as-is.
@@ -10794,7 +10807,7 @@ function initClassSetup(cls) {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
     G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
-  const def = { paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
+  const def = { paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
   G.logFilter = {pixelgraphics:true,basicattack:true,dmgdealt:true,dmgtaken:true,golddrop:true,itemdrop:true,goldsell:true,spawncountdown:true,spellcast:true,spelldmg:true,mpcost:true,system:true,reverseTextScroll:false};
   G.logColors = {};
@@ -11922,7 +11935,7 @@ function applyClassData(data) {
   G.abyssDifficulty = data.abyssDifficulty||1;
   G.farmRoutes = data.farmRoutes || { routes:[], equippedId:null, botStep:0, shopStock:[] };
   const DEFAULT_CONFIG = {
-    paused:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
+    paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
     uiFontSize:18,
     liveMapRouteSize:15,
     chaosDifficulty:0,
@@ -11951,6 +11964,7 @@ function applyClassData(data) {
   G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(G.config.chaosDifficulty || 0, 10) || 0));
   G.config.liveMapRouteSize = Math.max(6, Math.min(18, parseInt(G.config.liveMapRouteSize || 15, 10) || 15));
   G.config.paused = false;
+  G.config.manualPause = false;
   G.logColors = data.logColors || {};
   G.logFilter = Object.assign({
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true,
@@ -12144,7 +12158,7 @@ function resetGameState() {
   G.combat={battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0,spinCleaverWhirlwindUntil:0,spinCleaverWhirlwindNextAt:0,spinCleaverWhirlwindStr:0,spinCleaverWhirlwindSp:0};
   G.dead=false; G.deathStartedAt=0; G.respawnReady=false;
   G.bsSelectedItem=null; G.bsSelectedStat=null; G.bsSelectedStatType=null; G.bsRerollCounts={};
-  G.merchantStock=[]; G.config={paused:false, skipEvents:false};
+  G.merchantStock=[]; G.config={paused:false, manualPause:false, skipEvents:false};
 }
 
 function swapClass() {
