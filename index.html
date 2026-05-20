@@ -1316,19 +1316,19 @@ body.chaos-active #map-panel .subzone-row,
           <div class="section-title">STAT ALLOCATION</div>
           <div class="points-left">PTS: <span id="pts-left">0</span></div>
           <div class="alloc-row">
-            <div class="tooltip-wrap"><span class="alloc-name">STR</span><div class="tooltip-box" id="tip-str">Universal: +floor(STR × 0.35) basic damage<br>Warrior: +floor(STR × 0.75) bonus damage, +1 Max HP per 3 STR</div></div>
+            <div class="tooltip-wrap"><span class="alloc-name">STR</span><div class="tooltip-box" id="tip-str">All classes: every 3 STR gives about +1 basic damage<br>Warrior: every 4 STR gives about +3 more basic damage, and every 3 STR gives +1 Max HP</div></div>
             <span class="alloc-val" id="alloc-str">0</span><span class="alloc-equip" id="alloc-str-eq"></span>
             <span class="alloc-desc">+1 dmg/pt</span>
             <button class="alloc-btn" id="btn-str" data-alloc-stat="str" disabled>+</button>
           </div>
           <div class="alloc-row">
-            <div class="tooltip-wrap"><span class="alloc-name">AGI</span><div class="tooltip-box" id="tip-agi">Warrior/Wizard: -0.015s attack interval per AGI, minimum 0.5s<br>Rogue: -0.03s attack interval per AGI, +floor(AGI × 0.35) basic damage, +0.5% Crit per 3 AGI</div></div>
+            <div class="tooltip-wrap"><span class="alloc-name">AGI</span><div class="tooltip-box" id="tip-agi">Warrior/Wizard: -0.015s attack interval per AGI, minimum 0.5s<br>Rogue: each AGI makes attacks 0.03s faster, every 3 AGI gives about +1 basic damage, and every 3 AGI gives +0.5% Crit Chance</div></div>
             <span class="alloc-val" id="alloc-agi">0</span><span class="alloc-equip" id="alloc-agi-eq"></span>
             <span class="alloc-desc">atk spd/pt</span>
             <button class="alloc-btn" id="btn-agi" data-alloc-stat="agi" disabled>+</button>
           </div>
           <div class="alloc-row">
-            <div class="tooltip-wrap"><span class="alloc-name">INT</span><div class="tooltip-box" id="tip-int">Universal: +0.1 MP regen and +1 Max MP per INT<br>Wizard: +floor(INT × 0.45) basic damage, +5 Max MP per 3 INT</div></div>
+            <div class="tooltip-wrap"><span class="alloc-name">INT</span><div class="tooltip-box" id="tip-int">Universal: +0.1 MP regen and +1 Max MP per INT<br>Wizard: every 2 INT gives about +1 basic damage, and every 3 INT gives +5 Max MP</div></div>
             <span class="alloc-val" id="alloc-int">0</span><span class="alloc-equip" id="alloc-int-eq"></span>
             <span class="alloc-desc">+0.3 MP/s, +1 MP</span>
             <button class="alloc-btn" id="btn-int" data-alloc-stat="int" disabled>+</button>
@@ -9820,17 +9820,17 @@ function updateStatTooltips() {
     if (el) el.innerHTML = lines.join('<br>');
   };
 
-  const strLines = ['Universal: +floor(STR × 0.35) basic damage'];
-  const agiLines = [cls === 'rogue' ? 'Rogue: -0.03s attack interval per AGI' : 'Warrior/Wizard: -0.015s attack interval per AGI', 'Minimum attack interval: 0.5s'];
-  const intLines = ['Universal: +0.1 MP regen per INT', 'Universal: +1 Max MP per INT'];
-  const vitLines = ['Universal: +0.3 HP regen per VIT', 'Universal: +10 Max HP per 3 VIT'];
+  const strLines = ['All classes: every 3 STR gives about +1 basic damage'];
+  const agiLines = [cls === 'rogue' ? 'Rogue: each AGI makes attacks 0.03s faster' : 'Warrior/Wizard: each AGI makes attacks 0.015s faster', 'Attack interval cannot go below 0.5s'];
+  const intLines = ['All classes: each INT gives +0.1 MP regen per second', 'All classes: each INT gives +1 Max MP'];
+  const vitLines = ['All classes: each VIT gives +0.3 HP regen per second', 'All classes: every 3 VIT gives +10 Max HP'];
 
   if (cls === 'warrior') {
-    strLines.push('Warrior: +floor(STR × 0.75) bonus basic damage', 'Warrior: +1 Max HP per 3 STR');
+    strLines.push('Warrior: every 4 STR gives about +3 more basic damage', 'Warrior: every 3 STR gives +1 Max HP');
   } else if (cls === 'rogue') {
-    agiLines.push('Rogue: +floor(AGI × 0.35) basic damage', 'Rogue: +0.5% Crit Chance per 3 AGI');
+    agiLines.push('Rogue: every 3 AGI gives about +1 basic damage', 'Rogue: every 3 AGI gives +0.5% Crit Chance');
   } else if (cls === 'wizard') {
-    intLines.push('Wizard: +floor(INT × 0.45) basic damage', 'Wizard: +5 Max MP per 3 INT');
+    intLines.push('Wizard: every 2 INT gives about +1 basic damage', 'Wizard: every 3 INT gives +5 Max MP');
   }
 
   setTip('tip-str', strLines);
@@ -9990,6 +9990,12 @@ function updateKillDisplays() {
   renderUniqueBossLog();
 }
 
+
+function fmtOneDecimal(v) {
+  const n = Number(v) || 0;
+  return n.toFixed(1);
+}
+
 function renderStats() {
   updateDerived();
   updateStatTooltips();
@@ -10025,7 +10031,7 @@ function renderStats() {
   ['str','agi','int','vit'].forEach(s=>{
     const eq=totalEquipStat(s);
     const el=document.getElementById(`alloc-${s}-eq`);
-    if(el)el.textContent=eq>0?`(+${eq} equip)`:'';
+    if(el)el.textContent=eq>0?`(+${fmtOneDecimal(eq)} gear)`:'';
   });
   document.getElementById('pts-left').textContent=G.statsPoints;
   const hasPts=G.statsPoints>0;
