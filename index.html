@@ -5816,9 +5816,12 @@ const MYTHIC_ITEMS = {
   },
   wizard: {
     helmet: { name:"Arcanist's Crown",     mod:'arcanist_crown',desc:'Overload triggers after %val% skill casts',                 val:3    },
-    armor:  { name:'Void Mantle',          mod:'void_mantle',   desc:'Mana Shield absorbs all damage, MP drain x%val%',           val:3    },
+    armor: [
+      { name:'Void Mantle',          mod:'void_mantle',   desc:'Mana Shield absorbs all damage, MP drain x%val%',           val:3    },
+      { name:"Rainouga's Raiment",   mod:'rainougas_raiment', desc:'Chain Lightning restores MP equal to 30% of its damage dealt', val:30 },
+    ],
     weapon: [
-      { name:'Lightning Staff',      mod:'lightning_staff',desc:'Chain Lightning has no cooldown, costs 20%% max MP per cast', val:20   },
+      { name:'Lightning Staff',      mod:'lightning_staff',desc:'Chain Lightning bounces unlimited times', val:null },
       { name:'Hellfire Torch',       mod:'hellfire_torch', desc:'Fireball also deals 10% of each enemy current HP',             val:10   },
       { name:'Freezing Orb',         mod:'ethereal',       desc:'Frost Nova cooldown reduced by %val%%',                      val:40   },
     ],
@@ -7244,15 +7247,18 @@ function gameTick(ts) {
             boltDmg = Math.round(boltDmg * overloadBonus);
           }
 
-          // Chain Lightning: 1 target = single hit. 2+ targets = 7 sequential bounces.
+          // Chain Lightning: 1 target = single hit. 2+ targets = sequential bounces.
+          // Lightning Staff removes the bounce cap; keep a high safety guard so one cast cannot lock the browser.
           const startingTargets = [...G.monsters];
-          const maxHits = startingTargets.length >= 2 ? Math.min(12, 7 + Math.floor(sp/15)) : 1;
+          const unlimitedBounces = hasMythicMod('lightning_staff');
+          const maxHits = unlimitedBounces ? 250 : (startingTargets.length >= 2 ? Math.min(12, 7 + Math.floor(sp/15)) : 1);
           let previousTarget = null;
           let total = 0;
           const hitTotals = {};
           const hitNames = {};
 
-          log(`[Chain Lightning] cast at ${startingTargets.length} target${startingTargets.length!==1?'s':''}${maxHits===7?' — 7 bounces':' — no bounce'}`, 'spellcast');
+          const bounceText = unlimitedBounces ? ' — unlimited bounces' : (maxHits===1 ? ' — no bounce' : ` — ${maxHits} bounces`);
+          log(`[Chain Lightning] cast at ${startingTargets.length} target${startingTargets.length!==1?'s':''}${bounceText}`, 'spellcast');
 
           for (let bounce=1; bounce<=maxHits; bounce++) {
             const liveTargets = G.monsters.filter(m => m && m.hp > 0);
@@ -7268,14 +7274,14 @@ function gameTick(ts) {
 
             const res = dealSkillDamageToMonster(bounceTarget, boltDmg, ts);
             if (res.arcaneBlocked) {
-              log(`[Chain Lightning] bounce ${bounce}/${maxHits} → <span class="log-monster">${targetName}</span> nullified by Arcane Shield (${fmtNum(res.remainingArcane)} left)`, 'spelldmg');
+              log(`[Chain Lightning] bounce ${bounce}/${unlimitedBounces ? '∞' : maxHits} → <span class="log-monster">${targetName}</span> nullified by Arcane Shield (${fmtNum(res.remainingArcane)} left)`, 'spelldmg');
             } else {
-              if (res.shieldAbsorbed > 0) log(`[Chain Lightning] bounce ${bounce}/${maxHits} → <span class="log-monster">${targetName}</span> removes ${fmtNum(res.shieldAbsorbed)} Shield (${fmtNum(res.remainingShield)} left)`, 'spelldmg');
+              if (res.shieldAbsorbed > 0) log(`[Chain Lightning] bounce ${bounce}/${unlimitedBounces ? '∞' : maxHits} → <span class="log-monster">${targetName}</span> removes ${fmtNum(res.shieldAbsorbed)} Shield (${fmtNum(res.remainingShield)} left)`, 'spelldmg');
               if (res.dealt > 0) {
                 total += res.dealt;
                 hitTotals[targetKey] = (hitTotals[targetKey] || 0) + res.dealt;
                 hitNames[targetKey] = targetName;
-                log(`[Chain Lightning] bounce ${bounce}/${maxHits} → <span class="log-monster">${targetName}</span> for ${fmtNum(res.dealt)} dmg (${fmtNum(Math.max(0,bounceTarget.hp))}/${bounceTarget.maxHp})`, 'spelldmg');
+                log(`[Chain Lightning] bounce ${bounce}/${unlimitedBounces ? '∞' : maxHits} → <span class="log-monster">${targetName}</span> for ${fmtNum(res.dealt)} dmg (${fmtNum(Math.max(0,bounceTarget.hp))}/${bounceTarget.maxHp})`, 'spelldmg');
                 visualCombatEvent('chainlightning', res.dealt, false, bounceTarget);
                 if (bounceTarget.hp <= 0) killMonster(bounceTarget, ts);
               }
@@ -7286,17 +7292,16 @@ function gameTick(ts) {
           const summary = Object.entries(hitTotals).map(([key, dmg]) => `<span class="log-monster">${hitNames[key]}</span>: ${fmtNum(dmg)}`).join(' · ');
           if (summary) log(`[Chain Lightning] total ${fmtNum(total)} dmg — ${summary}`, 'spelldmg');
 
+          if (hasMythicMod('rainougas_raiment') && total > 0) {
+            const restore = Math.round(total * 0.30);
+            const beforeMp = G.mp;
+            G.mp = Math.min(G.maxMp, G.mp + restore);
+            const gained = Math.max(0, G.mp - beforeMp);
+            if (gained > 0) log(`+${fmtNum(gained)} MP [Rainouga's Raiment] (${fmtNum(G.mp)}/${fmtNum(G.maxMp)})`, 'mpgain');
+          }
+
           skillDmg = 0;
           skillLogHandled = true;
-
-          // Lightning Staff: refund MP cost
-          if (hasMythicMod('lightning_staff')) {
-            G.skillCooldowns[k] = 0; // no cooldown
-            // override MP cost to 20% max MP
-            const extraCost = Math.round(G.maxMp * 0.20) - v.mpCost;
-            G.mp = Math.max(0, G.mp - extraCost);
-            log(`-${fmtNum(Math.round(G.maxMp*0.20))} MP [Lightning Staff] (${fmtNum(G.mp)}/${G.maxMp})`, 'mpcost');
-          }
         } else if(k==='frostnova'){
           const frostSp = Math.min(99, Math.max(0, sp || 0));
           const novaSlowMs = Math.round((2 + frostSp * (8/99)) * 1000); // 2s at 0 pts, 10s at Lv99
@@ -10434,8 +10439,9 @@ function skillDamagePreview(k) {
   }
   if(k==='chainlightning') {
     const dmg=Math.round(int_*2*(1+sp*0.008));
-    const bounces=Math.min(12,7+Math.floor(sp/15));
-    return `~${fmtNum(dmg)}/bounce · ${bounces} bounces · skill pts improve damage and bounce count`;
+    const bounces = hasMythicMod('lightning_staff') ? 'unlimited' : Math.min(12,7+Math.floor(sp/15));
+    const raimentText = hasMythicMod('rainougas_raiment') ? ' · Rainouga: restores 30% of damage as MP' : '';
+    return `~${fmtNum(dmg)}/bounce · ${bounces} bounces · skill pts improve damage and bounce count${raimentText}`;
   }
   if(k==='frostnova') {
     const frostSp = Math.min(99, Math.max(0, sp || 0));
@@ -10481,7 +10487,6 @@ function skillCdLabel(k, v) {
 
 function skillEffCdLabel(k, v) {
   let effCd = effectiveCooldown(v.cooldown, k);
-  if (k==='chainlightning' && hasMythicMod('lightning_staff')) effCd = 0;
   if (k==='cheapshot' && hasMythicMod('mirror_edge')) effCd = 0;
   return effCd===0 ? '<span style="color:#cc44ff">NO CD</span>' : (effCd/1000).toFixed(1)+'s CD';
 }
@@ -10609,7 +10614,6 @@ function skillNeedsTarget(k) {
 function currentSkillMpCost(k) {
   const v = G.skills?.[k];
   if (!v) return Infinity;
-  if (k==='chainlightning' && hasMythicMod('lightning_staff')) return Math.round(G.maxMp * 0.20);
   if (k==='cheapshot' && hasMythicMod('mirror_edge')) return v.mpCost + Math.round(G.maxMp * 0.10);
   return v.mpCost || 0;
 }
@@ -10663,8 +10667,7 @@ function renderSkills() {
     div.dataset.skill = k;
     const cdRemain = G.skillCooldowns[k]||0;
     let effCd = effectiveCooldown(v.cooldown, k);
-    if (k==='chainlightning' && hasMythicMod('lightning_staff')) effCd = 0;
-    if (k==='cheapshot' && hasMythicMod('mirror_edge')) effCd = 0;
+      if (k==='cheapshot' && hasMythicMod('mirror_edge')) effCd = 0;
     const cdLabel = cdRemain>0
       ? `<span style="color:var(--red)">${(cdRemain/1000).toFixed(1)}s</span>`
       : `<span style="color:#446644">READY</span>`;
@@ -11046,7 +11049,7 @@ function selectClass(cls) {
     };
     G.skills = {
       fireball: {name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0},
-      chainlightning: {name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0},
+      chainlightning: {name:'Chain Lightning',desc:'Bounce between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0},
       frostnova: {name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0},
       manasurge: {name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
       chronosphere: {name:'Chronosphere',desc:'Distort time — delay all enemies\' next attack',mpCost:60,cooldown:30000,enabled:false,skillPts:0}
@@ -11075,7 +11078,7 @@ function initClassSetup(cls) {
     G.skills = { cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} };
   } else {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
-    G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce 7x between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
+    G.skills = { fireball:{name:'Fireball',desc:'AOE burst — full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce between targets',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; Arcane Shield blocks damage only',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore MP',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
   const def = { paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
