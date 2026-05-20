@@ -1565,10 +1565,10 @@ body.chaos-active #map-panel .subzone-row,
       </div>
       <div class="subzone-row" id="subzone-fields" style="display:none;padding:4px 6px 6px;background:var(--bg2);border:1px solid var(--border);border-top:none;display:none;gap:4px;flex-wrap:wrap;">
         <button class="subzone-btn" id="sz-fields-base" onclick="setSubZone('fields','')">Open Plains</button>
-        <button class="subzone-btn" id="sz-fields-dusty_outskirts" onclick="setSubZone('fields','dusty_outskirts')">Dusty Outskirts<span class="sz-desc">Zone Hazard: Bandits steal gold on hit</span></button>
+        <button class="subzone-btn" id="sz-fields-dusty_outskirts" onclick="setSubZone('fields','dusty_outskirts')">Dusty Outskirts<span class="sz-desc">Sly eyes stalk the roadside</span></button>
         <button class="subzone-btn" id="sz-fields-goblin_camp" onclick="setSubZone('fields','goblin_camp')">Goblin Camp<span class="sz-desc">Swarms of goblins, high gold</span></button>
         <button class="subzone-btn" id="sz-fields-golem_temple" onclick="setSubZone('fields','golem_temple')">Golem Temple<span class="sz-desc">Slow armoured constructs</span></button>
-        <button class="subzone-btn" id="sz-fields-stormwind_fields" onclick="setSubZone('fields','stormwind_fields')">Stormwind Fields<span class="sz-desc">Zone Hazard: Lightning strikes, stormcharged enemies</span></button>
+        <button class="subzone-btn" id="sz-fields-stormwind_fields" onclick="setSubZone('fields','stormwind_fields')">Stormwind Fields<span class="sz-desc">Thunderheads brood over open grass</span></button>
       </div>
 
       <div class="map-zone zone-caves" id="zone-caves" onclick="setZoneBase('caves')">
@@ -10486,7 +10486,7 @@ function getZoneBossFlavor(zone, subZone) {
       : 'A strange presence is in the area, a foreboding aura of an entity unknown... If you present the Skull and Bone with a chant from the disastrous book, your call shall be heard. Zone Hazard: all healing is reduced by 30%.';
   }
   const flavors = {
-    dusty_outskirts: 'A sly shadow watches the roads. Lingering too long in the Dusty Outskirts might draw the attention of a notorious pocket picker...',
+    dusty_outskirts: 'A sly shadow watches the roads. Lingering too long in the Dusty Outskirts might draw the attention of a notorious pocket picker... Zone Hazard: bandits may steal gold on hit.',
     goblin_camp: 'The Goblin Camp grows restless. A crude crown may rise above the rabble if the camp is stirred enough...',
     golem_temple: 'The stones of the Golem Temple grind like old teeth. Something titanic may wake beneath the ruins...',
     stormwind_fields: 'Stormclouds gather over Stormwind Fields. Enough blood spilled beneath the thunder may call down its lord... Zone Hazard: lightning may strike during combat.',
