@@ -534,6 +534,56 @@ select.config-input { width:auto; cursor:pointer; }
   border-radius:50%;
 }
 .sprite-plinth canvas { position:relative; z-index:1; width:64px; height:64px; }
+
+.sprite-status-icons {
+  position:absolute;
+  left:3px;
+  right:3px;
+  bottom:-13px;
+  z-index:6;
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:2px;
+  pointer-events:none;
+}
+.status-icon {
+  width:15px;
+  height:15px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,0.32);
+  background:#343434;
+  box-shadow:0 2px 5px rgba(0,0,0,0.70), inset 0 0 5px rgba(255,255,255,0.06);
+  font-size:7px;
+  line-height:15px;
+  text-align:center;
+  color:#fff;
+  font-weight:bold;
+  text-shadow:0 1px 2px #000, 0 0 4px rgba(0,0,0,0.85);
+}
+.status-icon-fill {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:100%;
+  background:var(--status-color, #cccccc);
+  transition:height 0.12s linear;
+}
+.status-icon-label {
+  position:relative;
+  z-index:1;
+  display:block;
+  transform:scale(0.92);
+}
+.status-icon.debuff { border-color:rgba(255,120,120,0.55); }
+.status-icon.buff { border-color:rgba(150,220,255,0.50); }
+@media (max-width:700px) {
+  .sprite-status-icons { bottom:-11px; gap:1px; }
+  .status-icon { width:13px; height:13px; line-height:13px; font-size:6px; }
+}
+
 .enemy-plinth { border-color:rgba(204,68,68,0.18); }
 .combat-card {
   min-width:0;
@@ -1966,7 +2016,7 @@ body.chaos-active #map-panel .subzone-row,
       <canvas id="combat-fx-canvas" width="640" height="118"></canvas>
       <div class="combat-hud-layer">
         <div class="combat-side hero-side">
-          <div class="sprite-plinth hero-plinth"><canvas id="player-canvas" width="64" height="64"></canvas></div>
+          <div class="sprite-plinth hero-plinth"><canvas id="player-canvas" width="64" height="64"></canvas><div id="player-status-icons" class="sprite-status-icons"></div></div>
           <div class="combat-card">
             <div class="combat-nameplate" id="player-nameplate">BOT</div>
             <div class="combat-subplate" id="cvp-zone-name">AUTO FARMING</div>
@@ -2721,6 +2771,7 @@ function fxNow() { return (typeof performance !== 'undefined' && performance.now
 
 function pushFxParticle(x, y, color, opts={}) {
   const now = fxNow();
+  updatePlayerStatusIcons(now);
   VIS.particles.push({
     x, y,
     vx: opts.vx ?? randf(-0.006, 0.006),
@@ -3477,6 +3528,44 @@ function getBossCastBarState(monster, ts=fxNow()) {
     if (wail) return wail;
   }
   return null;
+}
+
+
+function playerStatusPctFromUntil(until, startedAt, defaultDurationMs, now=fxNow()) {
+  const u = Number(until) || 0;
+  if (u <= now) return 0;
+  const start = Number(startedAt) || (u - defaultDurationMs);
+  const total = Math.max(1, u - start);
+  return Math.max(0, Math.min(100, ((u - now) / total) * 100));
+}
+
+function playerStatusIcon(label, color, pct, title, kind='buff') {
+  const safeLabel = String(label || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const safeTitle = String(title || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const fill = Math.max(0, Math.min(100, Number(pct) || 0));
+  return `<div class="status-icon ${kind}" title="${safeTitle}" style="--status-color:${color || '#cccccc'}"><div class="status-icon-fill" style="height:${fill.toFixed(1)}%"></div><span class="status-icon-label">${safeLabel}</span></div>`;
+}
+
+function updatePlayerStatusIcons(now=fxNow()) {
+  const el = document.getElementById('player-status-icons');
+  if (!el) return;
+  if (!G.started || G.zone === 'town' || G.monsters.length === 0) { el.innerHTML = ''; return; }
+  const icons = [];
+  if ((G.combat?.warCryUntil || 0) > now) icons.push(playerStatusIcon('WC', '#ffcc55', playerStatusPctFromUntil(G.combat.warCryUntil, G.combat.warCryStartedAt, 10000, now), 'War Cry damage buff', 'buff'));
+  if ((G.combat?.fortifyUntil || 0) > now) icons.push(playerStatusIcon('FT', '#88cc99', playerStatusPctFromUntil(G.combat.fortifyUntil, G.combat.fortifyStartedAt, 6000, now), 'Fortify damage reduction', 'buff'));
+  if ((G.potionShield || 0) > 0) {
+    const maxShield = Math.max(1, G.potionShieldMax || G.potionShield || 1);
+    icons.push(playerStatusIcon('SH', '#99ee99', Math.max(10, Math.min(100, (G.potionShield / maxShield) * 100)), 'Potion shield', 'buff'));
+  }
+  if ((G.combat?.smokeBombCharges || 0) > 0) icons.push(playerStatusIcon('SM', '#777777', Math.min(100, (G.combat.smokeBombCharges / 7) * 100), `Smoke Bomb: ${G.combat.smokeBombCharges} charge(s)`, 'buff'));
+  if ((G.debuffs?.plagued || 0) > now) icons.push(playerStatusIcon('PL', '#55cc55', playerStatusPctFromUntil(G.debuffs.plagued, G.debuffs.plaguedStartedAt, 10000, now), 'Plagued', 'debuff'));
+  if ((G.debuffs?.necrorotUntil || 0) > now) icons.push(playerStatusIcon('ROT', '#55aa55', playerStatusPctFromUntil(G.debuffs.necrorotUntil, G.debuffs.necrorotStartedAt, 10000, now), 'Necro Rot', 'debuff'));
+  if ((G.debuffs?.blackPoolUntil || 0) > now) icons.push(playerStatusIcon('BP', '#9977bb', playerStatusPctFromUntil(G.debuffs.blackPoolUntil, G.debuffs.blackPoolStartedAt, 5000, now), 'Black Pool: innate HP regen disabled', 'debuff'));
+  if ((G.debuffs?.witchCurseUntil || 0) > now) icons.push(playerStatusIcon('CUR', '#d96dff', playerStatusPctFromUntil(G.debuffs.witchCurseUntil, G.debuffs.witchCurseStartedAt, 15000, now), "Witch's Curse", 'debuff'));
+  if ((G.combat?.sandwormMissUntil || 0) > now) icons.push(playerStatusIcon('MIS', '#d6b06a', playerStatusPctFromUntil(G.combat.sandwormMissUntil, G.combat.sandwormMissStartedAt, 5000, now), 'Reduced attack accuracy', 'debuff'));
+  if ((G.combat?.everlastingWinterAttacks || 0) > 0) icons.push(playerStatusIcon('FR', '#88bbff', Math.max(10, Math.min(100, (G.combat.everlastingWinterAttacks / 4) * 100)), `Everlasting Winter Frost: ${G.combat.everlastingWinterAttacks} slowed attack(s) left`, 'debuff'));
+  if (G.debuffs?.freezing) icons.push(playerStatusIcon('ICE', '#88bbff', 100, 'Freezing aura', 'debuff'));
+  el.innerHTML = icons.join('');
 }
 
 function updateCombatViewport() {
@@ -4237,6 +4326,7 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     v.vaalixBreathPending = false;
     const dmg = Math.max(1, Math.round(G.hp * 0.70));
     G.hp = Math.max(0, G.hp - dmg);
+    G.debuffs.necrorotStartedAt = ts;
     G.debuffs.necrorotUntil = ts + 10000;
     log('<span style="color:#55aa55">☠ Vaalix exhales the grave-wind of ancient carrion — the battlefield drowns beneath the Necrodragon Breath!</span>', 'dmgtaken');
     log(`<span style="color:#55aa55">Necrodragon Breath deals ${fmtNum(dmg)} damage and inflicts Necrorot for 10s. Potion healing becomes damage.</span>`, 'dmgtaken');
@@ -4660,6 +4750,7 @@ function spawnMonsters() {
   G.monsters = [];
   if ((G.potionShield || 0) > 0) {
     G.potionShield = 0;
+    G.potionShieldMax = 0;
     log('🛡 Potion Shield fades as a new encounter begins.', 'dmgtaken');
   }
   G.debuffs.freezing = false;
@@ -6274,6 +6365,7 @@ function usePotion() {
   if (type === 'shielding') {
     const shieldGain = Math.round(G.maxHp * 0.60);
     G.potionShield = Math.max(G.potionShield || 0, shieldGain);
+    G.potionShieldMax = Math.max(G.potionShieldMax || 0, G.potionShield);
     log(`🛡 Used Potion of Shielding (+${fmtNum(heal)} HP, ${fmtNum(G.potionShield)} shield)`);
   } else if (type === 'arcanic') {
     ensurePotionBuffs().arcanicUntil = performance.now() + 15000;
@@ -6572,6 +6664,7 @@ function updateSandwormBurrow(ts, dt) {
   }
   if (worm.sandwormWasUnderground) {
     worm.sandwormWasUnderground = false;
+    G.combat.sandwormMissStartedAt = ts;
     G.combat.sandwormMissUntil = ts + 5000;
     log(`<span style="color:#d6b06a">〰 The Great Sandworm resurfaces! Your basic attacks have 50% accuracy for 5s.</span>`, 'dmgtaken');
   }
@@ -6688,11 +6781,13 @@ function gameTick(ts) {
     const hpPct = (darkYoung.hp / Math.max(1, darkYoung.maxHp)) * 100;
     if (!darkYoung.blackPool70 && hpPct <= 70) {
       darkYoung.blackPool70 = true;
+      G.debuffs.blackPoolStartedAt = ts;
       G.debuffs.blackPoolUntil = ts + 5000;
       log(`<span style="color:#9977bb">Black Pool spreads beneath you — innate HP regen drops to 0 for 5s.</span>`, 'dmgtaken');
     }
     if (!darkYoung.blackPool50 && hpPct <= 50) {
       darkYoung.blackPool50 = true;
+      G.debuffs.blackPoolStartedAt = ts;
       G.debuffs.blackPoolUntil = ts + 5000;
       log(`<span style="color:#9977bb">Black Pool spreads again — innate HP regen drops to 0 for 5s.</span>`, 'dmgtaken');
     }
@@ -6959,12 +7054,14 @@ function gameTick(ts) {
           const pct = Math.min(80, (10 + str * 0.3 + sp * 0.35));
           const dur = 10 + sp * 0.08;
           G.combat.warCryPct = pct;
+          G.combat.warCryStartedAt = ts;
           G.combat.warCryUntil = ts + dur * 1000;
           skillNote = `+${pct.toFixed(0)}% dmg buff for ${dur.toFixed(1)}s`;
         } else if(k==='fortify'){
           const dur = (6+effStat('vit')*0.05+sp*0.10);
           const fortifyPct = Math.min(75, 50 + sp * 0.08);
           G.combat.fortifyPct = fortifyPct;
+          G.combat.fortifyStartedAt = ts;
           G.combat.fortifyUntil = ts + dur * 1000;
           skillNote = `dmg -${fortifyPct.toFixed(0)}% for ${dur.toFixed(1)}s`;
         } else if(k==='execute'){
@@ -7404,7 +7501,7 @@ function gameTick(ts) {
               log(`<span style="color:#ff6bff">☠ The goal of all life is death — 60 seconds remain.</span>`, 'dmgtaken');
             }
           }
-          if (m.tags && m.tags.includes('PLAGUED')) G.debuffs.plagued = ts + 10000;
+          if (m.tags && m.tags.includes('PLAGUED')) { G.debuffs.plaguedStartedAt = ts; G.debuffs.plagued = ts + 10000; }
           if (G.monsters[0] === m && G.subZone==='crimson_rot') G.debuffs.crimsonRot = ts + 10000;
           if (G.hp <= 0) { G.hp=0; die(); return; }
         }
@@ -7716,6 +7813,7 @@ function killMonster(m, ts) {
     if (witchBoss && !eldersAlive && !witchBoss.witchCurseCast) {
       witchBoss.witchCurseCast = true;
       if (!G.debuffs) G.debuffs = {};
+      G.debuffs.witchCurseStartedAt = ts;
       G.debuffs.witchCurseUntil = ts + 15000;
       log(`<span style="color:#d96dff">Witch of the Wastes casts Witch's Curse — skill casts deal 50 damage to you for 15s.</span>`, 'dmgtaken');
     }
