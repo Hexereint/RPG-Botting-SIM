@@ -10026,40 +10026,48 @@ function renderPotions() {
     if (discoveredTypes.length === 0) {
       grid.innerHTML = '<div class="potion-empty-note">No potions attained</div>';
     } else {
-      let html = '';
-      for (const type of discoveredTypes) {
-        const p = POTION_TYPES[type];
-        const count = potionCount(type);
-        const selectedCls = selected === type ? ' selected' : ' unselected';
-        const depletedCls = count <= 0 ? ' depleted' : '';
-        const typeCls = ' potion-' + type;
-        const selectHint = selected === type ? 'Selected main potion · double-click to use manually' : 'Click to set as main potion';
-        const cellStyle = `color:${p.color || '#77dd77'};border-color:${p.color || '#183818'};`;
-        html += `<button type="button" class="potion-cell${typeCls}${selectedCls}${depletedCls}" data-potion-type="${type}" style="${cellStyle}" title="${selectHint}: ${p.name} — ${p.desc} · ${count}/${POTION_MAX}" aria-label="${selectHint}: ${p.name}, ${count} of ${POTION_MAX}"><span class="potion-icon">${p.icon}</span><span class="pot-qty">${count}</span></button>`;
+      const sig = discoveredTypes.map(type => `${type}:${potionCount(type)}`).join('|') + `::selected=${selected}`;
+      if (grid.dataset.potionSig !== sig) {
+        let html = '';
+        for (const type of discoveredTypes) {
+          const p = POTION_TYPES[type];
+          const count = potionCount(type);
+          const selectedCls = selected === type ? ' selected' : ' unselected';
+          const depletedCls = count <= 0 ? ' depleted' : '';
+          const typeCls = ' potion-' + type;
+          const selectHint = selected === type ? 'Selected main potion · double-click to use manually' : 'Click to set as main potion';
+          const cellStyle = `color:${p.color || '#77dd77'};border-color:${p.color || '#183818'};`;
+          html += `<button type="button" class="potion-cell${typeCls}${selectedCls}${depletedCls}" data-potion-type="${type}" style="${cellStyle}" title="${selectHint}: ${p.name} — ${p.desc} · ${count}/${POTION_MAX}" aria-label="${selectHint}: ${p.name}, ${count} of ${POTION_MAX}"><span class="potion-icon">${p.icon}</span><span class="pot-qty">${count}</span></button>`;
+        }
+        grid.innerHTML = html;
+        grid.dataset.potionSig = sig;
       }
-      grid.innerHTML = html;
-      grid.querySelectorAll('[data-potion-type]').forEach(cell => {
-        const potionType = () => cell.dataset.potionType || 'healing';
-        cell.addEventListener('click', e => {
+      if (!grid.dataset.potionEventsBound) {
+        grid.addEventListener('click', e => {
+          const cell = e.target.closest('[data-potion-type]');
+          if (!cell || !grid.contains(cell)) return;
           e.preventDefault();
           e.stopPropagation();
-          // Single-click should always be responsive on desktop: select immediately.
-          // A follow-up dblclick event will still perform the manual use below.
-          selectPotion(potionType());
+          selectPotion(cell.dataset.potionType || 'healing');
         });
-        cell.addEventListener('dblclick', e => {
+        grid.addEventListener('dblclick', e => {
+          const cell = e.target.closest('[data-potion-type]');
+          if (!cell || !grid.contains(cell)) return;
           e.preventDefault();
           e.stopPropagation();
-          manualUsePotionType(potionType());
+          manualUsePotionType(cell.dataset.potionType || 'healing');
         });
-        cell.addEventListener('keydown', e => {
+        grid.addEventListener('keydown', e => {
+          const cell = e.target.closest('[data-potion-type]');
+          if (!cell || !grid.contains(cell)) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             e.stopPropagation();
-            selectPotion(potionType());
+            selectPotion(cell.dataset.potionType || 'healing');
           }
         });
-      });
+        grid.dataset.potionEventsBound = '1';
+      }
     }
   }
   const cd=document.getElementById('potion-cd-text');
