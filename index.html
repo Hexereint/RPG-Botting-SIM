@@ -6218,8 +6218,9 @@ function manualUsePotionType(type='healing') {
   normalizePotions();
   if (!POTION_TYPES[type] || !hasDiscoveredPotion(type)) return;
   if (G.selectedPotion !== type) {
-    selectPotion(type);
-    return;
+    G.selectedPotion = type;
+    if (G.config) G.config.potionPref = type;
+    saveGame(false);
   }
   manualUseSelectedPotion();
 }
@@ -9906,14 +9907,30 @@ function renderPotions() {
       grid.innerHTML = html;
       grid.querySelectorAll('[data-potion-type]').forEach(cell => {
         const potionType = () => cell.dataset.potionType || 'healing';
+        let singleClickTimer = null;
         cell.addEventListener('click', e => {
           e.preventDefault();
           e.stopPropagation();
-          selectPotion(potionType());
+          if (singleClickTimer) {
+            clearTimeout(singleClickTimer);
+            singleClickTimer = null;
+          }
+          if (e.detail >= 2) {
+            manualUsePotionType(potionType());
+            return;
+          }
+          singleClickTimer = setTimeout(() => {
+            singleClickTimer = null;
+            selectPotion(potionType());
+          }, 220);
         });
         cell.addEventListener('dblclick', e => {
           e.preventDefault();
           e.stopPropagation();
+          if (singleClickTimer) {
+            clearTimeout(singleClickTimer);
+            singleClickTimer = null;
+          }
           manualUsePotionType(potionType());
         });
         cell.addEventListener('keydown', e => {
