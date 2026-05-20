@@ -2459,6 +2459,7 @@ function calcMaxMp() {
 function calcHpRegen() {
   let r = 1 + effStat('vit')*0.3;
   r += totalEquipSubStat('hpregen');
+  if (isVitalityPotionActive()) r += 100;
   return +r.toFixed(2);
 }
 function calcMpRegen() {
@@ -3565,7 +3566,7 @@ function updatePlayerStatusIcons(now=fxNow()) {
   ensurePotionBuffs();
   if ((G.potionBuffs?.arcanicUntil || 0) > now) icons.push(playerStatusIcon('ARC', '#b077ff', playerStatusPctFromUntil(G.potionBuffs.arcanicUntil, G.potionBuffs.arcanicStartedAt, 15000, now), 'Arcanic Potion: INT-scaling skills +20%', 'buff'));
   if ((G.potionBuffs?.fervorUntil || 0) > now) icons.push(playerStatusIcon('FV', '#ff5555', playerStatusPctFromUntil(G.potionBuffs.fervorUntil, G.potionBuffs.fervorStartedAt, 10000, now), 'Potion of Fervor: basic damage +20%', 'buff'));
-  if ((G.potionBuffs?.vitalityUntil || 0) > now) icons.push(playerStatusIcon('VIT', '#ff8888', playerStatusPctFromUntil(G.potionBuffs.vitalityUntil, G.potionBuffs.vitalityStartedAt, 5000, now), 'Potion of Vitality: +1000 Max HP', 'buff'));
+  if ((G.potionBuffs?.vitalityUntil || 0) > now) icons.push(playerStatusIcon('VIT', '#ff8888', playerStatusPctFromUntil(G.potionBuffs.vitalityUntil, G.potionBuffs.vitalityStartedAt, 6000, now), 'Potion of Vitality: +1000 Max HP and +100 HP/s regen', 'buff'));
   if ((G.potionBuffs?.swiftnessUntil || 0) > now) icons.push(playerStatusIcon('SPD', '#77ddff', playerStatusPctFromUntil(G.potionBuffs.swiftnessUntil, G.potionBuffs.swiftnessStartedAt, 5000, now), 'Potion of Swiftness: faster attacks and 40% CDR', 'buff'));
   if ((G.combat?.smokeBombCharges || 0) > 0) icons.push(playerStatusIcon('SM', '#777777', Math.min(100, (G.combat.smokeBombCharges / 7) * 100), `Smoke Bomb: ${G.combat.smokeBombCharges} charge(s)`, 'buff'));
   if ((G.debuffs?.plagued || 0) > now) icons.push(playerStatusIcon('PL', '#55cc55', playerStatusPctFromUntil(G.debuffs.plagued, G.debuffs.plaguedStartedAt, 10000, now), 'Plagued', 'debuff'));
@@ -6161,7 +6162,7 @@ const POTION_TYPES = {
   shielding:{ name:'Potion of Shielding', icon:'🛡️', color:'#99ee99', desc:'Heals 40% Max HP and grants a shield equal to 60% Max HP for this encounter' },
   arcanic:  { name:'Arcanic Potion',      icon:'◆',  color:'#b077ff', desc:'Heals 40% Max HP and boosts INT-scaling skill effects by 20% for 15s' },
   fervor:   { name:'Potion of Fervor',    icon:'♦',  color:'#ff5555', desc:'Heals 40% Max HP and boosts basic damage by 20% for 10s' },
-  vitality: { name:'Potion of Vitality',  icon:'♥',  color:'#ff8888', desc:'Heals 40% Max HP and increases Max HP by 1000 for 5s' },
+  vitality: { name:'Potion of Vitality',  icon:'♥',  color:'#ff8888', desc:'Heals 40% Max HP and increases Max HP by 1000 and HP regen by 100/s for 6s' },
   swiftness:{ name:'Potion of Swiftness', icon:'⏩', color:'#77ddff', desc:'Heals 40% Max HP, reduces attack interval by 1.0s, and grants 40% skill CDR for 5s' },
 };
 
@@ -6438,9 +6439,9 @@ function usePotion() {
     const buffs = ensurePotionBuffs();
     const now = performance.now();
     buffs.vitalityStartedAt = now;
-    buffs.vitalityUntil = now + 5000;
+    buffs.vitalityUntil = now + 6000;
     updateDerived();
-    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP for 5s)`);
+    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP and +100 HP/s regen for 6s)`);
   } else if (type === 'swiftness') {
     const buffs = ensurePotionBuffs();
     const now = performance.now();
@@ -10128,7 +10129,7 @@ function renderPotions() {
     if (G.potionCooldown>0) parts.push(`Cooldown: ${(G.potionCooldown/1000).toFixed(1)}s`);
     if (G.potionBuffs.arcanicUntil > now) parts.push(`Arcanic: ${((G.potionBuffs.arcanicUntil-now)/1000).toFixed(1)}s`);
     if (G.potionBuffs.fervorUntil > now) parts.push(`Fervor: ${((G.potionBuffs.fervorUntil-now)/1000).toFixed(1)}s`);
-    if (G.potionBuffs.vitalityUntil > now) parts.push(`Vitality: ${((G.potionBuffs.vitalityUntil-now)/1000).toFixed(1)}s`);
+    if (G.potionBuffs.vitalityUntil > now) parts.push(`Vitality (+1000 HP, +100 HP/s): ${((G.potionBuffs.vitalityUntil-now)/1000).toFixed(1)}s`);
     if (G.potionBuffs.swiftnessUntil > now) parts.push(`Swiftness: ${((G.potionBuffs.swiftnessUntil-now)/1000).toFixed(1)}s`);
     cd.textContent = parts.join(' · ');
   }
