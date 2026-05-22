@@ -966,6 +966,9 @@ canvas {
 .reroll-row.reroll-selected .reroll-stats { display:block; }
 .reroll-essence-tag { font-size:8px; color:var(--legendary); margin-left:4px; }
 
+.upgrade-row { font-size:11px; }
+.upgrade-row button, .salvage-row button, .reroll-row button { font-family:inherit; }
+
 /* ===================== MAPS ===================== */
 .farm-routes-section { margin-top:6px; }
 .fr-title { font-size:9px; color:var(--muted); letter-spacing:2px; padding-bottom:4px; border-bottom:1px solid var(--border); text-transform:uppercase; margin-bottom:6px; }
@@ -2278,7 +2281,7 @@ const G = {
   logFilter: {
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true, itemdrop:true,
     goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true,
-    mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
+    hpgain:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   },
   logColors: {},
   farmRates: { zoneKey:'', encounterStartedAt:0, startedAt:0, exp:0, gold:0, kills:0 }
@@ -2577,7 +2580,7 @@ function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
       monster.hp = Math.min(monster.maxHp, monster.hp + heal);
       const reflect = Math.max(1, Math.round(attemptedGluttony * 0.35));
       const reflectedTaken = applyPlayerDamage(reflect, 'Guzmak\'s Gluttony', now);
-      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP and returning ${fmtNum(reflect)} damage!`, 'dmgtaken');
+      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP and returning ${fmtNum(reflect)} damage!`, 'hpgain');
       if (reflectedTaken > 0) applyKitarasqueHeartHeal(reflectedTaken);
       if (G.hp <= 0) { G.hp = 0; die(); }
     }
@@ -4496,7 +4499,7 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
     const before = monster.hp;
     const heal = Math.max(1, Math.round(before * 0.05 * bossHealMultiplier(monster)));
     monster.hp = Math.min(monster.maxHp, monster.hp + heal);
-    if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
+    if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'hpgain');
     monster.kitarasqueHitsTaken = (monster.kitarasqueHitsTaken || 0) + 1;
     if (monster.kitarasqueHitsTaken >= 10) {
       monster.kitarasqueHitsTaken = 0;
@@ -4514,7 +4517,7 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
       const heal = Math.max(1, Math.round(amount * 0.60 * bossHealMultiplier(monster)));
       const before = monster.hp;
       monster.hp = Math.min(monster.maxHp, monster.hp + heal);
-      if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'dmgtaken');
+      if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'hpgain');
     } else if (!monster.guzmakEternalHunger && (monster.guzmakGluttonyUntil || 0) <= ts) {
       monster.guzmakHitsTaken = (monster.guzmakHitsTaken || 0) + 1;
       const threshold = 5;
@@ -4553,14 +4556,14 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     const before = guz.hp;
     guz.hp = Math.min(guz.maxHp, guz.hp + 300 * dt * bossHealMultiplier(guz));
     const tick = Math.floor(ts/1000);
-    if (tick !== guz.guzmakRegenTick && guz.hp > before) { guz.guzmakRegenTick = tick; log(`<span class="log-monster">Guzmak</span> regenerates ${fmtNum(guz.hp-before)} HP.`, 'dmgtaken'); }
+    if (tick !== guz.guzmakRegenTick && guz.hp > before) { guz.guzmakRegenTick = tick; log(`<span class="log-monster">Guzmak</span> regenerates ${fmtNum(guz.hp-before)} HP.`, 'hpgain'); }
   }
   const kit = G.monsters.find(m => m.isKitarasque);
   if (kit) {
     const before = kit.hp;
     kit.hp = Math.min(kit.maxHp, kit.hp + 350 * dt * bossHealMultiplier(kit));
     const tick = Math.floor(ts/1000);
-    if (tick !== kit.kitarasqueRegenTick && kit.hp > before) { kit.kitarasqueRegenTick = tick; log(`<span class="log-monster">Kitarasque</span> regenerates ${fmtNum(kit.hp-before)} HP.`, 'dmgtaken'); }
+    if (tick !== kit.kitarasqueRegenTick && kit.hp > before) { kit.kitarasqueRegenTick = tick; log(`<span class="log-monster">Kitarasque</span> regenerates ${fmtNum(kit.hp-before)} HP.`, 'hpgain'); }
     const hpPct = (kit.hp / Math.max(1, kit.maxHp)) * 100;
     kit.kitarasqueHeartbeats = kit.kitarasqueHeartbeats || {80:false,50:false,30:false};
     for (const pct of [80,50,30]) {
@@ -4569,20 +4572,20 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
         const heal = Math.max(1, Math.round(kit.maxHp * 0.10 * bossHealMultiplier(kit)));
         const hbBefore = kit.hp;
         kit.hp = Math.min(kit.maxHp, kit.hp + heal);
-        log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'dmgtaken');
+        log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'hpgain');
       }
     }
     if (!kit.kitarasqueDesperateGrowthCast && hpPct <= 10) {
       kit.kitarasqueDesperateGrowthCast = true;
       kit.kitarasqueDesperateGrowthStartedAt = ts;
       kit.kitarasqueDesperateGrowthAt = ts + 10000;
-      log('<span style="color:#cc3355">Kitarasque casts Desperate Growth — kill it within 10 seconds or it regains 20% max HP!</span>', 'dmgtaken');
+      log('<span style="color:#cc3355">Kitarasque casts Desperate Growth — kill it within 10 seconds or it regains 20% max HP!</span>', 'hpgain');
     }
     if (kit.kitarasqueDesperateGrowthCast && !kit.kitarasqueDesperateGrowthResolved && ts >= (kit.kitarasqueDesperateGrowthAt || Infinity)) {
       kit.kitarasqueDesperateGrowthResolved = true;
       const dgBefore = kit.hp;
       kit.hp = Math.min(kit.maxHp, kit.hp + Math.round(kit.maxHp * 0.20 * bossHealMultiplier(kit)));
-      log(`<span style="color:#cc3355">Desperate Growth completes — Kitarasque regains ${fmtNum(kit.hp-dgBefore)} HP!</span>`, 'dmgtaken');
+      log(`<span style="color:#cc3355">Desperate Growth completes — Kitarasque regains ${fmtNum(kit.hp-dgBefore)} HP!</span>`, 'hpgain');
     }
   }
   const v = G.monsters.find(m => m.isVaalix);
@@ -4590,7 +4593,7 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
   const before = v.hp;
   v.hp = Math.min(v.maxHp, v.hp + 300 * dt * bossHealMultiplier(v));
   const tick = Math.floor(ts/1000);
-  if (tick !== v.vaalixRegenTick && v.hp > before) { v.vaalixRegenTick = tick; log(`<span class="log-monster">Vaalix</span> regenerates ${fmtNum(v.hp-before)} HP.`, 'dmgtaken'); }
+  if (tick !== v.vaalixRegenTick && v.hp > before) { v.vaalixRegenTick = tick; log(`<span class="log-monster">Vaalix</span> regenerates ${fmtNum(v.hp-before)} HP.`, 'hpgain'); }
   if (!v.vaalixEffluviumCast && ts >= (v.vaalixEffluviumAt || Infinity)) {
     v.vaalixEffluviumCast = true;
     G.combat.vaalixEffluviumUntil = Infinity;
@@ -6668,7 +6671,7 @@ function applyKitarasqueHeartHeal(damageTaken) {
   const heal = Math.max(1, Math.round(G.maxHp * 0.10));
   const before = G.hp;
   G.hp = Math.min(G.maxHp, G.hp + heal);
-  if (G.hp > before) log(`Heart of Kitarasque restores ${fmtNum(G.hp - before)} HP after taking damage`, 'dmgtaken');
+  if (G.hp > before) log(`Heart of Kitarasque restores ${fmtNum(G.hp - before)} HP after taking damage`, 'hpgain');
 }
 
 
@@ -6700,28 +6703,28 @@ function usePotion() {
     const shieldGain = Math.round(G.maxHp * 0.60);
     G.potionShield = Math.max(G.potionShield || 0, shieldGain);
     G.potionShieldMax = Math.max(G.potionShieldMax || 0, G.potionShield);
-    log(`🛡 Used Potion of Shielding (+${fmtNum(heal)} HP, ${fmtNum(G.potionShield)} shield)`);
+    log(`🛡 Used Potion of Shielding (+${fmtNum(heal)} HP, ${fmtNum(G.potionShield)} shield)`, 'hpgain');
   } else if (type === 'arcanic') {
     { const buffs = ensurePotionBuffs(); const now = performance.now(); buffs.arcanicStartedAt = now; buffs.arcanicUntil = now + 15000; }
-    log(`◆ Used Arcanic Potion (+${fmtNum(heal)} HP, INT-scaling skills +20% for 15s)`);
+    log(`◆ Used Arcanic Potion (+${fmtNum(heal)} HP, INT-scaling skills +20% for 15s)`, 'hpgain');
   } else if (type === 'fervor') {
     { const buffs = ensurePotionBuffs(); const now = performance.now(); buffs.fervorStartedAt = now; buffs.fervorUntil = now + 10000; }
-    log(`♦ Used Potion of Fervor (+${fmtNum(heal)} HP, basic damage +20% for 10s)`);
+    log(`♦ Used Potion of Fervor (+${fmtNum(heal)} HP, basic damage +20% for 10s)`, 'hpgain');
   } else if (type === 'vitality') {
     const buffs = ensurePotionBuffs();
     const now = performance.now();
     buffs.vitalityStartedAt = now;
     buffs.vitalityUntil = now + 6000;
     updateDerived();
-    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP and +100 HP/s regen for 6s)`);
+    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP and +100 HP/s regen for 6s)`, 'hpgain');
   } else if (type === 'swiftness') {
     const buffs = ensurePotionBuffs();
     const now = performance.now();
     buffs.swiftnessStartedAt = now;
     buffs.swiftnessUntil = now + 5000;
-    log(`⏩ Used Potion of Swiftness (+${fmtNum(heal)} HP, -1.0s attack interval and 40% CDR for 5s)`);
+    log(`⏩ Used Potion of Swiftness (+${fmtNum(heal)} HP, -1.0s attack interval and 40% CDR for 5s)`, 'hpgain');
   } else {
-    log(`⚗ Used Potion of Healing (+${fmtNum(heal)} HP)`);
+    log(`⚗ Used Potion of Healing (+${fmtNum(heal)} HP)`, 'hpgain');
   }
   setPotionCount(type, count-1);
   G.potionCooldown=10000;
@@ -6860,6 +6863,7 @@ const LOG_CATEGORIES = [
   { key:'basicattack',   label:'Basic Attacks',   color:'#e8c97a' },
   { key:'dmgdealt',      label:'Damage Dealt',    color:'#e8c97a' },
   { key:'dmgtaken',      label:'Damage Taken',    color:'#e87a7a' },
+  { key:'hpgain',        label:'HP Regained',     color:'#77dd77' },
   { key:'spellcast',     label:'Spell Cast',      color:'#9b8aff' },
   { key:'spelldmg',      label:'Spell Damage',    color:'#c4a0ff' },
   { key:'mpcost',        label:'MP Cost',         color:'#6699cc' },
@@ -7192,7 +7196,7 @@ function gameTick(ts) {
       darkYoung.darkYoungHealTick = healTick;
       const before = darkYoung.hp;
       darkYoung.hp = Math.min(darkYoung.maxHp, darkYoung.hp + 100);
-      if (darkYoung.hp > before) log(`<span class="log-monster">Eye of the Dark Young</span> regenerates ${fmtNum(darkYoung.hp - before)} HP`, 'dmgtaken');
+      if (darkYoung.hp > before) log(`<span class="log-monster">Eye of the Dark Young</span> regenerates ${fmtNum(darkYoung.hp - before)} HP`, 'hpgain');
     }
     const hpPct = (darkYoung.hp / Math.max(1, darkYoung.maxHp)) * 100;
     if (!darkYoung.blackPool70 && hpPct <= 70) {
@@ -7873,7 +7877,7 @@ function gameTick(ts) {
               const beforeVamp = m.hp;
               m.hp = Math.min(m.maxHp, m.hp + vampHeal);
               const restoredVamp = Math.max(0, Math.round(m.hp - beforeVamp));
-              if (restoredVamp > 0) log(`<span class="log-monster">${m.baseName||m.name}</span> [VAMPIRIC] heals ${fmtNum(restoredVamp)} HP`, 'dmgtaken');
+              if (restoredVamp > 0) log(`<span class="log-monster">${m.baseName||m.name}</span> [VAMPIRIC] heals ${fmtNum(restoredVamp)} HP`, 'hpgain');
             }
             applyKitarasqueHeartHeal(mdmg);
             if (m.isQuel && mdmg > 0) {
@@ -7881,7 +7885,7 @@ function gameTick(ts) {
               if (m.quelAttackCount % 3 === 0) {
                 const before = m.hp;
                 m.hp = Math.min(m.maxHp, m.hp + mdmg);
-                log(`☣ Quel lifesteals ${fmtNum(m.hp - before)} HP from the hit (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'dmgtaken');
+                log(`☣ Quel lifesteals ${fmtNum(m.hp - before)} HP from the hit (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'hpgain');
               }
             }
             if (m.isSandworm && mdmg > 0) {
@@ -7919,7 +7923,7 @@ function gameTick(ts) {
               const heal = Math.max(1, Math.round(m.hp * 0.10));
               const before = m.hp;
               m.hp = Math.min(m.maxHp, m.hp + heal);
-              log(`⛰ Hakam restores ${fmtNum(m.hp - before)} HP from temple stone (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'dmgtaken');
+              log(`⛰ Hakam restores ${fmtNum(m.hp - before)} HP from temple stone (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'hpgain');
             }
           }
           if (m.isOverlord) {
@@ -9164,6 +9168,7 @@ function renderUpgradeList() {
   for (const item of legends) {
     const alreadyAscended = item.rarity === 'ascended';
     const row = document.createElement('div');
+    row.className = 'upgrade-row';
     row.style.cssText = `display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border:1px solid ${alreadyAscended ? '#664422' : 'var(--border2)'};cursor:pointer;`;
 
     const statDef = alreadyAscended ? ASCEND_STATS.find(d => d.key === item.ascendStat?.key) : null;
@@ -12166,7 +12171,8 @@ function setUiFontSize(val) {
     .header-class, .rarity-tag,
     .inv-equip-btn, .inv-sell-btn, .inv-lock-btn, .town-section-title, .refresh-btn,
     .bs-reroll-btn, .bs-cost, #bs-val-cost-display, #bs-type-cost-display, #essence-val-cost-display, #essence-type-cost-display,
-    .alloc-btn, .alloc-equip, .subzone-btn,
+    .alloc-btn, .alloc-equip, .subzone-btn, .subzone-btn *, .fr-tool-btn, .fr-tile-type-btn, .fr-rc-btn, .fr-action-btn, .fr-shop-buy-btn,
+    .salvage-row, .salvage-row *, .reroll-row, .reroll-row *, #upgrade-item-list, #upgrade-item-list *, .upgrade-row, .upgrade-row *,
     .cfg-subtab, .config-sub, .tooltip-box, .log-header, .log-time,
     .inv-upgrade-btn, .inv-sort-btn, .inv-subtab, .shop-buy-btn,
     .bs-reroll-select, .bs-type-cost-display, .points-left,
@@ -12224,6 +12230,11 @@ function setUiFontSize(val) {
     .skill-cond-input, .skill-cond-unit, .skill-priority-rank, .skill-priority-btn { font-size:${px(0.88, 10)}px !important; }
     .skill-cond-row, .skill-priority-row { padding:${Math.max(7, Math.round(val * 0.46))}px 0 !important; }
     .alloc-btn { width:${Math.round(val * 1.55)}px !important; height:${Math.round(val * 1.55)}px !important; }
+
+    .subzone-btn, .fr-tool-btn, .fr-tile-type-btn, .fr-rc-btn, .fr-action-btn, .fr-shop-buy-btn { font-size:${px(0.92, 11)}px !important; padding:${Math.max(5, Math.round(val * 0.28))}px ${Math.max(8, Math.round(val * 0.44))}px !important; min-height:${Math.max(30, Math.round(val * 1.65))}px !important; line-height:1.35 !important; }
+    .salvage-row, .reroll-row, #upgrade-item-list > div, .upgrade-row { font-size:${px(0.90, 11)}px !important; padding:${Math.max(6, Math.round(val * 0.36))}px ${Math.max(8, Math.round(val * 0.46))}px !important; line-height:1.4 !important; }
+    .salvage-row button, .reroll-row button, #upgrade-item-list button, .upgrade-row button { font-size:${px(0.86, 10)}px !important; padding:${Math.max(4, Math.round(val * 0.24))}px ${Math.max(8, Math.round(val * 0.44))}px !important; min-height:${Math.max(28, Math.round(val * 1.55))}px !important; line-height:1.25 !important; }
+    .salvage-stats, .reroll-stats, .salvage-hint, .reroll-essence-tag { font-size:${px(0.82, 10)}px !important; line-height:1.45 !important; }
 
     @media (max-width:700px) {
       .merchant-grid { grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)) !important; }
@@ -12629,7 +12640,7 @@ function applyClassData(data) {
   G.logColors = data.logColors || {};
   G.logFilter = Object.assign({
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true,
-    itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
+    itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, hpgain:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   }, data.logFilter||{});
   updateDerived();
   G.hp = data.hp!==undefined ? Math.min(data.hp,G.maxHp) : G.maxHp;
