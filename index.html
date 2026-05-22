@@ -124,6 +124,11 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
   line-height:1.5;
   color:#aaa;
 }
+.equip-preview-hint {
+  font-size:8px;
+  color:#444;
+  margin-top:2px;
+}
 .equip-slot:hover .equip-stat-preview,
 .equip-slot.stat-pinned .equip-stat-preview { display:block; }
 .equip-slot { cursor:pointer; }
@@ -358,20 +363,26 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 }
 .town-back-btn:active { transform:translateY(1px); }
 
-/* Merchant sub-tabs */
-.merchant-subtab {
+/* Town sub-tabs */
+.merchant-subtab,
+.overgear-subtab {
   background:#000;
   border:1px solid var(--border2);
-  border-bottom:none;
-  color:var(--muted);
+  color:#666;
   font-family:inherit;
   font-size:8px;
-  padding:4px 12px;
+  padding:5px 10px;
   cursor:pointer;
   letter-spacing:1px;
   text-transform:uppercase;
 }
-.merchant-subtab.active { border-color:var(--white); color:var(--white); background:#0a0a0a; }
+.merchant-subtab.active,
+.overgear-subtab.active {
+  border-color:#d8c7ff;
+  color:#fff;
+  background:#0b0711;
+  box-shadow:0 0 10px rgba(160,120,255,0.12);
+}
 .merchant-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)); gap:6px; align-items:stretch; }
 .shop-item { background:#000; border:1px solid var(--border); padding:8px; min-width:0; max-width:none; width:100%; overflow-wrap:break-word; word-break:normal; }
 .shop-item-name { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--white); }
@@ -1251,10 +1262,6 @@ body.chaos-active #map-panel .subzone-row,
 }
 .overgear-x { font-size:9px; color:#e8d8ff; margin-left:3px; text-shadow:0 0 5px #aa77ff; }
 .overgear-card { border-color:rgba(180,140,255,0.55) !important; box-shadow:inset 0 0 14px rgba(120,220,255,0.08), 0 0 10px rgba(180,120,255,0.08); }
-.overgear-subtab { background:#000; border:1px solid var(--border2); color:#666; font-family:inherit; font-size:8px; padding:5px 10px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
-.overgear-subtab.active { border-color:#d8c7ff; color:#fff; background:#0b0711; box-shadow:0 0 10px rgba(160,120,255,0.12); }
-
-
 /* RANDOM EVENTS --------------------------------------------------------- */
 #random-event-popup {
   display:none;
@@ -10476,7 +10483,7 @@ function renderEquipSlots() {
       el.classList.add('filled');
       if (preview) {
         const statsHtml = formatItemStats(item) || '<span style="color:#555;">No stats</span>';
-        preview.innerHTML = statsHtml + `<div style="font-size:8px;color:#444;margin-top:2px;">Click to pin · hover to preview</div>`;
+        preview.innerHTML = statsHtml + `<div class="equip-preview-hint">Click to pin · hover to preview</div>`;
       }
     } else {
       ne.textContent = '— empty —';
@@ -12229,7 +12236,7 @@ function setUiFontSize(val) {
     .cfg-subtab, .config-sub, .tooltip-box, .log-header, .log-time,
     .inv-upgrade-btn, .inv-sort-btn, .inv-subtab, .shop-buy-btn,
     .bs-reroll-select, .bs-type-cost-display, .points-left,
-    .gear-menu-title, .gear-menu-subline, .gear-menu-action, .gear-menu-stats, .salvage-hint,
+    .gear-menu-title, .gear-menu-subline, .gear-menu-action, .gear-menu-stats, .reroll-stats, .salvage-stats, .equip-stat-preview, .salvage-hint, .equip-preview-hint,
     .skill-cond-row, .skill-cond-name, .skill-cond-label, .skill-cond-input,
     .skill-cond-unit, .skill-cond-help, .skill-priority-row, .skill-priority-name,
     .skill-priority-sub, .skill-priority-rank, .skill-priority-btn, .skill-priority-help
