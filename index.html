@@ -12876,6 +12876,7 @@ function setUiFontSize(val) {
   const label = document.getElementById('cfg-ui-font-size-val');
   if (label) label.textContent = val;
   installMobileGearListFix();
+  installEquipmentPreviewLayoutFix();
   if (G?.started) saveGame(false);
 }
 
@@ -16632,6 +16633,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
 
 requestAnimationFrame(gameTick);
 setUiFontSize(G?.config?.uiFontSize || 18);
+installEquipmentPreviewLayoutFix();
 setLiveMapRouteSize(G?.config?.liveMapRouteSize || 15);
 setLogFontSize(10);
 </script>
