@@ -12667,6 +12667,7 @@ function installMobileGearListFix() {
         overflow-wrap:break-word !important;
         word-break:normal !important;
       }
+    }
 
     @media (min-width:701px) {
       .salvage-main,
@@ -12696,8 +12697,17 @@ function installMobileGearListFix() {
         min-width:72px !important;
         margin:0 !important;
         white-space:nowrap !important;
+        text-align:center !important;
       }
-    }
+      .salvage-main > div:first-child,
+      .reroll-main > div:first-child,
+      #upgrade-item-list > .upgrade-row > div:first-child,
+      #overgear-item-list > .overgear-card > div:first-child,
+      #overgear-gamble-list > .overgear-card > div:first-child {
+        flex:1 1 auto !important;
+        width:auto !important;
+        min-width:0 !important;
+      }
     }
   `;
 }
