@@ -1580,6 +1580,14 @@ body.chaos-active #map-panel .subzone-row,
   }
 }
 
+
+/* FINAL STATIC EQUIPMENT CARD SAFETY PATCH */
+.salvage-row:hover .salvage-stats,
+.reroll-row:hover .reroll-stats { display:none !important; }
+.salvage-row.salvage-expanded .salvage-stats,
+.reroll-row.reroll-selected .reroll-stats { display:block !important; position:static !important; max-height:180px !important; overflow:auto !important; }
+#bs-reroll-list > .reroll-row, #salvage-list > .salvage-row, #upgrade-item-list > .upgrade-row, #overgear-item-list > .overgear-card, #overgear-gamble-list > .overgear-card { height:auto !important; min-height:auto !important; }
+
 </style>
 </head>
 <body>
@@ -1929,7 +1937,7 @@ body.chaos-active #map-panel .subzone-row,
               <span style="font-size:9px;color:#888;">Gear Essence:</span>
               <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gear-essence-display">0</span>
             </div>
-            <div style="font-size:8px;color:#555;margin-bottom:6px;">Hover or click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
+            <div style="font-size:8px;color:#555;margin-bottom:6px;">Click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
             <div id="bs-reroll-list" style="max-height:min(520px,58vh);overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
             <div id="bs-reroll-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No rerollable items.</div>
             <div id="bs-reroll-panel" style="display:none;margin-top:8px;">
@@ -12053,7 +12061,7 @@ function buildSalvageSelect() {
     const row = document.createElement('div');
     row.className = `salvage-row rarity-${item.rarity}`;
     row.tabIndex = 0;
-    row.title = 'Hover or click to preview item stats';
+    row.title = 'Click to preview item stats';
     const statsHtml = formatItemStats(item) || '<span style="color:#555;">No stats</span>';
     row.innerHTML = `
       <div class="salvage-main">
@@ -12739,6 +12747,152 @@ function installMobileGearListFix() {
       padding-top:8px !important;
       line-height:1.45 !important;
       font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
+    }
+
+
+
+    /* FINAL EQUIPMENT CARD SAFETY PATCH ---------------------------------
+       Keep equipment selection rows readable at large UI text sizes. Hover
+       no longer expands stat previews because it caused text to spill over
+       nearby cards on desktop browsers; click/tap still pins the preview. */
+    #bs-reroll-list > .reroll-row,
+    #salvage-list > .salvage-row,
+    #upgrade-item-list > .upgrade-row,
+    #overgear-item-list > .overgear-card,
+    #overgear-gamble-list > .overgear-card {
+      min-height:auto !important;
+      height:auto !important;
+      overflow:hidden !important;
+      padding:12px 14px !important;
+      margin:0 0 8px 0 !important;
+      line-height:1.45 !important;
+      box-sizing:border-box !important;
+    }
+
+    .salvage-main,
+    .reroll-main,
+    #upgrade-item-list > .upgrade-row,
+    #overgear-item-list > .overgear-card {
+      display:grid !important;
+      grid-template-columns:minmax(0, 1fr) minmax(118px, auto) !important;
+      align-items:start !important;
+      gap:14px !important;
+      width:100% !important;
+    }
+
+    #overgear-gamble-list > .overgear-card {
+      display:block !important;
+    }
+
+    .salvage-main > div:first-child,
+    .reroll-main > div:first-child,
+    #upgrade-item-list > .upgrade-row > div:first-child,
+    #overgear-item-list > .overgear-card > div:first-child,
+    #overgear-gamble-list > .overgear-card > div:first-child {
+      min-width:0 !important;
+      width:auto !important;
+      max-width:100% !important;
+      overflow:hidden !important;
+    }
+
+    .salvage-main > div:first-child > div,
+    .reroll-main > div:first-child > div,
+    #upgrade-item-list > .upgrade-row > div:first-child > div,
+    #overgear-item-list > .overgear-card > div:first-child > div,
+    #overgear-gamble-list > .overgear-card > div {
+      white-space:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+      overflow-wrap:break-word !important;
+      word-break:normal !important;
+      max-width:100% !important;
+      line-height:1.35 !important;
+    }
+
+    .salvage-main > div:first-child > div:first-child,
+    .reroll-main > div:first-child > div:first-child,
+    #upgrade-item-list > .upgrade-row > div:first-child > div:first-child,
+    #overgear-item-list > .overgear-card > div:first-child > div:first-child,
+    #overgear-gamble-list > .overgear-card > div:first-child {
+      font-size:max(16px, calc(var(--ui-font-size) * 0.92)) !important;
+      line-height:1.28 !important;
+      margin-bottom:4px !important;
+    }
+
+    .salvage-main > div:first-child > div:nth-child(2),
+    .reroll-main > div:first-child > div:nth-child(2),
+    #upgrade-item-list > .upgrade-row > div:first-child > div:nth-child(2),
+    #overgear-item-list > .overgear-card > div:first-child > div:nth-child(2),
+    #overgear-gamble-list > .overgear-card > div:nth-child(2) {
+      font-size:max(12px, calc(var(--ui-font-size) * 0.72)) !important;
+      line-height:1.35 !important;
+      margin-top:2px !important;
+    }
+
+    #overgear-item-list > .overgear-card > div:first-child > div:nth-child(3) {
+      font-size:max(12px, calc(var(--ui-font-size) * 0.68)) !important;
+      line-height:1.35 !important;
+      margin-top:5px !important;
+    }
+
+    .salvage-main button,
+    .reroll-main button,
+    #upgrade-item-list > .upgrade-row > button,
+    #overgear-item-list > .overgear-card > button {
+      align-self:start !important;
+      justify-self:end !important;
+      width:auto !important;
+      min-width:118px !important;
+      max-width:180px !important;
+      min-height:36px !important;
+      white-space:normal !important;
+      line-height:1.2 !important;
+      padding:8px 12px !important;
+      overflow-wrap:break-word !important;
+      text-align:center !important;
+    }
+
+    .salvage-row:hover .salvage-stats,
+    .salvage-row:focus-within .salvage-stats,
+    .reroll-row:hover .reroll-stats,
+    .reroll-row:focus-within .reroll-stats {
+      display:none !important;
+    }
+
+    .salvage-row.salvage-expanded .salvage-stats,
+    .reroll-row.reroll-selected .reroll-stats {
+      display:block !important;
+      position:static !important;
+      clear:both !important;
+      margin-top:10px !important;
+      padding-top:10px !important;
+      max-height:180px !important;
+      overflow:auto !important;
+      line-height:1.45 !important;
+      font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
+      border-top:1px solid var(--border) !important;
+      background:rgba(0,0,0,0.12) !important;
+    }
+
+    @media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
+      .salvage-main,
+      .reroll-main,
+      #upgrade-item-list > .upgrade-row,
+      #overgear-item-list > .overgear-card {
+        display:flex !important;
+        flex-direction:column !important;
+        align-items:stretch !important;
+        gap:8px !important;
+      }
+      .salvage-main button,
+      .reroll-main button,
+      #upgrade-item-list > .upgrade-row > button,
+      #overgear-item-list > .overgear-card > button {
+        width:100% !important;
+        max-width:none !important;
+        min-width:0 !important;
+        justify-self:stretch !important;
+      }
     }
 
     @media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
