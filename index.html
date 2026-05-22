@@ -358,20 +358,27 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 }
 .town-back-btn:active { transform:translateY(1px); }
 
-/* Merchant sub-tabs */
-.merchant-subtab {
+/* Merchant / upgrade / gamble sub-tabs */
+.merchant-subtab, .overgear-subtab {
   background:#000;
   border:1px solid var(--border2);
-  border-bottom:none;
-  color:var(--muted);
+  color:#666;
   font-family:inherit;
-  font-size:8px;
-  padding:4px 12px;
+  font-size:max(12px, calc(var(--ui-font-size) * 0.72));
+  padding:8px 14px;
+  min-height:36px;
   cursor:pointer;
   letter-spacing:1px;
   text-transform:uppercase;
+  font-weight:bold;
 }
-.merchant-subtab.active { border-color:var(--white); color:var(--white); background:#0a0a0a; }
+.merchant-subtab { border-bottom:none; }
+.merchant-subtab.active, .overgear-subtab.active {
+  border-color:#d8c7ff;
+  color:#fff;
+  background:#0b0711;
+  box-shadow:0 0 10px rgba(160,120,255,0.12);
+}
 .merchant-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)); gap:6px; align-items:stretch; }
 .shop-item { background:#000; border:1px solid var(--border); padding:8px; min-width:0; max-width:none; width:100%; overflow-wrap:break-word; word-break:normal; }
 .shop-item-name { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--white); }
@@ -935,6 +942,17 @@ canvas {
   margin-top:3px;
 }
 
+.salvage-row, .reroll-row, .upgrade-row, .overgear-card {
+  min-height:0;
+}
+.salvage-row button, .reroll-row button, .upgrade-row button, .overgear-card button {
+  font-size:8px;
+  padding:4px 9px;
+  min-height:24px;
+  line-height:1.2;
+  font-family:inherit;
+}
+
 /* Unified reroll item list — extends salvage-row visual pattern */
 .reroll-row {
   display:flex;
@@ -1207,8 +1225,6 @@ body.chaos-active #map-panel .subzone-row,
 }
 .overgear-x { font-size:9px; color:#e8d8ff; margin-left:3px; text-shadow:0 0 5px #aa77ff; }
 .overgear-card { border-color:rgba(180,140,255,0.55) !important; box-shadow:inset 0 0 14px rgba(120,220,255,0.08), 0 0 10px rgba(180,120,255,0.08); }
-.overgear-subtab { background:#000; border:1px solid var(--border2); color:#666; font-family:inherit; font-size:8px; padding:5px 10px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
-.overgear-subtab.active { border-color:#d8c7ff; color:#fff; background:#0b0711; box-shadow:0 0 10px rgba(160,120,255,0.12); }
 
 
 /* RANDOM EVENTS --------------------------------------------------------- */
@@ -1238,6 +1254,104 @@ body.chaos-active #map-panel .subzone-row,
 .random-event-btn strong { display:block; color:#fff; font-size:10px; margin-bottom:2px; }
 .random-event-btn span { display:block; color:#777; font-size:8px; line-height:1.35; text-transform:none; letter-spacing:0; }
 @media (max-width:700px) { #random-event-popup { top:6px; } .random-event-actions { grid-template-columns:1fr; } }
+
+
+
+/* MOBILE TOWN UI READABILITY PATCH ------------------------------------- */
+@media (max-width:700px) {
+  /* Sub-tabs: allow long labels to wrap cleanly instead of overflowing/overlapping. */
+  .merchant-subtab,
+  .overgear-subtab {
+    flex:1 1 0;
+    min-width:0;
+    white-space:normal !important;
+    overflow-wrap:break-word;
+    word-break:normal;
+    line-height:1.2;
+    text-align:center;
+    letter-spacing:0.7px;
+    padding:8px 7px;
+  }
+  #town-screen-merchant > div:first-of-type,
+  #town-screen-gamble .town-section > div:first-child,
+  #town-screen-upgrade .town-section > div:first-child {
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:4px !important;
+  }
+
+  /* Item rows: keep action buttons readable and prevent label/button collision. */
+  .salvage-main,
+  .reroll-main,
+  .upgrade-row {
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    align-items:center !important;
+    gap:6px !important;
+  }
+  .salvage-main > div:first-child,
+  .reroll-main > div:first-child,
+  .upgrade-row > div:first-child {
+    min-width:0 !important;
+  }
+  .salvage-main button,
+  .reroll-main button,
+  .upgrade-row button,
+  #upgrade-item-list button,
+  #overgear-item-list button,
+  .overgear-card button {
+    width:auto !important;
+    max-width:42vw !important;
+    min-width:58px !important;
+    white-space:normal !important;
+    overflow-wrap:break-word !important;
+    word-break:normal !important;
+    line-height:1.15 !important;
+    letter-spacing:0.5px !important;
+    text-align:center !important;
+    padding:5px 7px !important;
+  }
+  .salvage-row,
+  .reroll-row,
+  .upgrade-row,
+  .overgear-card {
+    overflow:hidden;
+  }
+  .salvage-row [style*="white-space:nowrap"],
+  .reroll-row [style*="white-space:nowrap"],
+  .upgrade-row [style*="white-space:nowrap"],
+  .overgear-card [style*="white-space:nowrap"] {
+    white-space:normal !important;
+  }
+}
+
+@media (max-width:430px) and (orientation:portrait) {
+  /* Very narrow portrait: use one tab per line for long upgrade/gamble labels. */
+  #town-screen-gamble .overgear-subtab,
+  #town-screen-upgrade .overgear-subtab {
+    flex-basis:100% !important;
+    min-height:34px !important;
+  }
+  .merchant-subtab {
+    flex-basis:calc(50% - 2px) !important;
+  }
+  .salvage-main,
+  .reroll-main,
+  .upgrade-row {
+    grid-template-columns:minmax(0, 1fr) minmax(64px, 30vw) !important;
+  }
+  .salvage-main button,
+  .reroll-main button,
+  .upgrade-row button,
+  #upgrade-item-list button,
+  #overgear-item-list button,
+  .overgear-card button {
+    max-width:30vw !important;
+    min-width:64px !important;
+    font-size:max(8px, calc(var(--ui-font-size) * 0.56)) !important;
+    padding:5px 5px !important;
+  }
+}
 
 </style>
 </head>
@@ -1563,7 +1677,7 @@ body.chaos-active #map-panel .subzone-row,
                 <span style="font-size:9px;color:#888;">Gear Essence: <span id="og-gamble-ge-display" style="color:#44bbaa;font-weight:bold;">0</span></span>
               </div>
               <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Select an Overgeared item, then gamble for +1 Overgear star. Failure reduces the item by 2 stars.</div>
-              <div id="overgear-gamble-list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;"></div>
+              <div id="overgear-gamble-list" style="display:flex;flex-direction:column;gap:4px;max-height:min(520px,58vh);overflow-y:auto;"></div>
               <div id="overgear-gamble-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Overgeared equipment available.</div>
               <div id="overgear-gamble-actions" style="display:none;margin-top:8px;padding:8px;background:#050505;border:1px solid rgba(180,140,255,0.35);">
                 <div id="overgear-gamble-selected" style="font-size:9px;color:#aaa;margin-bottom:7px;"></div>
@@ -1589,7 +1703,7 @@ body.chaos-active #map-panel .subzone-row,
               <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gear-essence-display">0</span>
             </div>
             <div style="font-size:8px;color:#555;margin-bottom:6px;">Hover or click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
-            <div id="bs-reroll-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="bs-reroll-list" style="max-height:min(520px,58vh);overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
             <div id="bs-reroll-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No rerollable items.</div>
             <div id="bs-reroll-panel" style="display:none;margin-top:8px;">
               <div style="font-size:8px;color:#777;margin-bottom:4px;" id="bs-reroll-item-label"></div>
@@ -1617,7 +1731,7 @@ body.chaos-active #map-panel .subzone-row,
           <div class="town-section">
             <div class="town-section-title">SALVAGE</div>
             <div style="font-size:8px;color:#555;margin-bottom:5px;">All rarities. Equipped or locked items cannot be salvaged.</div>
-            <div id="salvage-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="salvage-list" style="max-height:min(560px,62vh);overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
             <div id="salvage-empty" style="font-size:9px;color:#444;display:none;">No items available to salvage</div>
           </div>
         </div>
@@ -1637,7 +1751,7 @@ body.chaos-active #map-panel .subzone-row,
                 <span style="font-size:9px;color:#888;">Gold: <span id="upgrade-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
                 <span style="font-size:9px;color:#888;">Legendary Essence: <span id="upgrade-le-display" style="color:var(--legendary);font-weight:bold;">0</span></span>
               </div>
-              <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+              <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:min(520px,58vh);overflow-y:auto;"></div>
               <div id="upgrade-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No legendary items available to ascend.</div>
             </div>
             <div id="upgrade-tab-overgear" style="display:none;">
@@ -1646,7 +1760,7 @@ body.chaos-active #map-panel .subzone-row,
               <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
                 <span style="font-size:9px;color:#888;">Gold: <span id="overgear-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
               </div>
-              <div id="overgear-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+              <div id="overgear-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:min(560px,62vh);overflow-y:auto;"></div>
               <div id="overgear-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Ascended or Mythic items available to Overgear.</div>
             </div>
           </div>
@@ -9529,7 +9643,7 @@ function buildBsRerollList() {
           <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${eqBadgeHtml(item)}${essenceTag}</div>
           <div style="font-size:8px;color:#555;">${item.slot ? item.slot.toUpperCase() : ''} · ${item.rarity.toUpperCase()}</div>
         </div>
-        <button onclick="event.stopPropagation();bsUnifiedSelectItem(${item.id})" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:2px 7px;cursor:pointer;flex-shrink:0;white-space:nowrap;letter-spacing:1px;">SELECT</button>
+        <button onclick="event.stopPropagation();bsUnifiedSelectItem(${item.id})" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:4px 9px;min-height:24px;line-height:1.2;cursor:pointer;flex-shrink:0;white-space:nowrap;letter-spacing:1px;">SELECT</button>
       </div>
       <div class="reroll-stats">
         ${statsHtml}
@@ -11720,7 +11834,7 @@ function buildSalvageSelect() {
           <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${eqBadgeHtml(item)}</div>
           <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · Sell ${fmtNum(item.goldVal || calcItemGold(item))}g · <span style="color:#44bbaa;">${rewardStr}</span></div>
         </div>
-        <button onclick="event.stopPropagation();doSalvage(${item.id})" style="background:#000;border:1px solid ${isCurrentlyEquippedItem(item) ? '#333' : '#886633'};color:${isCurrentlyEquippedItem(item) ? '#555' : '#aa8833'};font-family:inherit;font-size:8px;padding:2px 7px;cursor:${isCurrentlyEquippedItem(item) ? 'not-allowed' : 'pointer'};flex-shrink:0;white-space:nowrap;" ${isCurrentlyEquippedItem(item) ? 'disabled' : ''}>${isCurrentlyEquippedItem(item) ? 'EQ.' : 'SALVAGE'}</button>
+        <button onclick="event.stopPropagation();doSalvage(${item.id})" style="background:#000;border:1px solid ${isCurrentlyEquippedItem(item) ? '#333' : '#886633'};color:${isCurrentlyEquippedItem(item) ? '#555' : '#aa8833'};font-family:inherit;font-size:8px;padding:4px 9px;min-height:24px;line-height:1.2;cursor:${isCurrentlyEquippedItem(item) ? 'not-allowed' : 'pointer'};flex-shrink:0;white-space:nowrap;" ${isCurrentlyEquippedItem(item) ? 'disabled' : ''}>${isCurrentlyEquippedItem(item) ? 'EQ.' : 'SALVAGE'}</button>
       </div>
       <div class="salvage-stats">
         ${statsHtml}
@@ -12232,8 +12346,9 @@ function setUiFontSize(val) {
     .alloc-btn { width:${Math.round(val * 1.55)}px !important; height:${Math.round(val * 1.55)}px !important; }
 
     .subzone-btn, .fr-tool-btn, .fr-tile-type-btn, .fr-rc-btn, .fr-action-btn, .fr-shop-buy-btn { font-size:${px(0.92, 11)}px !important; padding:${Math.max(5, Math.round(val * 0.28))}px ${Math.max(8, Math.round(val * 0.44))}px !important; min-height:${Math.max(30, Math.round(val * 1.65))}px !important; line-height:1.35 !important; }
-    .salvage-row, .reroll-row, #upgrade-item-list > div, .upgrade-row { font-size:${px(0.90, 11)}px !important; padding:${Math.max(6, Math.round(val * 0.36))}px ${Math.max(8, Math.round(val * 0.46))}px !important; line-height:1.4 !important; }
-    .salvage-row button, .reroll-row button, #upgrade-item-list button, .upgrade-row button { font-size:${px(0.86, 10)}px !important; padding:${Math.max(4, Math.round(val * 0.24))}px ${Math.max(8, Math.round(val * 0.44))}px !important; min-height:${Math.max(28, Math.round(val * 1.55))}px !important; line-height:1.25 !important; }
+    .salvage-row, .reroll-row, #upgrade-item-list > div, #overgear-item-list > div, .upgrade-row, .overgear-card { font-size:${px(0.84, 10)}px !important; padding:${Math.max(5, Math.round(val * 0.28))}px ${Math.max(8, Math.round(val * 0.44))}px !important; line-height:1.3 !important; }
+    .salvage-row button, .reroll-row button, #upgrade-item-list button, #overgear-item-list button, .upgrade-row button, .overgear-card button { font-size:${px(0.72, 8)}px !important; padding:${Math.max(4, Math.round(val * 0.20))}px ${Math.max(8, Math.round(val * 0.42))}px !important; min-height:${Math.max(24, Math.round(val * 1.32))}px !important; line-height:1.2 !important; }
+    .merchant-subtab, .overgear-subtab { font-size:${px(0.72, 12)}px !important; padding:${Math.max(8, Math.round(val * 0.42))}px ${Math.max(14, Math.round(val * 0.78))}px !important; min-height:${Math.max(36, Math.round(val * 2.0))}px !important; }
     .salvage-stats, .reroll-stats, .salvage-hint, .reroll-essence-tag { font-size:${px(0.82, 10)}px !important; line-height:1.45 !important; }
 
     @media (max-width:700px) {
@@ -12241,6 +12356,12 @@ function setUiFontSize(val) {
       .bs-stat-select { display:grid !important; grid-template-columns:repeat(auto-fit, minmax(min(100%, ${Math.max(96, Math.round(val * 5.5))}px), 1fr)) !important; }
       .tooltip-box { left:0 !important; transform:none !important; max-width:92vw !important; }
       .stat-row[data-tip]::after { left:0 !important; max-width:92vw !important; }
+      .merchant-subtab, .overgear-subtab { flex:1 1 0 !important; min-width:0 !important; white-space:normal !important; overflow-wrap:break-word !important; line-height:1.2 !important; text-align:center !important; letter-spacing:0.7px !important; padding:${Math.max(7, Math.round(val * 0.34))}px ${Math.max(6, Math.round(val * 0.30))}px !important; }
+      #town-screen-merchant > div:first-of-type, #town-screen-gamble .town-section > div:first-child, #town-screen-upgrade .town-section > div:first-child { display:flex !important; flex-wrap:wrap !important; gap:4px !important; }
+      .salvage-main, .reroll-main, .upgrade-row { display:grid !important; grid-template-columns:minmax(0, 1fr) auto !important; align-items:center !important; gap:${Math.max(5, Math.round(val * 0.28))}px !important; }
+      .salvage-main > div:first-child, .reroll-main > div:first-child, .upgrade-row > div:first-child { min-width:0 !important; }
+      .salvage-main button, .reroll-main button, .upgrade-row button, #upgrade-item-list button, #overgear-item-list button, .overgear-card button { width:auto !important; max-width:42vw !important; min-width:${Math.max(58, Math.round(val * 3.1))}px !important; white-space:normal !important; overflow-wrap:break-word !important; word-break:normal !important; line-height:1.15 !important; letter-spacing:0.5px !important; text-align:center !important; padding:${Math.max(5, Math.round(val * 0.24))}px ${Math.max(6, Math.round(val * 0.32))}px !important; }
+      .salvage-row [style*="white-space:nowrap"], .reroll-row [style*="white-space:nowrap"], .upgrade-row [style*="white-space:nowrap"], .overgear-card [style*="white-space:nowrap"] { white-space:normal !important; }
     }
     @media (max-width:430px) and (orientation:portrait) {
       .merchant-grid { grid-template-columns:1fr !important; }
@@ -12250,6 +12371,10 @@ function setUiFontSize(val) {
       .config-label { flex-basis:100% !important; }
       .bs-select, .shop-buy-btn, .bs-reroll-btn, .refresh-btn { width:100% !important; }
       .tooltip-box, .stat-row[data-tip]::after { min-width:min(220px, 88vw) !important; max-width:92vw !important; }
+      #town-screen-gamble .overgear-subtab, #town-screen-upgrade .overgear-subtab { flex-basis:100% !important; min-height:${Math.max(34, Math.round(val * 1.75))}px !important; }
+      .merchant-subtab { flex-basis:calc(50% - 2px) !important; }
+      .salvage-main, .reroll-main, .upgrade-row { grid-template-columns:minmax(0, 1fr) minmax(${Math.max(64, Math.round(val * 3.2))}px, 30vw) !important; }
+      .salvage-main button, .reroll-main button, .upgrade-row button, #upgrade-item-list button, #overgear-item-list button, .overgear-card button { max-width:30vw !important; min-width:${Math.max(64, Math.round(val * 3.2))}px !important; font-size:${px(0.56, 8)}px !important; padding:${Math.max(5, Math.round(val * 0.22))}px ${Math.max(5, Math.round(val * 0.22))}px !important; }
     }
   `;
   const input = document.getElementById('cfg-ui-font-size');
