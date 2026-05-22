@@ -1258,7 +1258,7 @@ body.chaos-active #map-panel .subzone-row,
 
 
 /* MOBILE TOWN UI READABILITY PATCH ------------------------------------- */
-@media (max-width:700px) {
+@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
   /* Sub-tabs: allow long labels to wrap cleanly instead of overflowing/overlapping. */
   .merchant-subtab,
   .overgear-subtab {
@@ -1325,7 +1325,7 @@ body.chaos-active #map-panel .subzone-row,
   }
 }
 
-@media (max-width:430px) and (orientation:portrait) {
+@media (max-width:430px) and (orientation:portrait) and (pointer:coarse) {
   /* Very narrow portrait: use one tab per line for long upgrade/gamble labels. */
   #town-screen-gamble .overgear-subtab,
   #town-screen-upgrade .overgear-subtab {
@@ -1355,7 +1355,7 @@ body.chaos-active #map-panel .subzone-row,
 
 
 /* MOBILE EQUIPMENT LIST READABILITY PATCH ------------------------------- */
-@media (max-width:700px) and (orientation:portrait) {
+@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
   #salvage-list,
   #bs-reroll-list,
   #upgrade-item-list,
@@ -1422,7 +1422,7 @@ body.chaos-active #map-panel .subzone-row,
   }
 }
 
-@media (max-width:430px) and (orientation:portrait) {
+@media (max-width:430px) and (orientation:portrait) and (pointer:coarse) {
   #salvage-list,
   #bs-reroll-list,
   #upgrade-item-list,
@@ -1463,7 +1463,7 @@ body.chaos-active #map-panel .subzone-row,
 /* DESKTOP EQUIPMENT LIST RESTORE -----------------------------------------
    Keep the mobile one-column card layout limited to portrait mobile. Desktop
    town equipment rows stay compact and horizontal. */
-@media (min-width:701px) {
+@media (min-width:701px), (hover:hover) and (pointer:fine) {
   #bs-reroll-list > .reroll-row,
   #salvage-list > .salvage-row,
   #upgrade-item-list > .upgrade-row,
@@ -1519,6 +1519,64 @@ body.chaos-active #map-panel .subzone-row,
     min-width:72px !important;
     margin:0 !important;
     white-space:nowrap !important;
+  }
+}
+
+
+/* AUTHORITATIVE DESKTOP / MOUSE EQUIPMENT LIST LAYOUT ------------------
+   Keeps town equipment rows horizontal on desktop, even when the browser
+   viewport is narrow. The stacked card layout is reserved for touch portrait. */
+@media (hover:hover) and (pointer:fine), (min-width:701px) {
+  #bs-reroll-list > .reroll-row,
+  #salvage-list > .salvage-row,
+  #upgrade-item-list > .upgrade-row,
+  #overgear-item-list > .overgear-card,
+  #overgear-gamble-list > .overgear-card {
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    margin:0 0 4px 0 !important;
+    overflow:hidden !important;
+  }
+  .salvage-main,
+  .reroll-main {
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    align-items:center !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+  #upgrade-item-list > .upgrade-row,
+  #overgear-item-list > .overgear-card,
+  #overgear-gamble-list > .overgear-card {
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) auto !important;
+    align-items:center !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+  .salvage-main > div:first-child,
+  .reroll-main > div:first-child,
+  #upgrade-item-list > .upgrade-row > div:first-child,
+  #overgear-item-list > .overgear-card > div:first-child,
+  #overgear-gamble-list > .overgear-card > div:first-child {
+    min-width:0 !important;
+    width:auto !important;
+    max-width:none !important;
+  }
+  .salvage-main button,
+  .reroll-main button,
+  #upgrade-item-list > .upgrade-row > button,
+  #overgear-item-list > .overgear-card > button,
+  #overgear-gamble-list > .overgear-card button {
+    width:auto !important;
+    max-width:none !important;
+    min-width:72px !important;
+    white-space:nowrap !important;
+    overflow-wrap:normal !important;
+    text-align:center !important;
+    margin:0 !important;
   }
 }
 
@@ -12562,7 +12620,7 @@ function installMobileGearListFix() {
   let tag = document.getElementById('mobile-gear-list-final-fix');
   if (!tag) { tag = document.createElement('style'); tag.id = 'mobile-gear-list-final-fix'; document.head.appendChild(tag); }
   tag.textContent = `
-    @media (max-width:700px) and (orientation:portrait) {
+    @media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
       #town-screen-reroll,
       #town-screen-salvage,
       #town-screen-upgrade,
@@ -12669,7 +12727,7 @@ function installMobileGearListFix() {
       }
     }
 
-    @media (min-width:701px) {
+    @media (min-width:701px), (hover:hover) and (pointer:fine) {
       .salvage-main,
       .reroll-main {
         display:flex !important;
