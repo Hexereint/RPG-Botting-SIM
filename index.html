@@ -405,6 +405,31 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 #config-panel { background:#000; overflow-y:auto; padding:8px; display:none; flex-direction:column; gap:6px; }
 #config-panel.active { display:flex; }
 .config-section { background:var(--bg2); border:1px solid var(--border); padding:10px; }
+.config-section.config-collapsible { padding:0; overflow:hidden; }
+.config-collapse-header {
+  width:100%;
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:9px 10px;
+  background:rgba(0,0,0,0.24);
+  border:none;
+  border-bottom:1px solid var(--border);
+  color:var(--white);
+  font-family:inherit;
+  cursor:pointer;
+  text-align:left;
+}
+.config-collapse-header:hover { background:rgba(255,255,255,0.035); }
+.config-collapse-title { font-size:9px; color:#ffffff; letter-spacing:2px; text-transform:uppercase; font-weight:bold; }
+.config-collapse-chevron { color:var(--muted); font-size:12px; line-height:1; }
+.config-collapse-body { padding:10px; }
+.config-section.config-collapsed .config-collapse-body { display:none; }
+.config-section.config-collapsed .config-collapse-header { border-bottom:none; }
+.config-collapse-subtitle { font-size:9px; color:#77aa77; letter-spacing:2px; text-transform:uppercase; font-weight:bold; border-top:1px solid rgba(119,170,119,0.22); padding-top:10px; margin:10px 0 8px; }
+
 .cfg-subtab { background:transparent; border:none; border-bottom:2px solid transparent; color:#555; font-family:inherit; font-size:9px; padding:6px 12px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.15s; }
 .cfg-subtab:hover { color:#aaa; }
 .cfg-subtab.active { color:#fff; border-bottom-color:#fff; }
@@ -6903,6 +6928,75 @@ function triggerLogDistortion(durationMs=3000) {
   G.logDistortRestoreTimer = setTimeout(restoreLogDistortion, durationMs + 80);
 }
 
+
+function setupBotConfigCollapsibles() {
+  const bot = document.getElementById('cfg-tab-bot');
+  if (!bot || bot.dataset.collapsibleReady === '1') return;
+  bot.dataset.collapsibleReady = '1';
+
+  const titleText = section => (section.querySelector('.config-title')?.textContent || '').trim().toUpperCase();
+  const sections = Array.from(bot.children).filter(el => el.classList && el.classList.contains('config-section'));
+  const byTitle = name => sections.find(sec => titleText(sec) === name.toUpperCase());
+
+  function makeCollapsible(section, label, opts={}) {
+    if (!section || section.dataset.collapsible === '1') return null;
+    const title = section.querySelector('.config-title');
+    const titleColor = opts.color || title?.style?.color || '';
+    section.dataset.collapsible = '1';
+    section.classList.add('config-collapsible');
+    section.classList.toggle('config-collapsed', opts.collapsed !== false);
+
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.className = 'config-collapse-header';
+    header.innerHTML = `<span class="config-collapse-title" style="${titleColor ? `color:${titleColor};` : ''}">${label}</span><span class="config-collapse-chevron">${section.classList.contains('config-collapsed') ? '▼' : '▲'}</span>`;
+
+    const body = document.createElement('div');
+    body.className = 'config-collapse-body';
+
+    const nodes = Array.from(section.childNodes);
+    for (const node of nodes) {
+      if (node === title) continue;
+      body.appendChild(node);
+    }
+    if (title) title.remove();
+    section.appendChild(header);
+    section.appendChild(body);
+
+    header.addEventListener('click', () => {
+      const collapsed = section.classList.toggle('config-collapsed');
+      const chev = header.querySelector('.config-collapse-chevron');
+      if (chev) chev.textContent = collapsed ? '▼' : '▲';
+      if (!collapsed && section.dataset.initOnOpen === 'maps') initFarmRoutesUI();
+    });
+    return body;
+  }
+
+  // Bot Control intentionally remains always visible.
+  makeCollapsible(byTitle('LOOT FILTER'), 'LOOT FILTER', { collapsed:true });
+  makeCollapsible(byTitle('TOWN RUN'), 'TOWN RUN', { collapsed:true });
+
+  const mapQueue = byTitle('MAP QUEUE');
+  const maps = byTitle('MAPS');
+  const mapBody = makeCollapsible(mapQueue, 'MAP QUEUE + MAPS', { collapsed:true, color:'#77aa77' });
+  if (mapBody && maps) {
+    const mapTitle = maps.querySelector('.config-title');
+    const sub = document.createElement('div');
+    sub.className = 'config-collapse-subtitle';
+    sub.textContent = 'MAPS';
+    mapBody.appendChild(sub);
+    Array.from(maps.childNodes).forEach(node => {
+      if (node !== mapTitle) mapBody.appendChild(node);
+    });
+    maps.remove();
+    mapQueue.dataset.initOnOpen = 'maps';
+  }
+
+  makeCollapsible(byTitle('DISPLAY'), 'DISPLAY', { collapsed:true });
+  makeCollapsible(byTitle('LOG FILTER & COLOURS'), 'LOG FILTER & COLOURS', { collapsed:true });
+  makeCollapsible(byTitle('SAVE / LOAD'), 'SAVE / LOAD', { collapsed:true });
+}
+
 function renderLogFilterUI() {
   const container = document.getElementById('log-filter-rows');
   if (!container) return;
@@ -7290,8 +7384,7 @@ function gameTick(ts) {
         // Check skill condition; manual casts bypass configured auto-cast condition.
         if(!isManualCast && !checkSkillCondition(k)) continue;
 
-        // Execute's actual damage threshold is fixed by the skill, not by the auto-cast config.
-        // Player config may make auto-cast stricter, but cannot make Execute hit above this threshold.
+        // Execute's actual damage threshold is fixed by the skill.
         if (k === 'execute' && target) {
           const executeThreshold = executeDamageThreshold();
           const targetHpPct = (target.hp / Math.max(1, target.maxHp)) * 100;
@@ -10662,7 +10755,7 @@ function skillDamagePreview(k) {
     const dmg=Math.round(skillBaseDamage('execute', sp) + base*(2+str*0.012));
     const thresh = executeDamageThreshold();
     const mythicText = hasMythicMod('executioner') ? ' [Executioner threshold]' : '';
-    return `~${fmtNum(dmg)} dmg only on enemies <=${thresh}% HP${mythicText} · auto-cast config cannot raise this damage threshold · base ${fmtNum(skillBaseDamage('execute', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts`;
+    return `~${fmtNum(dmg)} dmg only on enemies <=${thresh}% HP${mythicText} · base ${fmtNum(skillBaseDamage('execute', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts`;
   }
   if(k==='cheapshot') {
     const dmg=Math.round(skillBaseDamage('cheapshot', sp) + base*(calcCritDamage()/100+agi*0.005));
@@ -10670,7 +10763,7 @@ function skillDamagePreview(k) {
   }
   if(k==='smokebomb') {
     const charges=Math.min(4, 2+Math.floor(sp/10));
-    return `Delays the next ${charges} enemy attacks${condStr} · skill pts increase delayed attacks`;
+    return `Delays the next ${charges} enemy attacks · skill pts increase delayed attacks`;
   }
   if(k==='flurry') {
     const h=hasMythicMod('phantom_wraps')?8:5;
@@ -10994,7 +11087,7 @@ function switchTab(tab) {
   if(tab==='stats'){renderStats();renderEquipSlots();renderPotions();}
   if(tab==='inv'){renderInventory(); renderKeyItems();}
   if(tab==='skills'){renderSkills();}
-  if(tab==='config'){renderPriorityQueue(); switchCfgTab('bot'); loadConfigUI(); renderLogFilterUI(); initFarmRoutesUI();}
+  if(tab==='config'){renderPriorityQueue(); switchCfgTab('bot'); loadConfigUI(); renderLogFilterUI(); initFarmRoutesUI(); setupBotConfigCollapsibles();}
   if(tab==='map'){updateAbyssFloor();}
 }
 
@@ -12014,7 +12107,7 @@ function checkSkillCondition(k) {
   if (!cond) return true;
   const target = G.monsters[0];
   const { type } = cond;
-  // Executioner's Edge: raises execute threshold from config val to 50%
+  // Executioner's Edge raises Execute's damage threshold to 50%.
   let val = cond.val;
   if (k==='execute' && hasMythicMod('executioner')) val = Math.max(val, 50);
   if (type==='enemy_count_gte') return G.monsters.length >= val;
@@ -15290,7 +15383,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
     refreshMerchant(); buildBsItemSelect(); renderSkills();
     renderStats(); setupStatHoldAllocation(); renderEquipSlots(); renderInventory();
     renderPotions(); updateZoneUI(); updateAbyssFloor(); renderPriorityQueue();
-    renderLogFilterUI(); renderSkillPriority();
+    renderLogFilterUI(); setupBotConfigCollapsibles(); renderSkillPriority();
     // Re-render merchant with correct gold after full load
     setTimeout(() => renderMerchant(), 50);
     // Init maps
