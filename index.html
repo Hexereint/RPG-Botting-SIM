@@ -358,27 +358,20 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 }
 .town-back-btn:active { transform:translateY(1px); }
 
-/* Merchant / upgrade / gamble sub-tabs */
-.merchant-subtab, .overgear-subtab {
+/* Merchant sub-tabs */
+.merchant-subtab {
   background:#000;
   border:1px solid var(--border2);
-  color:#666;
+  border-bottom:none;
+  color:var(--muted);
   font-family:inherit;
-  font-size:max(12px, calc(var(--ui-font-size) * 0.72));
-  padding:8px 14px;
-  min-height:36px;
+  font-size:8px;
+  padding:4px 12px;
   cursor:pointer;
   letter-spacing:1px;
   text-transform:uppercase;
-  font-weight:bold;
 }
-.merchant-subtab { border-bottom:none; }
-.merchant-subtab.active, .overgear-subtab.active {
-  border-color:#d8c7ff;
-  color:#fff;
-  background:#0b0711;
-  box-shadow:0 0 10px rgba(160,120,255,0.12);
-}
+.merchant-subtab.active { border-color:var(--white); color:var(--white); background:#0a0a0a; }
 .merchant-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)); gap:6px; align-items:stretch; }
 .shop-item { background:#000; border:1px solid var(--border); padding:8px; min-width:0; max-width:none; width:100%; overflow-wrap:break-word; word-break:normal; }
 .shop-item-name { font-size:10px; font-weight:bold; margin-bottom:2px; color:var(--white); }
@@ -900,70 +893,102 @@ canvas {
 }
 
 /* SALVAGE ITEM STAT PREVIEW -------------------------------------------- */
+.town-gear-list {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+  gap:6px;
+  max-height:440px;
+  overflow-y:auto;
+  align-content:start;
+  padding-right:2px;
+}
+.gear-menu-row,
 .salvage-row {
   display:flex;
   flex-direction:column;
-  gap:4px;
-  padding:4px 5px;
+  gap:6px;
+  padding:6px 7px;
   background:var(--bg3);
   border:1px solid var(--border2);
   cursor:pointer;
   outline:none;
+  min-height:62px;
 }
+.gear-menu-row:hover,
+.gear-menu-row:focus-within,
 .salvage-row:hover,
 .salvage-row:focus-within,
 .salvage-row.salvage-expanded {
   border-color:var(--yellow);
   background:#111;
 }
+.gear-menu-main,
 .salvage-main {
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:6px;
+  gap:8px;
   min-width:0;
 }
+.gear-menu-copy { flex:1; min-width:0; }
+.gear-menu-title {
+  font-size:12px;
+  line-height:1.25;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.gear-menu-subline {
+  font-size:10px;
+  color:#666;
+  margin-top:2px;
+}
+.gear-menu-action {
+  background:#000;
+  border:1px solid var(--border2);
+  color:#888;
+  font-family:inherit;
+  font-size:10px;
+  padding:4px 10px;
+  cursor:pointer;
+  flex-shrink:0;
+  white-space:nowrap;
+  letter-spacing:1px;
+}
+.gear-menu-stats,
 .salvage-stats {
   display:none;
   border-top:1px solid var(--border);
   padding-top:5px;
-  font-size:9px;
+  font-size:10px;
   line-height:1.45;
   color:#aaa;
 }
+.gear-menu-row:hover .gear-menu-stats,
+.gear-menu-row:focus-within .gear-menu-stats,
 .salvage-row:hover .salvage-stats,
 .salvage-row:focus-within .salvage-stats,
 .salvage-row.salvage-expanded .salvage-stats {
   display:block;
 }
 .salvage-hint {
-  font-size:8px;
+  font-size:9px;
   color:#555;
   margin-top:3px;
-}
-
-.salvage-row, .reroll-row, .upgrade-row, .overgear-card {
-  min-height:0;
-}
-.salvage-row button, .reroll-row button, .upgrade-row button, .overgear-card button {
-  font-size:8px;
-  padding:4px 9px;
-  min-height:24px;
-  line-height:1.2;
-  font-family:inherit;
 }
 
 /* Unified reroll item list — extends salvage-row visual pattern */
 .reroll-row {
   display:flex;
   flex-direction:column;
-  gap:4px;
-  padding:4px 5px;
+  gap:6px;
+  padding:6px 7px;
   background:var(--bg3);
   border:1px solid var(--border2);
   cursor:pointer;
   outline:none;
   transition:border-color 0.1s, background 0.1s;
+  min-height:62px;
 }
 .reroll-row:hover,
 .reroll-row:focus-within {
@@ -978,14 +1003,15 @@ canvas {
 .reroll-row.rarity-mythic.reroll-selected { border-color:var(--unique); }
 .reroll-row.rarity-legendary { border-left:2px solid var(--legendary); }
 .reroll-row.rarity-legendary.reroll-selected { border-color:var(--legendary); }
-.reroll-main { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; }
-.reroll-stats { display:none; border-top:1px solid var(--border); padding-top:5px; font-size:9px; line-height:1.45; color:#aaa; }
+.reroll-main { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+.reroll-stats { display:none; border-top:1px solid var(--border); padding-top:5px; font-size:10px; line-height:1.45; color:#aaa; }
 .reroll-row:hover .reroll-stats,
 .reroll-row.reroll-selected .reroll-stats { display:block; }
-.reroll-essence-tag { font-size:8px; color:var(--legendary); margin-left:4px; }
+.reroll-essence-tag { font-size:9px; color:var(--legendary); margin-left:4px; }
 
-.upgrade-row { font-size:11px; }
-.upgrade-row button, .salvage-row button, .reroll-row button { font-family:inherit; }
+@media (max-width: 760px) {
+  .town-gear-list { grid-template-columns:1fr; max-height:380px; }
+}
 
 /* ===================== MAPS ===================== */
 .farm-routes-section { margin-top:6px; }
@@ -1225,6 +1251,8 @@ body.chaos-active #map-panel .subzone-row,
 }
 .overgear-x { font-size:9px; color:#e8d8ff; margin-left:3px; text-shadow:0 0 5px #aa77ff; }
 .overgear-card { border-color:rgba(180,140,255,0.55) !important; box-shadow:inset 0 0 14px rgba(120,220,255,0.08), 0 0 10px rgba(180,120,255,0.08); }
+.overgear-subtab { background:#000; border:1px solid var(--border2); color:#666; font-family:inherit; font-size:8px; padding:5px 10px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
+.overgear-subtab.active { border-color:#d8c7ff; color:#fff; background:#0b0711; box-shadow:0 0 10px rgba(160,120,255,0.12); }
 
 
 /* RANDOM EVENTS --------------------------------------------------------- */
@@ -1255,594 +1283,6 @@ body.chaos-active #map-panel .subzone-row,
 .random-event-btn span { display:block; color:#777; font-size:8px; line-height:1.35; text-transform:none; letter-spacing:0; }
 @media (max-width:700px) { #random-event-popup { top:6px; } .random-event-actions { grid-template-columns:1fr; } }
 
-
-
-/* MOBILE TOWN UI READABILITY PATCH ------------------------------------- */
-@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
-  /* Sub-tabs: allow long labels to wrap cleanly instead of overflowing/overlapping. */
-  .merchant-subtab,
-  .overgear-subtab {
-    flex:1 1 0;
-    min-width:0;
-    white-space:normal !important;
-    overflow-wrap:break-word;
-    word-break:normal;
-    line-height:1.2;
-    text-align:center;
-    letter-spacing:0.7px;
-    padding:8px 7px;
-  }
-  #town-screen-merchant > div:first-of-type,
-  #town-screen-gamble .town-section > div:first-child,
-  #town-screen-upgrade .town-section > div:first-child {
-    display:flex !important;
-    flex-wrap:wrap !important;
-    gap:4px !important;
-  }
-
-  /* Item rows: keep action buttons readable and prevent label/button collision. */
-  .salvage-main,
-  .reroll-main,
-  .upgrade-row {
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) auto !important;
-    align-items:center !important;
-    gap:6px !important;
-  }
-  .salvage-main > div:first-child,
-  .reroll-main > div:first-child,
-  .upgrade-row > div:first-child {
-    min-width:0 !important;
-  }
-  .salvage-main button,
-  .reroll-main button,
-  .upgrade-row button,
-  #upgrade-item-list button,
-  #overgear-item-list button,
-  .overgear-card button {
-    width:auto !important;
-    max-width:42vw !important;
-    min-width:58px !important;
-    white-space:normal !important;
-    overflow-wrap:break-word !important;
-    word-break:normal !important;
-    line-height:1.15 !important;
-    letter-spacing:0.5px !important;
-    text-align:center !important;
-    padding:5px 7px !important;
-  }
-  .salvage-row,
-  .reroll-row,
-  .upgrade-row,
-  .overgear-card {
-    overflow:hidden;
-  }
-  .salvage-row [style*="white-space:nowrap"],
-  .reroll-row [style*="white-space:nowrap"],
-  .upgrade-row [style*="white-space:nowrap"],
-  .overgear-card [style*="white-space:nowrap"] {
-    white-space:normal !important;
-  }
-}
-
-@media (max-width:430px) and (orientation:portrait) and (pointer:coarse) {
-  /* Very narrow portrait: use one tab per line for long upgrade/gamble labels. */
-  #town-screen-gamble .overgear-subtab,
-  #town-screen-upgrade .overgear-subtab {
-    flex-basis:100% !important;
-    min-height:34px !important;
-  }
-  .merchant-subtab {
-    flex-basis:calc(50% - 2px) !important;
-  }
-  .salvage-main,
-  .reroll-main,
-  .upgrade-row {
-    grid-template-columns:minmax(0, 1fr) minmax(64px, 30vw) !important;
-  }
-  .salvage-main button,
-  .reroll-main button,
-  .upgrade-row button,
-  #upgrade-item-list button,
-  #overgear-item-list button,
-  .overgear-card button {
-    max-width:30vw !important;
-    min-width:64px !important;
-    font-size:max(8px, calc(var(--ui-font-size) * 0.56)) !important;
-    padding:5px 5px !important;
-  }
-}
-
-
-/* MOBILE EQUIPMENT LIST READABILITY PATCH ------------------------------- */
-@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
-  #salvage-list,
-  #bs-reroll-list,
-  #upgrade-item-list,
-  #overgear-item-list,
-  #overgear-gamble-list {
-    gap:8px !important;
-    max-height:min(680px, 64vh) !important;
-  }
-
-  .salvage-row,
-  .reroll-row,
-  .upgrade-row,
-  .overgear-card {
-    padding:8px !important;
-    gap:7px !important;
-    overflow:visible !important;
-    min-height:0 !important;
-  }
-
-  .salvage-main,
-  .reroll-main,
-  .upgrade-row,
-  .overgear-card {
-    display:grid !important;
-    grid-template-columns:1fr !important;
-    align-items:stretch !important;
-    gap:7px !important;
-  }
-
-  .salvage-main > div:first-child,
-  .reroll-main > div:first-child,
-  .upgrade-row > div:first-child,
-  .overgear-card > div:first-child {
-    min-width:0 !important;
-    width:100% !important;
-  }
-
-  .salvage-main button,
-  .reroll-main button,
-  .upgrade-row button,
-  #upgrade-item-list button,
-  #overgear-item-list button,
-  .overgear-card button {
-    width:100% !important;
-    max-width:none !important;
-    min-width:0 !important;
-    min-height:28px !important;
-    padding:6px 8px !important;
-    white-space:normal !important;
-    overflow-wrap:break-word !important;
-    word-break:normal !important;
-    line-height:1.2 !important;
-    text-align:center !important;
-    flex-shrink:1 !important;
-  }
-
-  .salvage-row [style*="white-space:nowrap"],
-  .reroll-row [style*="white-space:nowrap"],
-  .upgrade-row [style*="white-space:nowrap"],
-  .overgear-card [style*="white-space:nowrap"] {
-    white-space:normal !important;
-    overflow:visible !important;
-    text-overflow:clip !important;
-  }
-}
-
-@media (max-width:430px) and (orientation:portrait) and (pointer:coarse) {
-  #salvage-list,
-  #bs-reroll-list,
-  #upgrade-item-list,
-  #overgear-item-list,
-  #overgear-gamble-list {
-    gap:9px !important;
-  }
-
-  .salvage-row,
-  .reroll-row,
-  .upgrade-row,
-  .overgear-card {
-    padding:9px !important;
-  }
-
-  .salvage-main,
-  .reroll-main,
-  .upgrade-row,
-  .overgear-card {
-    grid-template-columns:1fr !important;
-  }
-
-  .salvage-main button,
-  .reroll-main button,
-  .upgrade-row button,
-  #upgrade-item-list button,
-  #overgear-item-list button,
-  .overgear-card button {
-    width:100% !important;
-    max-width:none !important;
-    min-width:0 !important;
-    font-size:max(9px, calc(var(--ui-font-size) * 0.62)) !important;
-    padding:7px 8px !important;
-  }
-}
-
-
-/* DESKTOP EQUIPMENT LIST RESTORE -----------------------------------------
-   Keep the mobile one-column card layout limited to portrait mobile. Desktop
-   town equipment rows stay compact and horizontal. */
-@media (min-width:701px), (hover:hover) and (pointer:fine) {
-  #bs-reroll-list > .reroll-row,
-  #salvage-list > .salvage-row,
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card,
-  #overgear-gamble-list > .overgear-card {
-    width:100% !important;
-    max-width:100% !important;
-    box-sizing:border-box !important;
-  }
-
-  .salvage-main,
-  .reroll-main {
-    display:flex !important;
-    flex-direction:row !important;
-    align-items:center !important;
-    justify-content:space-between !important;
-    gap:8px !important;
-    width:100% !important;
-    min-width:0 !important;
-  }
-
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card,
-  #overgear-gamble-list > .overgear-card {
-    display:flex !important;
-    flex-direction:row !important;
-    align-items:center !important;
-    justify-content:space-between !important;
-    gap:8px !important;
-    width:100% !important;
-    min-width:0 !important;
-  }
-
-  .salvage-main > div,
-  .reroll-main > div,
-  #upgrade-item-list > .upgrade-row > div,
-  #overgear-item-list > .overgear-card > div,
-  #overgear-gamble-list > .overgear-card > div {
-    flex:1 1 auto !important;
-    width:auto !important;
-    min-width:0 !important;
-    max-width:none !important;
-  }
-
-  .salvage-main button,
-  .reroll-main button,
-  #upgrade-item-list > .upgrade-row > button,
-  #overgear-item-list > .overgear-card > button,
-  #overgear-gamble-list > .overgear-card button {
-    flex:0 0 auto !important;
-    width:auto !important;
-    max-width:none !important;
-    min-width:72px !important;
-    margin:0 !important;
-    white-space:nowrap !important;
-  }
-}
-
-
-/* AUTHORITATIVE DESKTOP / MOUSE EQUIPMENT LIST LAYOUT ------------------
-   Keeps town equipment rows horizontal on desktop, even when the browser
-   viewport is narrow. The stacked card layout is reserved for touch portrait. */
-@media (hover:hover) and (pointer:fine), (min-width:701px) {
-  #bs-reroll-list > .reroll-row,
-  #salvage-list > .salvage-row,
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card,
-  #overgear-gamble-list > .overgear-card {
-    display:block !important;
-    width:100% !important;
-    max-width:100% !important;
-    box-sizing:border-box !important;
-    margin:0 0 4px 0 !important;
-    overflow:hidden !important;
-  }
-  .salvage-main,
-  .reroll-main {
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) auto !important;
-    align-items:center !important;
-    gap:8px !important;
-    width:100% !important;
-  }
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card,
-  #overgear-gamble-list > .overgear-card {
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) auto !important;
-    align-items:center !important;
-    gap:8px !important;
-    width:100% !important;
-  }
-  .salvage-main > div:first-child,
-  .reroll-main > div:first-child,
-  #upgrade-item-list > .upgrade-row > div:first-child,
-  #overgear-item-list > .overgear-card > div:first-child,
-  #overgear-gamble-list > .overgear-card > div:first-child {
-    min-width:0 !important;
-    width:auto !important;
-    max-width:none !important;
-  }
-  .salvage-main button,
-  .reroll-main button,
-  #upgrade-item-list > .upgrade-row > button,
-  #overgear-item-list > .overgear-card > button,
-  #overgear-gamble-list > .overgear-card button {
-    width:auto !important;
-    max-width:none !important;
-    min-width:72px !important;
-    white-space:nowrap !important;
-    overflow-wrap:normal !important;
-    text-align:center !important;
-    margin:0 !important;
-  }
-}
-
-
-/* FINAL STATIC EQUIPMENT CARD SAFETY PATCH */
-.salvage-row:hover .salvage-stats,
-.reroll-row:hover .reroll-stats { display:none !important; }
-.salvage-row.salvage-expanded .salvage-stats,
-.reroll-row.reroll-selected .reroll-stats { display:block !important; position:static !important; max-height:180px !important; overflow:auto !important; }
-#bs-reroll-list > .reroll-row, #salvage-list > .salvage-row, #upgrade-item-list > .upgrade-row, #overgear-item-list > .overgear-card, #overgear-gamble-list > .overgear-card { height:auto !important; min-height:auto !important; }
-
-
-
-/* DEFINITIVE EQUIPMENT LIST READABILITY FIX -----------------------------
-   Fixes desktop and mobile town equipment rows after prior mobile patches.
-   Rows are real cards with enough reserved height; hover previews cannot
-   collapse or overlay neighboring rows. */
-#bs-reroll-list,
-#salvage-list,
-#upgrade-item-list,
-#overgear-item-list,
-#overgear-gamble-list {
-  display:flex !important;
-  flex-direction:column !important;
-  gap:10px !important;
-  width:100% !important;
-  max-width:100% !important;
-  overflow-x:hidden !important;
-}
-
-#bs-reroll-list > .reroll-row,
-#salvage-list > .salvage-row,
-#upgrade-item-list > .upgrade-row,
-#overgear-item-list > .overgear-card,
-#overgear-gamble-list > .overgear-card {
-  display:block !important;
-  width:100% !important;
-  max-width:100% !important;
-  min-height:max(84px, calc(var(--ui-font-size) * 4.7)) !important;
-  height:auto !important;
-  box-sizing:border-box !important;
-  padding:max(10px, calc(var(--ui-font-size) * 0.55)) max(12px, calc(var(--ui-font-size) * 0.70)) !important;
-  margin:0 !important;
-  overflow:hidden !important;
-  line-height:1.35 !important;
-}
-
-.salvage-main,
-.reroll-main,
-#upgrade-item-list > .upgrade-row,
-#overgear-item-list > .overgear-card {
-  display:grid !important;
-  grid-template-columns:minmax(0, 1fr) minmax(118px, max-content) !important;
-  align-items:start !important;
-  gap:12px !important;
-  width:100% !important;
-  min-width:0 !important;
-}
-
-#overgear-gamble-list > .overgear-card {
-  display:block !important;
-}
-
-.salvage-main > div:first-child,
-.reroll-main > div:first-child,
-#upgrade-item-list > .upgrade-row > div:first-child,
-#overgear-item-list > .overgear-card > div:first-child,
-#overgear-gamble-list > .overgear-card > div:first-child {
-  min-width:0 !important;
-  width:100% !important;
-  max-width:100% !important;
-  overflow:hidden !important;
-}
-
-.salvage-main > div:first-child > div,
-.reroll-main > div:first-child > div,
-#upgrade-item-list > .upgrade-row > div:first-child > div,
-#overgear-item-list > .overgear-card > div:first-child > div,
-#overgear-gamble-list > .overgear-card > div,
-.salvage-row [style*="white-space:nowrap"],
-.reroll-row [style*="white-space:nowrap"],
-.upgrade-row [style*="white-space:nowrap"],
-.overgear-card [style*="white-space:nowrap"] {
-  display:block !important;
-  white-space:normal !important;
-  overflow:visible !important;
-  text-overflow:clip !important;
-  overflow-wrap:break-word !important;
-  word-break:normal !important;
-  max-width:100% !important;
-  line-height:1.35 !important;
-}
-
-.salvage-main > div:first-child > div:first-child,
-.reroll-main > div:first-child > div:first-child,
-#upgrade-item-list > .upgrade-row > div:first-child > div:first-child,
-#overgear-item-list > .overgear-card > div:first-child > div:first-child,
-#overgear-gamble-list > .overgear-card > div:first-child {
-  font-size:max(16px, calc(var(--ui-font-size) * 0.95)) !important;
-  line-height:1.25 !important;
-  margin-bottom:5px !important;
-}
-
-.salvage-main > div:first-child > div:nth-child(2),
-.reroll-main > div:first-child > div:nth-child(2),
-#upgrade-item-list > .upgrade-row > div:first-child > div:nth-child(2),
-#overgear-item-list > .overgear-card > div:first-child > div:nth-child(2),
-#overgear-gamble-list > .overgear-card > div:nth-child(2) {
-  font-size:max(12px, calc(var(--ui-font-size) * 0.72)) !important;
-  line-height:1.35 !important;
-  margin-top:3px !important;
-}
-
-#overgear-item-list > .overgear-card > div:first-child > div:nth-child(3),
-#overgear-gamble-list > .overgear-card > div:nth-child(3) {
-  font-size:max(12px, calc(var(--ui-font-size) * 0.68)) !important;
-  line-height:1.4 !important;
-  margin-top:6px !important;
-}
-
-.salvage-main button,
-.reroll-main button,
-#upgrade-item-list > .upgrade-row > button,
-#overgear-item-list > .overgear-card > button {
-  align-self:start !important;
-  justify-self:end !important;
-  width:auto !important;
-  min-width:118px !important;
-  max-width:210px !important;
-  min-height:36px !important;
-  box-sizing:border-box !important;
-  padding:8px 12px !important;
-  margin:0 !important;
-  white-space:normal !important;
-  overflow-wrap:break-word !important;
-  word-break:normal !important;
-  line-height:1.2 !important;
-  text-align:center !important;
-}
-
-/* Hover must not expand stat blocks; click/tap selection expands inside card. */
-.salvage-row:hover .salvage-stats,
-.salvage-row:focus-within .salvage-stats,
-.reroll-row:hover .reroll-stats,
-.reroll-row:focus-within .reroll-stats {
-  display:none !important;
-}
-.salvage-row.salvage-expanded .salvage-stats,
-.reroll-row.reroll-selected .reroll-stats {
-  display:block !important;
-  position:static !important;
-  clear:both !important;
-  max-height:220px !important;
-  overflow:auto !important;
-  margin-top:10px !important;
-  padding-top:10px !important;
-  border-top:1px solid var(--border) !important;
-  line-height:1.45 !important;
-  font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
-}
-
-@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
-  #bs-reroll-list > .reroll-row,
-  #salvage-list > .salvage-row,
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card,
-  #overgear-gamble-list > .overgear-card {
-    min-height:max(92px, calc(var(--ui-font-size) * 5.1)) !important;
-    padding:10px !important;
-  }
-  .salvage-main,
-  .reroll-main,
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card {
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:stretch !important;
-    gap:8px !important;
-  }
-  .salvage-main button,
-  .reroll-main button,
-  #upgrade-item-list > .upgrade-row > button,
-  #overgear-item-list > .overgear-card > button {
-    width:100% !important;
-    max-width:none !important;
-    min-width:0 !important;
-    justify-self:stretch !important;
-  }
-}
-
-
-
-/* FINAL EQUIPMENT STATS VISIBILITY FIX ---------------------------------
-   Keep equipment cards tall/readable and let stat previews show on hover
-   or click without clipping behind adjacent rows. */
-#bs-reroll-list > .reroll-row,
-#salvage-list > .salvage-row,
-#upgrade-item-list > .upgrade-row,
-#overgear-item-list > .overgear-card,
-#overgear-gamble-list > .overgear-card {
-  height:auto !important;
-  min-height:max(92px, calc(var(--ui-font-size) * 5.1)) !important;
-  overflow:visible !important;
-  contain:none !important;
-}
-
-#bs-reroll-list,
-#salvage-list,
-#upgrade-item-list,
-#overgear-item-list,
-#overgear-gamble-list {
-  overflow-x:hidden !important;
-}
-
-.salvage-main,
-.reroll-main {
-  overflow:visible !important;
-}
-
-.salvage-main > div:first-child,
-.reroll-main > div:first-child,
-#upgrade-item-list > .upgrade-row > div:first-child,
-#overgear-item-list > .overgear-card > div:first-child,
-#overgear-gamble-list > .overgear-card > div:first-child {
-  overflow:visible !important;
-}
-
-.salvage-row:hover .salvage-stats,
-.salvage-row:focus-within .salvage-stats,
-.salvage-row.salvage-expanded .salvage-stats,
-.reroll-row:hover .reroll-stats,
-.reroll-row:focus-within .reroll-stats,
-.reroll-row.reroll-selected .reroll-stats {
-  display:block !important;
-  position:static !important;
-  clear:both !important;
-  margin-top:10px !important;
-  padding-top:10px !important;
-  max-height:260px !important;
-  overflow:auto !important;
-  border-top:1px solid var(--border) !important;
-  background:rgba(0,0,0,0.18) !important;
-  line-height:1.45 !important;
-  font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
-  z-index:auto !important;
-}
-
-.salvage-stats,
-.reroll-stats {
-  width:100% !important;
-  max-width:100% !important;
-  box-sizing:border-box !important;
-  white-space:normal !important;
-  overflow-wrap:break-word !important;
-}
-
-@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
-  #bs-reroll-list > .reroll-row,
-  #salvage-list > .salvage-row,
-  #upgrade-item-list > .upgrade-row,
-  #overgear-item-list > .overgear-card,
-  #overgear-gamble-list > .overgear-card {
-    min-height:max(98px, calc(var(--ui-font-size) * 5.4)) !important;
-    overflow:visible !important;
-  }
-}
 </style>
 </head>
 <body>
@@ -2167,7 +1607,7 @@ body.chaos-active #map-panel .subzone-row,
                 <span style="font-size:9px;color:#888;">Gear Essence: <span id="og-gamble-ge-display" style="color:#44bbaa;font-weight:bold;">0</span></span>
               </div>
               <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Select an Overgeared item, then gamble for +1 Overgear star. Failure reduces the item by 2 stars.</div>
-              <div id="overgear-gamble-list" style="display:flex;flex-direction:column;gap:4px;max-height:min(520px,58vh);overflow-y:auto;"></div>
+              <div id="overgear-gamble-list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;"></div>
               <div id="overgear-gamble-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Overgeared equipment available.</div>
               <div id="overgear-gamble-actions" style="display:none;margin-top:8px;padding:8px;background:#050505;border:1px solid rgba(180,140,255,0.35);">
                 <div id="overgear-gamble-selected" style="font-size:9px;color:#aaa;margin-bottom:7px;"></div>
@@ -2192,8 +1632,8 @@ body.chaos-active #map-panel .subzone-row,
               <span style="font-size:9px;color:#888;">Gear Essence:</span>
               <span style="font-size:11px;color:#44bbaa;font-weight:bold;" id="gear-essence-display">0</span>
             </div>
-            <div style="font-size:8px;color:#555;margin-bottom:6px;">Click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
-            <div id="bs-reroll-list" style="max-height:min(520px,58vh);overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+            <div style="font-size:8px;color:#555;margin-bottom:6px;">Hover or click an item to preview stats. Mythic/Legendary items also require Legendary Essence.</div>
+            <div id="bs-reroll-list" class="town-gear-list" style="max-height:440px;"></div>
             <div id="bs-reroll-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No rerollable items.</div>
             <div id="bs-reroll-panel" style="display:none;margin-top:8px;">
               <div style="font-size:8px;color:#777;margin-bottom:4px;" id="bs-reroll-item-label"></div>
@@ -2221,7 +1661,7 @@ body.chaos-active #map-panel .subzone-row,
           <div class="town-section">
             <div class="town-section-title">SALVAGE</div>
             <div style="font-size:8px;color:#555;margin-bottom:5px;">All rarities. Equipped or locked items cannot be salvaged.</div>
-            <div id="salvage-list" style="max-height:min(560px,62vh);overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="salvage-list" class="town-gear-list"></div>
             <div id="salvage-empty" style="font-size:9px;color:#444;display:none;">No items available to salvage</div>
           </div>
         </div>
@@ -2241,7 +1681,7 @@ body.chaos-active #map-panel .subzone-row,
                 <span style="font-size:9px;color:#888;">Gold: <span id="upgrade-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
                 <span style="font-size:9px;color:#888;">Legendary Essence: <span id="upgrade-le-display" style="color:var(--legendary);font-weight:bold;">0</span></span>
               </div>
-              <div id="upgrade-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:min(520px,58vh);overflow-y:auto;"></div>
+              <div id="upgrade-item-list" class="town-gear-list"></div>
               <div id="upgrade-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No legendary items available to ascend.</div>
             </div>
             <div id="upgrade-tab-overgear" style="display:none;">
@@ -2250,7 +1690,7 @@ body.chaos-active #map-panel .subzone-row,
               <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
                 <span style="font-size:9px;color:#888;">Gold: <span id="overgear-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
               </div>
-              <div id="overgear-item-list" style="display:flex;flex-direction:column;gap:4px;max-height:min(560px,62vh);overflow-y:auto;"></div>
+              <div id="overgear-item-list" class="town-gear-list"></div>
               <div id="overgear-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Ascended or Mythic items available to Overgear.</div>
             </div>
           </div>
@@ -2885,7 +2325,7 @@ const G = {
   logFilter: {
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true, itemdrop:true,
     goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true,
-    hpgain:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
+    mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   },
   logColors: {},
   farmRates: { zoneKey:'', encounterStartedAt:0, startedAt:0, exp:0, gold:0, kills:0 }
@@ -3184,7 +2624,7 @@ function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
       monster.hp = Math.min(monster.maxHp, monster.hp + heal);
       const reflect = Math.max(1, Math.round(attemptedGluttony * 0.35));
       const reflectedTaken = applyPlayerDamage(reflect, 'Guzmak\'s Gluttony', now);
-      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP and returning ${fmtNum(reflect)} damage!`, 'hpgain');
+      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP and returning ${fmtNum(reflect)} damage!`, 'dmgtaken');
       if (reflectedTaken > 0) applyKitarasqueHeartHeal(reflectedTaken);
       if (G.hp <= 0) { G.hp = 0; die(); }
     }
@@ -5103,7 +4543,7 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
     const before = monster.hp;
     const heal = Math.max(1, Math.round(before * 0.05 * bossHealMultiplier(monster)));
     monster.hp = Math.min(monster.maxHp, monster.hp + heal);
-    if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'hpgain');
+    if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
     monster.kitarasqueHitsTaken = (monster.kitarasqueHitsTaken || 0) + 1;
     if (monster.kitarasqueHitsTaken >= 10) {
       monster.kitarasqueHitsTaken = 0;
@@ -5121,7 +4561,7 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
       const heal = Math.max(1, Math.round(amount * 0.60 * bossHealMultiplier(monster)));
       const before = monster.hp;
       monster.hp = Math.min(monster.maxHp, monster.hp + heal);
-      if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'hpgain');
+      if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'dmgtaken');
     } else if (!monster.guzmakEternalHunger && (monster.guzmakGluttonyUntil || 0) <= ts) {
       monster.guzmakHitsTaken = (monster.guzmakHitsTaken || 0) + 1;
       const threshold = 5;
@@ -5160,14 +4600,14 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     const before = guz.hp;
     guz.hp = Math.min(guz.maxHp, guz.hp + 300 * dt * bossHealMultiplier(guz));
     const tick = Math.floor(ts/1000);
-    if (tick !== guz.guzmakRegenTick && guz.hp > before) { guz.guzmakRegenTick = tick; log(`<span class="log-monster">Guzmak</span> regenerates ${fmtNum(guz.hp-before)} HP.`, 'hpgain'); }
+    if (tick !== guz.guzmakRegenTick && guz.hp > before) { guz.guzmakRegenTick = tick; log(`<span class="log-monster">Guzmak</span> regenerates ${fmtNum(guz.hp-before)} HP.`, 'dmgtaken'); }
   }
   const kit = G.monsters.find(m => m.isKitarasque);
   if (kit) {
     const before = kit.hp;
     kit.hp = Math.min(kit.maxHp, kit.hp + 350 * dt * bossHealMultiplier(kit));
     const tick = Math.floor(ts/1000);
-    if (tick !== kit.kitarasqueRegenTick && kit.hp > before) { kit.kitarasqueRegenTick = tick; log(`<span class="log-monster">Kitarasque</span> regenerates ${fmtNum(kit.hp-before)} HP.`, 'hpgain'); }
+    if (tick !== kit.kitarasqueRegenTick && kit.hp > before) { kit.kitarasqueRegenTick = tick; log(`<span class="log-monster">Kitarasque</span> regenerates ${fmtNum(kit.hp-before)} HP.`, 'dmgtaken'); }
     const hpPct = (kit.hp / Math.max(1, kit.maxHp)) * 100;
     kit.kitarasqueHeartbeats = kit.kitarasqueHeartbeats || {80:false,50:false,30:false};
     for (const pct of [80,50,30]) {
@@ -5176,20 +4616,20 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
         const heal = Math.max(1, Math.round(kit.maxHp * 0.10 * bossHealMultiplier(kit)));
         const hbBefore = kit.hp;
         kit.hp = Math.min(kit.maxHp, kit.hp + heal);
-        log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'hpgain');
+        log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'dmgtaken');
       }
     }
     if (!kit.kitarasqueDesperateGrowthCast && hpPct <= 10) {
       kit.kitarasqueDesperateGrowthCast = true;
       kit.kitarasqueDesperateGrowthStartedAt = ts;
       kit.kitarasqueDesperateGrowthAt = ts + 10000;
-      log('<span style="color:#cc3355">Kitarasque casts Desperate Growth — kill it within 10 seconds or it regains 20% max HP!</span>', 'hpgain');
+      log('<span style="color:#cc3355">Kitarasque casts Desperate Growth — kill it within 10 seconds or it regains 20% max HP!</span>', 'dmgtaken');
     }
     if (kit.kitarasqueDesperateGrowthCast && !kit.kitarasqueDesperateGrowthResolved && ts >= (kit.kitarasqueDesperateGrowthAt || Infinity)) {
       kit.kitarasqueDesperateGrowthResolved = true;
       const dgBefore = kit.hp;
       kit.hp = Math.min(kit.maxHp, kit.hp + Math.round(kit.maxHp * 0.20 * bossHealMultiplier(kit)));
-      log(`<span style="color:#cc3355">Desperate Growth completes — Kitarasque regains ${fmtNum(kit.hp-dgBefore)} HP!</span>`, 'hpgain');
+      log(`<span style="color:#cc3355">Desperate Growth completes — Kitarasque regains ${fmtNum(kit.hp-dgBefore)} HP!</span>`, 'dmgtaken');
     }
   }
   const v = G.monsters.find(m => m.isVaalix);
@@ -5197,7 +4637,7 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
   const before = v.hp;
   v.hp = Math.min(v.maxHp, v.hp + 300 * dt * bossHealMultiplier(v));
   const tick = Math.floor(ts/1000);
-  if (tick !== v.vaalixRegenTick && v.hp > before) { v.vaalixRegenTick = tick; log(`<span class="log-monster">Vaalix</span> regenerates ${fmtNum(v.hp-before)} HP.`, 'hpgain'); }
+  if (tick !== v.vaalixRegenTick && v.hp > before) { v.vaalixRegenTick = tick; log(`<span class="log-monster">Vaalix</span> regenerates ${fmtNum(v.hp-before)} HP.`, 'dmgtaken'); }
   if (!v.vaalixEffluviumCast && ts >= (v.vaalixEffluviumAt || Infinity)) {
     v.vaalixEffluviumCast = true;
     G.combat.vaalixEffluviumUntil = Infinity;
@@ -7275,7 +6715,7 @@ function applyKitarasqueHeartHeal(damageTaken) {
   const heal = Math.max(1, Math.round(G.maxHp * 0.10));
   const before = G.hp;
   G.hp = Math.min(G.maxHp, G.hp + heal);
-  if (G.hp > before) log(`Heart of Kitarasque restores ${fmtNum(G.hp - before)} HP after taking damage`, 'hpgain');
+  if (G.hp > before) log(`Heart of Kitarasque restores ${fmtNum(G.hp - before)} HP after taking damage`, 'dmgtaken');
 }
 
 
@@ -7307,28 +6747,28 @@ function usePotion() {
     const shieldGain = Math.round(G.maxHp * 0.60);
     G.potionShield = Math.max(G.potionShield || 0, shieldGain);
     G.potionShieldMax = Math.max(G.potionShieldMax || 0, G.potionShield);
-    log(`🛡 Used Potion of Shielding (+${fmtNum(heal)} HP, ${fmtNum(G.potionShield)} shield)`, 'hpgain');
+    log(`🛡 Used Potion of Shielding (+${fmtNum(heal)} HP, ${fmtNum(G.potionShield)} shield)`);
   } else if (type === 'arcanic') {
     { const buffs = ensurePotionBuffs(); const now = performance.now(); buffs.arcanicStartedAt = now; buffs.arcanicUntil = now + 15000; }
-    log(`◆ Used Arcanic Potion (+${fmtNum(heal)} HP, INT-scaling skills +20% for 15s)`, 'hpgain');
+    log(`◆ Used Arcanic Potion (+${fmtNum(heal)} HP, INT-scaling skills +20% for 15s)`);
   } else if (type === 'fervor') {
     { const buffs = ensurePotionBuffs(); const now = performance.now(); buffs.fervorStartedAt = now; buffs.fervorUntil = now + 10000; }
-    log(`♦ Used Potion of Fervor (+${fmtNum(heal)} HP, basic damage +20% for 10s)`, 'hpgain');
+    log(`♦ Used Potion of Fervor (+${fmtNum(heal)} HP, basic damage +20% for 10s)`);
   } else if (type === 'vitality') {
     const buffs = ensurePotionBuffs();
     const now = performance.now();
     buffs.vitalityStartedAt = now;
     buffs.vitalityUntil = now + 6000;
     updateDerived();
-    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP and +100 HP/s regen for 6s)`, 'hpgain');
+    log(`♥ Used Potion of Vitality (+${fmtNum(heal)} HP, +1000 Max HP and +100 HP/s regen for 6s)`);
   } else if (type === 'swiftness') {
     const buffs = ensurePotionBuffs();
     const now = performance.now();
     buffs.swiftnessStartedAt = now;
     buffs.swiftnessUntil = now + 5000;
-    log(`⏩ Used Potion of Swiftness (+${fmtNum(heal)} HP, -1.0s attack interval and 40% CDR for 5s)`, 'hpgain');
+    log(`⏩ Used Potion of Swiftness (+${fmtNum(heal)} HP, -1.0s attack interval and 40% CDR for 5s)`);
   } else {
-    log(`⚗ Used Potion of Healing (+${fmtNum(heal)} HP)`, 'hpgain');
+    log(`⚗ Used Potion of Healing (+${fmtNum(heal)} HP)`);
   }
   setPotionCount(type, count-1);
   G.potionCooldown=10000;
@@ -7467,7 +6907,6 @@ const LOG_CATEGORIES = [
   { key:'basicattack',   label:'Basic Attacks',   color:'#e8c97a' },
   { key:'dmgdealt',      label:'Damage Dealt',    color:'#e8c97a' },
   { key:'dmgtaken',      label:'Damage Taken',    color:'#e87a7a' },
-  { key:'hpgain',        label:'HP Regained',     color:'#77dd77' },
   { key:'spellcast',     label:'Spell Cast',      color:'#9b8aff' },
   { key:'spelldmg',      label:'Spell Damage',    color:'#c4a0ff' },
   { key:'mpcost',        label:'MP Cost',         color:'#6699cc' },
@@ -7800,7 +7239,7 @@ function gameTick(ts) {
       darkYoung.darkYoungHealTick = healTick;
       const before = darkYoung.hp;
       darkYoung.hp = Math.min(darkYoung.maxHp, darkYoung.hp + 100);
-      if (darkYoung.hp > before) log(`<span class="log-monster">Eye of the Dark Young</span> regenerates ${fmtNum(darkYoung.hp - before)} HP`, 'hpgain');
+      if (darkYoung.hp > before) log(`<span class="log-monster">Eye of the Dark Young</span> regenerates ${fmtNum(darkYoung.hp - before)} HP`, 'dmgtaken');
     }
     const hpPct = (darkYoung.hp / Math.max(1, darkYoung.maxHp)) * 100;
     if (!darkYoung.blackPool70 && hpPct <= 70) {
@@ -8481,7 +7920,7 @@ function gameTick(ts) {
               const beforeVamp = m.hp;
               m.hp = Math.min(m.maxHp, m.hp + vampHeal);
               const restoredVamp = Math.max(0, Math.round(m.hp - beforeVamp));
-              if (restoredVamp > 0) log(`<span class="log-monster">${m.baseName||m.name}</span> [VAMPIRIC] heals ${fmtNum(restoredVamp)} HP`, 'hpgain');
+              if (restoredVamp > 0) log(`<span class="log-monster">${m.baseName||m.name}</span> [VAMPIRIC] heals ${fmtNum(restoredVamp)} HP`, 'dmgtaken');
             }
             applyKitarasqueHeartHeal(mdmg);
             if (m.isQuel && mdmg > 0) {
@@ -8489,7 +7928,7 @@ function gameTick(ts) {
               if (m.quelAttackCount % 3 === 0) {
                 const before = m.hp;
                 m.hp = Math.min(m.maxHp, m.hp + mdmg);
-                log(`☣ Quel lifesteals ${fmtNum(m.hp - before)} HP from the hit (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'hpgain');
+                log(`☣ Quel lifesteals ${fmtNum(m.hp - before)} HP from the hit (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'dmgtaken');
               }
             }
             if (m.isSandworm && mdmg > 0) {
@@ -8527,7 +7966,7 @@ function gameTick(ts) {
               const heal = Math.max(1, Math.round(m.hp * 0.10));
               const before = m.hp;
               m.hp = Math.min(m.maxHp, m.hp + heal);
-              log(`⛰ Hakam restores ${fmtNum(m.hp - before)} HP from temple stone (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'hpgain');
+              log(`⛰ Hakam restores ${fmtNum(m.hp - before)} HP from temple stone (${fmtNum(m.hp)}/${fmtNum(m.maxHp)})`, 'dmgtaken');
             }
           }
           if (m.isOverlord) {
@@ -9621,16 +9060,21 @@ function renderOvergearList() {
     const lvl = getOvergearLevel(item);
     const cost = overgearCost(item);
     const row = document.createElement('div');
-    row.className = 'overgear-card';
-    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border:1px solid rgba(180,140,255,0.55);';
+    row.className = 'overgear-card gear-menu-row';
+    row.style.borderColor = 'rgba(180,140,255,0.55)';
     row.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        ${overgearStarHtml(item)}
-        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div>
-        <div style="font-size:8px;color:#666;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl || 0}</div>
-        <div style="font-size:8px;color:#888;margin-top:2px;">Next: +0.25% normal stats · +0.10% regen · +0.1% Crit · +10% CritDmg · Cost ${fmtNum(cost)}g</div>
+      <div class="gear-menu-main">
+        <div class="gear-menu-copy">
+          ${overgearStarHtml(item)}
+          <div class="gear-menu-title" style="color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div>
+          <div class="gear-menu-subline">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${lvl || 0}</div>
+        </div>
+        <button class="gear-menu-action" style="border-color:#d8c7ff;color:#d8c7ff;" onclick="doOvergearUpgrade(${item.id})" ${G.gold < cost ? 'disabled' : ''}>OVERGEAR</button>
       </div>
-      <button style="background:#000;border:1px solid #d8c7ff;color:#d8c7ff;font-family:inherit;font-size:8px;padding:4px 9px;cursor:pointer;letter-spacing:1px;white-space:nowrap;" onclick="doOvergearUpgrade(${item.id})" ${G.gold < cost ? 'disabled' : ''}>OVERGEAR</button>`;
+      <div class="gear-menu-stats">
+        Next: +0.25% normal stats · +0.10% regen · +0.1% Crit · +10% CritDmg
+        <div style="font-size:9px;color:#888;margin-top:3px;">Cost ${fmtNum(cost)}g</div>
+      </div>`;
     list.appendChild(row);
   }
 }
@@ -9772,24 +9216,30 @@ function renderUpgradeList() {
   for (const item of legends) {
     const alreadyAscended = item.rarity === 'ascended';
     const row = document.createElement('div');
-    row.className = 'upgrade-row';
-    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--bg3);border:1px solid ${alreadyAscended ? '#664422' : 'var(--border2)'};cursor:pointer;`;
+    row.className = 'gear-menu-row';
+    row.style.borderColor = alreadyAscended ? '#664422' : 'var(--border2)';
 
     const statDef = alreadyAscended ? ASCEND_STATS.find(d => d.key === item.ascendStat?.key) : null;
     const ascLabel = alreadyAscended && statDef
-      ? `<span style="font-size:8px;color:${ASCEND_COLOR};">✦ ${statDef.fmt(item.ascendStat.val)}</span>`
+      ? `<span class="gear-menu-subline" style="color:${ASCEND_COLOR};">✦ ${statDef.fmt(item.ascendStat.val)}</span>`
       : '';
 
     row.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:11px;color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div>
-        <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()}</div>
+      <div class="gear-menu-main">
+        <div class="gear-menu-copy">
+          <div class="gear-menu-title" style="color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div>
+          <div class="gear-menu-subline">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()}</div>
+          ${ascLabel}
+        </div>
+        <button class="gear-menu-action" style="border-color:${alreadyAscended ? '#664422' : 'var(--legendary)'};color:${alreadyAscended ? '#cc7733' : 'var(--legendary)'};cursor:${alreadyAscended ? 'default' : 'pointer'};"
+          ${alreadyAscended ? '' : `onclick="event.stopPropagation();doAscension(${item.id})"`} ${alreadyAscended ? 'disabled' : ''}>
+          ${alreadyAscended ? 'ASCENDED' : 'ASCEND'}
+        </button>
+      </div>
+      <div class="gear-menu-stats">
+        ${formatItemStats(item) || '<span style="color:#555;">No stats</span>'}
         ${ascLabel}
       </div>
-      <button style="background:#000;border:1px solid ${alreadyAscended ? '#664422' : 'var(--legendary)'};color:${alreadyAscended ? '#cc7733' : 'var(--legendary)'};font-family:inherit;font-size:8px;padding:3px 9px;cursor:${alreadyAscended ? 'default' : 'pointer'};letter-spacing:1px;white-space:nowrap;"
-        ${alreadyAscended ? '' : `onclick="event.stopPropagation();doAscension(${item.id})"`} ${alreadyAscended ? 'disabled' : ''}>
-        ${alreadyAscended ? 'ASCENDED' : 'ASCEND'}
-      </button>
     `;
     list.appendChild(row);
   }
@@ -10129,15 +9579,15 @@ function buildBsRerollList() {
 
     row.innerHTML = `
       <div class="reroll-main">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${eqBadgeHtml(item)}${essenceTag}</div>
-          <div style="font-size:8px;color:#555;">${item.slot ? item.slot.toUpperCase() : ''} · ${item.rarity.toUpperCase()}</div>
+        <div class="gear-menu-copy">
+          <div class="gear-menu-title" style="color:${rarityColor};">${item.name}${eqBadgeHtml(item)}${essenceTag}</div>
+          <div class="gear-menu-subline">${item.slot ? item.slot.toUpperCase() : ''} · ${item.rarity.toUpperCase()}</div>
         </div>
-        <button onclick="event.stopPropagation();bsUnifiedSelectItem(${item.id})" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:4px 9px;min-height:24px;line-height:1.2;cursor:pointer;flex-shrink:0;white-space:nowrap;letter-spacing:1px;">SELECT</button>
+        <button onclick="event.stopPropagation();bsUnifiedSelectItem(${item.id})" class="gear-menu-action">SELECT</button>
       </div>
       <div class="reroll-stats">
         ${statsHtml}
-        <div style="font-size:8px;color:#555;margin-top:3px;">${needsEssence ? 'Requires Legendary Essence + gold per reroll.' : 'Cost: gold only.'}</div>
+        <div style="font-size:9px;color:#555;margin-top:3px;">${needsEssence ? 'Requires Legendary Essence + gold per reroll.' : 'Cost: gold only.'}</div>
       </div>
     `;
     row.addEventListener('click', (e) => {
@@ -12316,15 +11766,15 @@ function buildSalvageSelect() {
     const row = document.createElement('div');
     row.className = `salvage-row rarity-${item.rarity}`;
     row.tabIndex = 0;
-    row.title = 'Click to preview item stats';
+    row.title = 'Hover or click to preview item stats';
     const statsHtml = formatItemStats(item) || '<span style="color:#555;">No stats</span>';
     row.innerHTML = `
       <div class="salvage-main">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:9px;color:${rarityColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}${eqBadgeHtml(item)}</div>
-          <div style="font-size:8px;color:#555;">${item.slot.toUpperCase()} · Sell ${fmtNum(item.goldVal || calcItemGold(item))}g · <span style="color:#44bbaa;">${rewardStr}</span></div>
+        <div class="gear-menu-copy">
+          <div class="gear-menu-title" style="color:${rarityColor};">${item.name}${eqBadgeHtml(item)}</div>
+          <div class="gear-menu-subline">${item.slot.toUpperCase()} · Sell ${fmtNum(item.goldVal || calcItemGold(item))}g · <span style="color:#44bbaa;">${rewardStr}</span></div>
         </div>
-        <button onclick="event.stopPropagation();doSalvage(${item.id})" style="background:#000;border:1px solid ${isCurrentlyEquippedItem(item) ? '#333' : '#886633'};color:${isCurrentlyEquippedItem(item) ? '#555' : '#aa8833'};font-family:inherit;font-size:8px;padding:4px 9px;min-height:24px;line-height:1.2;cursor:${isCurrentlyEquippedItem(item) ? 'not-allowed' : 'pointer'};flex-shrink:0;white-space:nowrap;" ${isCurrentlyEquippedItem(item) ? 'disabled' : ''}>${isCurrentlyEquippedItem(item) ? 'EQ.' : 'SALVAGE'}</button>
+        <button onclick="event.stopPropagation();doSalvage(${item.id})" class="gear-menu-action" style="border-color:${isCurrentlyEquippedItem(item) ? '#333' : '#886633'};color:${isCurrentlyEquippedItem(item) ? '#555' : '#aa8833'};cursor:${isCurrentlyEquippedItem(item) ? 'not-allowed' : 'pointer'};" ${isCurrentlyEquippedItem(item) ? 'disabled' : ''}>${isCurrentlyEquippedItem(item) ? 'EQ.' : 'SALVAGE'}</button>
       </div>
       <div class="salvage-stats">
         ${statsHtml}
@@ -12775,11 +12225,11 @@ function setUiFontSize(val) {
     .header-class, .rarity-tag,
     .inv-equip-btn, .inv-sell-btn, .inv-lock-btn, .town-section-title, .refresh-btn,
     .bs-reroll-btn, .bs-cost, #bs-val-cost-display, #bs-type-cost-display, #essence-val-cost-display, #essence-type-cost-display,
-    .alloc-btn, .alloc-equip, .subzone-btn, .subzone-btn *, .fr-tool-btn, .fr-tile-type-btn, .fr-rc-btn, .fr-action-btn, .fr-shop-buy-btn,
-    .salvage-row, .salvage-row *, .reroll-row, .reroll-row *, #upgrade-item-list, #upgrade-item-list *, .upgrade-row, .upgrade-row *,
+    .alloc-btn, .alloc-equip, .subzone-btn,
     .cfg-subtab, .config-sub, .tooltip-box, .log-header, .log-time,
     .inv-upgrade-btn, .inv-sort-btn, .inv-subtab, .shop-buy-btn,
     .bs-reroll-select, .bs-type-cost-display, .points-left,
+    .gear-menu-title, .gear-menu-subline, .gear-menu-action, .gear-menu-stats, .salvage-hint,
     .skill-cond-row, .skill-cond-name, .skill-cond-label, .skill-cond-input,
     .skill-cond-unit, .skill-cond-help, .skill-priority-row, .skill-priority-name,
     .skill-priority-sub, .skill-priority-rank, .skill-priority-btn, .skill-priority-help
@@ -12787,7 +12237,7 @@ function setUiFontSize(val) {
 
     .section-title, .config-title, .config-collapse-title, .inv-title, .map-title, .town-section-title
     { font-size: ${px(0.82, 10)}px !important; line-height:1.35 !important; }
-    .item-name, .skill-name, .map-zone-name, .config-label, .shop-item-name
+    .item-name, .skill-name, .map-zone-name, .config-label, .shop-item-name, .gear-menu-title
     { font-size: ${px(0.98, 11)}px !important; line-height:1.35 !important; }
 
     .tooltip-box, .stat-row[data-tip]::after
@@ -12835,25 +12285,11 @@ function setUiFontSize(val) {
     .skill-cond-row, .skill-priority-row { padding:${Math.max(7, Math.round(val * 0.46))}px 0 !important; }
     .alloc-btn { width:${Math.round(val * 1.55)}px !important; height:${Math.round(val * 1.55)}px !important; }
 
-    .subzone-btn, .fr-tool-btn, .fr-tile-type-btn, .fr-rc-btn, .fr-action-btn, .fr-shop-buy-btn { font-size:${px(0.92, 11)}px !important; padding:${Math.max(5, Math.round(val * 0.28))}px ${Math.max(8, Math.round(val * 0.44))}px !important; min-height:${Math.max(30, Math.round(val * 1.65))}px !important; line-height:1.35 !important; }
-    .salvage-row, .reroll-row, #upgrade-item-list > div, #overgear-item-list > div, .upgrade-row, .overgear-card { font-size:${px(0.84, 10)}px !important; padding:${Math.max(5, Math.round(val * 0.28))}px ${Math.max(8, Math.round(val * 0.44))}px !important; line-height:1.3 !important; }
-    .salvage-row button, .reroll-row button, #upgrade-item-list button, #overgear-item-list button, .upgrade-row button, .overgear-card button { font-size:${px(0.72, 8)}px !important; padding:${Math.max(4, Math.round(val * 0.20))}px ${Math.max(8, Math.round(val * 0.42))}px !important; min-height:${Math.max(24, Math.round(val * 1.32))}px !important; line-height:1.2 !important; }
-    .merchant-subtab, .overgear-subtab { font-size:${px(0.72, 12)}px !important; padding:${Math.max(8, Math.round(val * 0.42))}px ${Math.max(14, Math.round(val * 0.78))}px !important; min-height:${Math.max(36, Math.round(val * 2.0))}px !important; }
-    .salvage-stats, .reroll-stats, .salvage-hint, .reroll-essence-tag { font-size:${px(0.82, 10)}px !important; line-height:1.45 !important; }
-
     @media (max-width:700px) {
       .merchant-grid { grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)) !important; }
       .bs-stat-select { display:grid !important; grid-template-columns:repeat(auto-fit, minmax(min(100%, ${Math.max(96, Math.round(val * 5.5))}px), 1fr)) !important; }
       .tooltip-box { left:0 !important; transform:none !important; max-width:92vw !important; }
       .stat-row[data-tip]::after { left:0 !important; max-width:92vw !important; }
-      .merchant-subtab, .overgear-subtab { flex:1 1 0 !important; min-width:0 !important; white-space:normal !important; overflow-wrap:break-word !important; line-height:1.2 !important; text-align:center !important; letter-spacing:0.7px !important; padding:${Math.max(7, Math.round(val * 0.34))}px ${Math.max(6, Math.round(val * 0.30))}px !important; }
-      #town-screen-merchant > div:first-of-type, #town-screen-gamble .town-section > div:first-child, #town-screen-upgrade .town-section > div:first-child { display:flex !important; flex-wrap:wrap !important; gap:4px !important; }
-      #salvage-list, #bs-reroll-list, #upgrade-item-list, #overgear-item-list, #overgear-gamble-list { gap:${Math.max(8, Math.round(val * 0.42))}px !important; max-height:min(680px, 64vh) !important; }
-      .salvage-row, .reroll-row, .upgrade-row, .overgear-card { padding:${Math.max(8, Math.round(val * 0.42))}px !important; gap:${Math.max(7, Math.round(val * 0.36))}px !important; overflow:visible !important; }
-      .salvage-main, .reroll-main, .upgrade-row, .overgear-card { display:grid !important; grid-template-columns:1fr !important; align-items:stretch !important; gap:${Math.max(7, Math.round(val * 0.36))}px !important; }
-      .salvage-main > div:first-child, .reroll-main > div:first-child, .upgrade-row > div:first-child, .overgear-card > div:first-child { min-width:0 !important; width:100% !important; }
-      .salvage-main button, .reroll-main button, .upgrade-row button, #upgrade-item-list button, #overgear-item-list button, .overgear-card button { width:100% !important; max-width:none !important; min-width:0 !important; min-height:${Math.max(28, Math.round(val * 1.55))}px !important; white-space:normal !important; overflow-wrap:break-word !important; word-break:normal !important; line-height:1.2 !important; letter-spacing:0.5px !important; text-align:center !important; padding:${Math.max(6, Math.round(val * 0.30))}px ${Math.max(8, Math.round(val * 0.42))}px !important; flex-shrink:1 !important; }
-      .salvage-row [style*="white-space:nowrap"], .reroll-row [style*="white-space:nowrap"], .upgrade-row [style*="white-space:nowrap"], .overgear-card [style*="white-space:nowrap"] { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; }
     }
     @media (max-width:430px) and (orientation:portrait) {
       .merchant-grid { grid-template-columns:1fr !important; }
@@ -12863,239 +12299,13 @@ function setUiFontSize(val) {
       .config-label { flex-basis:100% !important; }
       .bs-select, .shop-buy-btn, .bs-reroll-btn, .refresh-btn { width:100% !important; }
       .tooltip-box, .stat-row[data-tip]::after { min-width:min(220px, 88vw) !important; max-width:92vw !important; }
-      #town-screen-gamble .overgear-subtab, #town-screen-upgrade .overgear-subtab { flex-basis:100% !important; min-height:${Math.max(34, Math.round(val * 1.75))}px !important; }
-      .merchant-subtab { flex-basis:calc(50% - 2px) !important; }
-      #salvage-list, #bs-reroll-list, #upgrade-item-list, #overgear-item-list, #overgear-gamble-list { gap:${Math.max(9, Math.round(val * 0.46))}px !important; }
-      .salvage-row, .reroll-row, .upgrade-row, .overgear-card { padding:${Math.max(9, Math.round(val * 0.46))}px !important; }
-      .salvage-main, .reroll-main, .upgrade-row, .overgear-card { grid-template-columns:1fr !important; }
-      .salvage-main button, .reroll-main button, .upgrade-row button, #upgrade-item-list button, #overgear-item-list button, .overgear-card button { width:100% !important; max-width:none !important; min-width:0 !important; font-size:${px(0.62, 9)}px !important; padding:${Math.max(7, Math.round(val * 0.34))}px ${Math.max(8, Math.round(val * 0.38))}px !important; }
     }
   `;
   const input = document.getElementById('cfg-ui-font-size');
   if (input) input.value = val;
   const label = document.getElementById('cfg-ui-font-size-val');
   if (label) label.textContent = val;
-  installMobileGearListFix();
   if (G?.started) saveGame(false);
-}
-
-function installMobileGearListFix() {
-  let tag = document.getElementById('equipment-list-clean-layout');
-  if (!tag) { tag = document.createElement('style'); tag.id = 'equipment-list-clean-layout'; document.head.appendChild(tag); }
-  tag.textContent = `
-    /* CLEAN EQUIPMENT LIST LAYOUT ---------------------------------------
-       Single source of truth for Reroll, Salvage, Ascension, Overgear, and
-       Overgear Gamble equipment rows. This deliberately overrides earlier
-       emergency patches and inline JS styles. Rows are normal-flow cards;
-       stat previews expand inside the card on hover/focus/click. */
-
-    #bs-reroll-list,
-    #salvage-list,
-    #upgrade-item-list,
-    #overgear-item-list,
-    #overgear-gamble-list {
-      display:flex !important;
-      flex-direction:column !important;
-      gap:max(8px, calc(var(--ui-font-size) * 0.45)) !important;
-      width:100% !important;
-      max-width:100% !important;
-      min-width:0 !important;
-      overflow-x:hidden !important;
-      overflow-y:auto !important;
-      box-sizing:border-box !important;
-    }
-
-    #bs-reroll-list > .reroll-row,
-    #salvage-list > .salvage-row,
-    #upgrade-item-list > .upgrade-row,
-    #overgear-item-list > .overgear-card,
-    #overgear-gamble-list > .overgear-card {
-      display:block !important;
-      width:100% !important;
-      max-width:100% !important;
-      min-width:0 !important;
-      height:auto !important;
-      min-height:0 !important;
-      box-sizing:border-box !important;
-      padding:max(10px, calc(var(--ui-font-size) * 0.55)) max(12px, calc(var(--ui-font-size) * 0.70)) !important;
-      margin:0 !important;
-      overflow:visible !important;
-      contain:none !important;
-      line-height:1.35 !important;
-      background:var(--bg3) !important;
-      cursor:pointer !important;
-    }
-
-    #bs-reroll-list > .reroll-row,
-    #salvage-list > .salvage-row {
-      border:1px solid var(--border2) !important;
-      border-left:3px solid var(--unique) !important;
-    }
-
-    #bs-reroll-list > .reroll-row:hover,
-    #salvage-list > .salvage-row:hover,
-    #bs-reroll-list > .reroll-row:focus-within,
-    #salvage-list > .salvage-row:focus-within,
-    #bs-reroll-list > .reroll-row.reroll-selected,
-    #salvage-list > .salvage-row.salvage-expanded {
-      border-color:var(--yellow) !important;
-      background:#111 !important;
-    }
-
-    .salvage-main,
-    .reroll-main,
-    #upgrade-item-list > .upgrade-row,
-    #overgear-item-list > .overgear-card {
-      display:grid !important;
-      grid-template-columns:minmax(0, 1fr) max-content !important;
-      gap:max(10px, calc(var(--ui-font-size) * 0.55)) !important;
-      align-items:start !important;
-      justify-content:stretch !important;
-      width:100% !important;
-      max-width:100% !important;
-      min-width:0 !important;
-      overflow:visible !important;
-    }
-
-    #overgear-gamble-list > .overgear-card {
-      display:block !important;
-    }
-
-    .salvage-main > div:first-child,
-    .reroll-main > div:first-child,
-    #upgrade-item-list > .upgrade-row > div:first-child,
-    #overgear-item-list > .overgear-card > div:first-child,
-    #overgear-gamble-list > .overgear-card > div:first-child {
-      min-width:0 !important;
-      width:100% !important;
-      max-width:100% !important;
-      overflow:visible !important;
-      box-sizing:border-box !important;
-    }
-
-    .salvage-main > div:first-child > div,
-    .reroll-main > div:first-child > div,
-    #upgrade-item-list > .upgrade-row > div:first-child > div,
-    #overgear-item-list > .overgear-card > div:first-child > div,
-    #overgear-gamble-list > .overgear-card > div,
-    .salvage-row [style*="white-space:nowrap"],
-    .reroll-row [style*="white-space:nowrap"],
-    .upgrade-row [style*="white-space:nowrap"],
-    .overgear-card [style*="white-space:nowrap"] {
-      display:block !important;
-      max-width:100% !important;
-      white-space:normal !important;
-      overflow:visible !important;
-      text-overflow:clip !important;
-      overflow-wrap:break-word !important;
-      word-break:normal !important;
-      line-height:1.35 !important;
-    }
-
-    .salvage-main > div:first-child > div:first-child,
-    .reroll-main > div:first-child > div:first-child,
-    #upgrade-item-list > .upgrade-row > div:first-child > div:first-child,
-    #overgear-item-list > .overgear-card > div:first-child > div:first-child,
-    #overgear-gamble-list > .overgear-card > div:first-child {
-      font-size:max(16px, calc(var(--ui-font-size) * 0.95)) !important;
-      line-height:1.25 !important;
-      margin:0 0 5px 0 !important;
-    }
-
-    .salvage-main > div:first-child > div:nth-child(2),
-    .reroll-main > div:first-child > div:nth-child(2),
-    #upgrade-item-list > .upgrade-row > div:first-child > div:nth-child(2),
-    #overgear-item-list > .overgear-card > div:first-child > div:nth-child(2),
-    #overgear-gamble-list > .overgear-card > div:nth-child(2),
-    #overgear-item-list > .overgear-card > div:first-child > div:nth-child(3),
-    #overgear-gamble-list > .overgear-card > div:nth-child(3) {
-      font-size:max(12px, calc(var(--ui-font-size) * 0.72)) !important;
-      line-height:1.35 !important;
-      margin-top:3px !important;
-    }
-
-    .salvage-main button,
-    .reroll-main button,
-    #upgrade-item-list > .upgrade-row > button,
-    #overgear-item-list > .overgear-card > button,
-    #overgear-gamble-list > .overgear-card button {
-      justify-self:end !important;
-      align-self:start !important;
-      width:auto !important;
-      min-width:max(108px, calc(var(--ui-font-size) * 6.1)) !important;
-      max-width:min(220px, 42vw) !important;
-      min-height:max(34px, calc(var(--ui-font-size) * 1.8)) !important;
-      box-sizing:border-box !important;
-      margin:0 !important;
-      padding:max(7px, calc(var(--ui-font-size) * 0.35)) max(10px, calc(var(--ui-font-size) * 0.56)) !important;
-      white-space:normal !important;
-      overflow-wrap:break-word !important;
-      word-break:normal !important;
-      line-height:1.2 !important;
-      text-align:center !important;
-      flex:none !important;
-    }
-
-    .salvage-stats,
-    .reroll-stats {
-      display:none !important;
-      width:100% !important;
-      max-width:100% !important;
-      box-sizing:border-box !important;
-      position:static !important;
-      clear:both !important;
-      margin-top:max(8px, calc(var(--ui-font-size) * 0.45)) !important;
-      padding-top:max(8px, calc(var(--ui-font-size) * 0.45)) !important;
-      border-top:1px solid var(--border) !important;
-      background:rgba(0,0,0,0.18) !important;
-      color:#aaa !important;
-      font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
-      line-height:1.45 !important;
-      white-space:normal !important;
-      overflow-wrap:break-word !important;
-      word-break:normal !important;
-      max-height:260px !important;
-      overflow:auto !important;
-      z-index:auto !important;
-    }
-
-    .salvage-row:hover .salvage-stats,
-    .salvage-row:focus-within .salvage-stats,
-    .salvage-row.salvage-expanded .salvage-stats,
-    .reroll-row:hover .reroll-stats,
-    .reroll-row:focus-within .reroll-stats,
-    .reroll-row.reroll-selected .reroll-stats {
-      display:block !important;
-    }
-
-    .salvage-hint,
-    .reroll-essence-tag {
-      font-size:max(11px, calc(var(--ui-font-size) * 0.62)) !important;
-      line-height:1.35 !important;
-    }
-
-    @media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
-      .salvage-main,
-      .reroll-main,
-      #upgrade-item-list > .upgrade-row,
-      #overgear-item-list > .overgear-card {
-        display:flex !important;
-        flex-direction:column !important;
-        align-items:stretch !important;
-        gap:max(8px, calc(var(--ui-font-size) * 0.42)) !important;
-      }
-      .salvage-main button,
-      .reroll-main button,
-      #upgrade-item-list > .upgrade-row > button,
-      #overgear-item-list > .overgear-card > button,
-      #overgear-gamble-list > .overgear-card button {
-        width:100% !important;
-        max-width:none !important;
-        min-width:0 !important;
-        justify-self:stretch !important;
-      }
-    }
-  `;
 }
 
 
@@ -13479,7 +12689,7 @@ function applyClassData(data) {
   G.logColors = data.logColors || {};
   G.logFilter = Object.assign({
     pixelgraphics:true, basicattack:true, dmgdealt:true, dmgtaken:true, golddrop:true,
-    itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, hpgain:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
+    itemdrop:true, goldsell:true, spawncountdown:true, spellcast:true, spelldmg:true, mpcost:true, system:true, reverseTextScroll:false, hideLiveMapGrid:false
   }, data.logFilter||{});
   updateDerived();
   G.hp = data.hp!==undefined ? Math.min(data.hp,G.maxHp) : G.maxHp;
