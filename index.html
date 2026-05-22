@@ -2225,7 +2225,7 @@ const G = {
       fortify:     { type:'player_hp_lte',  val:50  },
       execute:     { type:'enemy_hp_lte',   val:30  },
       cheapshot:   { type:'enemy_hp_gte',   val:100 },
-      smokebomb:   { type:'player_hp_lte',  val:40  },
+      smokebomb:   { type:'enemy_count_gte', val:1   },
       flurry:      { type:'enemy_hp_lte',   val:100 },
       marktarget:  { type:'enemy_hp_gte',   val:100 },
       assassinate: { type:'enemy_hp_lte',   val:50  },
@@ -4559,12 +4559,19 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     log('<span style="color:#55aa55">Vaalix casts Cursed Rot Effluvium — basic attacks may miss, skill damage weakens, and HP regen is reduced by 10/s.</span>', 'dmgtaken');
   }
   const hpPct = (v.hp / Math.max(1, v.maxHp)) * 100;
-  if (!v.vaalixBreathWarned70 && hpPct <= 70) {
-    v.vaalixBreathWarned70 = true;
+  const canStartNecrodragonBreath = !v.vaalixBreathAt && !v.vaalixBreathPending;
+  if (!v.vaalixBreathWarned80 && hpPct <= 80 && canStartNecrodragonBreath) {
+    v.vaalixBreathWarned80 = true;
     v.vaalixBreathWarnStartedAt = ts;
     v.vaalixBreathAt = ts + 10000;
     v.vaalixBreathResolveAt = v.vaalixBreathAt + 1500;
-    log('<span style="color:#55aa55">Vaalix gathers Necrodragon Breath — impact in 11.5 seconds!</span>', 'dmgtaken');
+    log('<span style="color:#55aa55">Vaalix gathers Necrodragon Breath at 80% HP — impact in 11.5 seconds!</span>', 'dmgtaken');
+  } else if (!v.vaalixBreathWarned50 && hpPct <= 50 && canStartNecrodragonBreath) {
+    v.vaalixBreathWarned50 = true;
+    v.vaalixBreathWarnStartedAt = ts;
+    v.vaalixBreathAt = ts + 10000;
+    v.vaalixBreathResolveAt = v.vaalixBreathAt + 1500;
+    log('<span style="color:#55aa55">Vaalix gathers a second Necrodragon Breath at 50% HP — impact in 11.5 seconds!</span>', 'dmgtaken');
   }
   if (v.vaalixBreathAt && !v.vaalixBreathPending && ts >= v.vaalixBreathAt) {
     v.vaalixBreathAt = 0;
@@ -7282,6 +7289,20 @@ function gameTick(ts) {
 
         // Check skill condition; manual casts bypass configured auto-cast condition.
         if(!isManualCast && !checkSkillCondition(k)) continue;
+
+        // Execute's actual damage threshold is fixed by the skill, not by the auto-cast config.
+        // Player config may make auto-cast stricter, but cannot make Execute hit above this threshold.
+        if (k === 'execute' && target) {
+          const executeThreshold = executeDamageThreshold();
+          const targetHpPct = (target.hp / Math.max(1, target.maxHp)) * 100;
+          if (targetHpPct > executeThreshold) {
+            if (isManualCast) {
+              G.combat.manualSkillCast = null;
+              log(`[Execute] cannot be used until enemy HP is ≤${executeThreshold}%`, 'system');
+            }
+            continue;
+          }
+        }
 
         // Overload (Wizard) — every 5th cast (3rd with Arcanist's Crown) costs 0 MP and deals bonus damage
         let overloadActive = false;
@@ -10605,6 +10626,11 @@ function positionPopup(popup, e) {
   popup.style.top=y+'px';
 }
 
+
+function executeDamageThreshold() {
+  return hasMythicMod('executioner') ? 50 : 30;
+}
+
 function skillDamagePreview(k) {
   const str=effStat('str'), agi=effStat('agi'), int_=effStat('int');
   const base=calcDamage();
@@ -10634,8 +10660,9 @@ function skillDamagePreview(k) {
   }
   if(k==='execute') {
     const dmg=Math.round(skillBaseDamage('execute', sp) + base*(2+str*0.012));
-    const thresh = cond?.type==='enemy_hp_lte' ? cond.val : 30;
-    return `~${fmtNum(dmg)} dmg on enemies <=${thresh}% HP · base ${fmtNum(skillBaseDamage('execute', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts`;
+    const thresh = executeDamageThreshold();
+    const mythicText = hasMythicMod('executioner') ? ' [Executioner threshold]' : '';
+    return `~${fmtNum(dmg)} dmg only on enemies <=${thresh}% HP${mythicText} · auto-cast config cannot raise this damage threshold · base ${fmtNum(skillBaseDamage('execute', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts`;
   }
   if(k==='cheapshot') {
     const dmg=Math.round(skillBaseDamage('cheapshot', sp) + base*(calcCritDamage()/100+agi*0.005));
@@ -11263,7 +11290,7 @@ function selectClass(cls) {
       whirlwind: {name:'Whirlwind',desc:'AOE — base 12→42 dmg, 40% falloff per extra target',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
       warcry: {name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
       fortify: {name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
-      execute: {name:'Execute',desc:'Massive hit below threshold',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
+      execute: {name:'Execute',desc:'Massive hit only at enemy HP ≤30%',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
     };
   } else if (cls==='rogue') {
     G.passives = {
@@ -11308,7 +11335,7 @@ function initClassSetup(cls) {
   G.playerClass = cls;
   if (cls==='warrior') {
     G.passives = { berserker:{name:'Berserker Rage',desc:'Basic attack damage increases as HP drops. Scales with level.',enabled:true}, battlehard:{name:'Battle Hardened',desc:'Stack 5% incoming damage reduction on consecutive kills without taking damage.',enabled:true} };
-    G.skills = { shieldbash:{name:'Shield Bash',desc:'Hit + stun — base 20→60 dmg',mpCost:8,cooldown:10000,enabled:false,skillPts:0}, whirlwind:{name:'Whirlwind',desc:'AOE — base 12→42 dmg, 40% falloff per extra target',mpCost:14,cooldown:18000,enabled:false,skillPts:0}, warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0}, fortify:{name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0}, execute:{name:'Execute',desc:'Massive hit below threshold',mpCost:30,cooldown:40000,enabled:false,skillPts:0} };
+    G.skills = { shieldbash:{name:'Shield Bash',desc:'Hit + stun — base 20→60 dmg',mpCost:8,cooldown:10000,enabled:false,skillPts:0}, whirlwind:{name:'Whirlwind',desc:'AOE — base 12→42 dmg, 40% falloff per extra target',mpCost:14,cooldown:18000,enabled:false,skillPts:0}, warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0}, fortify:{name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0}, execute:{name:'Execute',desc:'Massive hit only at enemy HP ≤30%',mpCost:30,cooldown:40000,enabled:false,skillPts:0} };
   } else if (cls==='rogue') {
     G.passives = { shadowstep:{name:'Shadowstep',desc:'Chance to strike twice on basic attacks. Scales with level.',enabled:true}, evasion:{name:'Evasion',desc:'Chance to dodge incoming attacks. Scales with level.',enabled:true} };
     G.skills = { cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} };
@@ -11316,7 +11343,7 @@ function initClassSetup(cls) {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
     G.skills = { fireball:{name:'Fireball',desc:'AOE burst — base 40→200 dmg + INT scaling, full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce between targets — stronger INT scaling',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; stronger INT scaling',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore 10→40% max MP + INT scaling',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack + INT scaling",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
-  const def = { paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'player_hp_lte',val:40},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
+  const def = { paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'enemy_count_gte',val:1},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
   G.logFilter = {pixelgraphics:true,basicattack:true,dmgdealt:true,dmgtaken:true,golddrop:true,itemdrop:true,goldsell:true,spawncountdown:true,spellcast:true,spelldmg:true,mpcost:true,system:true,reverseTextScroll:false};
   G.logColors = {};
@@ -11871,7 +11898,7 @@ const SKILL_CONDITION_META = {
   fortify:        { label:'Fortify',        condLabel:'Cast when player HP ≤', unit:'%'  },
   execute:        { label:'Execute',        condLabel:'Cast when enemy HP ≤',  unit:'%'  },
   cheapshot:      { label:'Cheap Shot',     condLabel:'Cast when enemy HP ≥',  unit:'%'  },
-  smokebomb:      { label:'Smoke Bomb',     condLabel:'Cast when player HP ≤', unit:'%'  },
+  smokebomb:      { label:'Smoke Bomb',     condLabel:'Cast when enemies ≥',   unit:''   },
   flurry:         { label:'Flurry',         condLabel:'Cast when enemy HP ≤',  unit:'%'  },
   marktarget:     { label:'Mark Target',    condLabel:'Cast when enemy HP ≥',  unit:'%'  },
   assassinate:    { label:'Assassinate',    condLabel:'Cast when enemy HP ≤',  unit:'%'  },
@@ -12467,7 +12494,7 @@ function applyClassData(data) {
       shieldbash:{type:'enemy_hp_lte',val:100}, whirlwind:{type:'enemy_count_gte',val:1},
       warcry:{type:'enemy_count_gte',val:1}, fortify:{type:'player_hp_lte',val:50},
       execute:{type:'enemy_hp_lte',val:30}, cheapshot:{type:'enemy_hp_gte',val:100},
-      smokebomb:{type:'player_hp_lte',val:40}, flurry:{type:'enemy_hp_lte',val:100},
+      smokebomb:{type:'enemy_count_gte',val:1}, flurry:{type:'enemy_hp_lte',val:100},
       marktarget:{type:'enemy_hp_gte',val:100}, assassinate:{type:'enemy_hp_lte',val:50},
       fireball:{type:'enemy_count_gte',val:1}, chainlightning:{type:'enemy_count_gte',val:1},
       frostnova:{type:'player_hp_lte',val:60}, manasurge:{type:'player_mp_lte',val:40},
@@ -12482,6 +12509,11 @@ function applyClassData(data) {
   G.config = Object.assign(DEFAULT_CONFIG, data.config||{});
   if (data.config?.equipRules) G.config.equipRules = Object.assign(DEFAULT_CONFIG.equipRules, data.config.equipRules);
   if (data.config?.skillConditions) G.config.skillConditions = Object.assign(DEFAULT_CONFIG.skillConditions, data.config.skillConditions);
+  // Migrate the old Smoke Bomb default auto-cast condition away from HP <= 40.
+  // HP-based behavior should be controlled by the player's general config, not this skill default.
+  if (G.config.skillConditions?.smokebomb?.type === 'player_hp_lte' && Number(G.config.skillConditions.smokebomb.val) === 40) {
+    G.config.skillConditions.smokebomb = { type:'enemy_count_gte', val:1 };
+  }
   if (data.config?.skillPriority) G.config.skillPriority = Array.isArray(data.config.skillPriority) ? data.config.skillPriority.slice() : DEFAULT_CONFIG.skillPriority.slice();
   G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(G.config.chaosDifficulty || 0, 10) || 0));
   G.config.liveMapRouteSize = Math.max(6, Math.min(18, parseInt(G.config.liveMapRouteSize || 15, 10) || 15));
