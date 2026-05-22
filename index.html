@@ -428,7 +428,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .config-collapse-body { padding:10px; }
 .config-section.config-collapsed .config-collapse-body { display:none; }
 .config-section.config-collapsed .config-collapse-header { border-bottom:none; }
-.config-collapse-subtitle { font-size:9px; color:#77aa77; letter-spacing:2px; text-transform:uppercase; font-weight:bold; border-top:1px solid rgba(119,170,119,0.22); padding-top:10px; margin:10px 0 8px; }
+.config-collapse-subtitle { font-size:12px; color:#ffffff; letter-spacing:2px; text-transform:uppercase; font-weight:bold; border-top:1px solid rgba(255,255,255,0.12); padding-top:10px; margin:10px 0 8px; }
 
 .cfg-subtab { background:transparent; border:none; border-bottom:2px solid transparent; color:#555; font-family:inherit; font-size:9px; padding:6px 12px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; transition:all 0.15s; }
 .cfg-subtab:hover { color:#aaa; }
@@ -1735,7 +1735,7 @@ body.chaos-active #map-panel .subzone-row,
             <div class="toggle-switch" id="toggle-paused" onclick="togglePause()"></div>
           </div>
           <div class="config-row" style="border:none;padding-top:7px;">
-            <div class="config-label" style="font-size:12px;">Skip Random Events<span class="config-sub">Prevents optional random events and route event tiles from triggering.</span></div>
+            <div class="config-label" style="font-size:12px;">Skip Random Events<span class="config-sub">Automatically escapes from random events.</span></div>
             <div class="toggle-switch" id="toggle-skipEvents" onclick="toggleConfig('skipEvents')"></div>
           </div>
         </div>
@@ -5439,7 +5439,8 @@ function isRandomEventBaseZoneEligible() {
   return G.started && !G.dead && G.zone && G.zone !== 'town' && G.zone !== 'abyss';
 }
 function isRandomEventZoneEligible() {
-  return isRandomEventBaseZoneEligible() && !G.config?.skipEvents;
+  // skipEvents auto-escapes events after they trigger; it should not prevent event checks/spawns.
+  return isRandomEventBaseZoneEligible();
 }
 function randomEventState() {
   if (!G.randomEvent || typeof G.randomEvent !== 'object') G.randomEvent = { active:null, pauseCombat:false, lastTriggerAt:0, nextAllowedAt:0, lastMiniAt:0 };
@@ -6991,7 +6992,7 @@ function setupBotConfigCollapsibles() {
 
   const mapQueue = byTitle('MAP QUEUE');
   const maps = byTitle('MAPS');
-  const mapBody = makeCollapsible(mapQueue, 'MAP QUEUE + MAPS', { collapsed:true, color:'#77aa77' });
+  const mapBody = makeCollapsible(mapQueue, 'MAP QUEUE + MAPS', { collapsed:true });
   if (mapBody && maps) {
     const mapTitle = maps.querySelector('.config-title');
     const sub = document.createElement('div');
