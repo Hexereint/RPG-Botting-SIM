@@ -2109,8 +2109,8 @@ const G = {
   hpRegen: 1, mpRegen: 1,
   stats: { str:0, agi:0, int:0, vit:0 },
   statsPoints: 0,
-  skillPoints: 0,
-  pendingSkillPoint: false,
+  skillPoints: 1,
+  pendingSkillPoint: true,
   kills: 0,
   currentKills: 0,
   eliteKills: 0,
@@ -2653,6 +2653,92 @@ function effectiveCooldown(baseCd, skillKey) {
 }
 
 const ACTIVE_SKILL_POINT_CAP = 20;
+const STARTING_SKILL_POINTS = 1;
+const SKILL_POINT_AWARD_LEVEL_CAP = 50;
+function grantsSkillPointAtLevel(level) {
+  return (Number(level) || 0) <= SKILL_POINT_AWARD_LEVEL_CAP;
+}
+function totalEarnedSkillPointsByLevel(level) {
+  const lvl = Math.max(1, Math.floor(Number(level) || 1));
+  return Math.min(SKILL_POINT_AWARD_LEVEL_CAP, lvl);
+}
+function totalAllocatedSkillPoints() {
+  if (!G.skills || typeof G.skills !== 'object') return 0;
+  return Object.values(G.skills).reduce((sum, v) => sum + Math.max(0, Number(v?.skillPts) || 0), 0);
+}
+function normalizeSkillPointStateObject(state) {
+  if (!state || typeof state !== 'object') return false;
+  let changed = false;
+  const skills = state.skills && typeof state.skills === 'object' ? state.skills : {};
+  let unspent = Math.max(0, Math.floor(Number(state.skillPoints) || 0));
+
+  // First cap every individual skill at 20/20. Overflow is not kept if total points
+  // already exceeds the lifetime cap; it is added here so the later total trim can
+  // remove excess fairly from the combined pool.
+  for (const v of Object.values(skills)) {
+    if (!v) continue;
+    const oldPts = Math.max(0, Math.floor(Number(v.skillPts) || 0));
+    const capped = Math.min(ACTIVE_SKILL_POINT_CAP, oldPts);
+    if (oldPts !== capped) {
+      v.skillPts = capped;
+      unspent += oldPts - capped;
+      changed = true;
+    } else if (v.skillPts !== capped) {
+      v.skillPts = capped;
+      changed = true;
+    }
+  }
+
+  const earned = totalEarnedSkillPointsByLevel(state.level);
+  const allocated = Object.values(skills).reduce((sum, v) => sum + Math.max(0, Math.floor(Number(v?.skillPts) || 0)), 0);
+  let owned = allocated + unspent;
+
+  if (owned > earned) {
+    let excess = owned - earned;
+
+    // Remove excess unallocated points first.
+    const unspentReduction = Math.min(unspent, excess);
+    unspent -= unspentReduction;
+    excess -= unspentReduction;
+
+    // If the player has over-allocated skill points, trim allocated points too.
+    // Trim from the largest investments first so heavily overcapped saves normalize quickly.
+    if (excess > 0) {
+      const keys = Object.keys(skills).sort((a, b) => {
+        const pa = Math.max(0, Math.floor(Number(skills[a]?.skillPts) || 0));
+        const pb = Math.max(0, Math.floor(Number(skills[b]?.skillPts) || 0));
+        return pb - pa || a.localeCompare(b);
+      });
+      for (const k of keys) {
+        if (excess <= 0) break;
+        const v = skills[k];
+        const pts = Math.max(0, Math.floor(Number(v?.skillPts) || 0));
+        const reduction = Math.min(pts, excess);
+        if (reduction > 0) {
+          v.skillPts = pts - reduction;
+          excess -= reduction;
+        }
+      }
+    }
+    changed = true;
+  } else if (owned < earned) {
+    unspent += earned - owned;
+    changed = true;
+  }
+
+  if (state.skillPoints !== unspent) changed = true;
+  state.skillPoints = unspent;
+  const pending = unspent > 0;
+  if (state.pendingSkillPoint !== pending) changed = true;
+  state.pendingSkillPoint = pending;
+  return changed;
+}
+function normalizeSkillPointEntitlement() {
+  const state = { level:G.level, skillPoints:G.skillPoints, pendingSkillPoint:G.pendingSkillPoint, skills:G.skills };
+  normalizeSkillPointStateObject(state);
+  G.skillPoints = state.skillPoints;
+  G.pendingSkillPoint = state.pendingSkillPoint;
+}
 function skillPts20(k) {
   const raw = G.skills?.[k]?.skillPts || 0;
   return Math.max(0, Math.min(ACTIVE_SKILL_POINT_CAP, raw));
@@ -8129,11 +8215,14 @@ function killMonster(m, ts) {
     G.exp-=expToLevel(G.level);
     G.level++;
     G.statsPoints+=3;
-    G.skillPoints++;
-    G.pendingSkillPoint = true;
+    const gainedSkillPoint = grantsSkillPointAtLevel(G.level);
+    if (gainedSkillPoint) {
+      G.skillPoints++;
+      G.pendingSkillPoint = true;
+    }
     updateDerived();
     G.hp=G.maxHp;G.mp=G.maxMp;
-    log(`LEVEL UP → Lv${G.level}${isOverlevelCapped() ? ' (OVERLEVEL MAX)' : ''} | +3 stat pts | +1 skill pt`);
+    log(`LEVEL UP → Lv${G.level}${isOverlevelCapped() ? ' (OVERLEVEL MAX)' : ''} | +3 stat pts${gainedSkillPoint ? ' | +1 skill pt' : ' | skill pts capped at Lv50'}`);
     const fl=document.createElement('div');fl.className='levelup-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
   }
   recordObservedFarmGain(exp, observedGoldGain, ts);
@@ -11202,6 +11291,7 @@ function selectClass(cls) {
     };
   }
 
+  normalizeSkillPointEntitlement();
   updateDerived();G.hp=G.maxHp;G.mp=G.maxMp;
   log(`RPG Botting Simulator started. Class: ${cls.toUpperCase()}`);
   setZone('fields',true);
@@ -11232,6 +11322,7 @@ function initClassSetup(cls) {
   G.logColors = {};
   G.currentKills = 0;
   G.zone = 'fields'; G.subZone = null;
+  normalizeSkillPointEntitlement();
   log(`RPG Botting Simulator started. Class: ${cls.toUpperCase()}`);
 }
 
@@ -12151,8 +12242,10 @@ function saveGame(manual=false) {
   try {
     const save = JSON.parse(localStorage.getItem(SAVE_KEY_V2) || '{}');
     save.slots = save.slots || [null,null,null];
+    normalizeSkillPointEntitlement();
     save.activeSlot = G.activeSlot;
     save.slots[G.activeSlot] = serializeClassState();
+    normalizeSkillPointStateObject(save.slots[G.activeSlot]);
     localStorage.setItem(SAVE_KEY_V2, JSON.stringify(save));
     const d = new Date();
     const ts = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
@@ -12294,6 +12387,7 @@ function importSaveData() {
     const ok = confirm('Import this save? This will replace the current browser save, then reload the game.');
     if (!ok) { setSaveTransferStatus('Import cancelled.', 'var(--muted)'); return; }
 
+    if (Array.isArray(saveObj.slots)) saveObj.slots.forEach(slot => normalizeSkillPointStateObject(slot));
     localStorage.setItem(SAVE_KEY_V2, JSON.stringify(saveObj));
     if (stashObj) localStorage.setItem('rpg_stash', JSON.stringify(stashObj));
     setSaveTransferStatus('Save imported. Reloading...', 'var(--green)');
@@ -12345,8 +12439,12 @@ function applyClassData(data) {
   normalizePotions();
   G.bsRerollCounts = data.bsRerollCounts||{};
   G.passives = data.passives||{};
-  G.skills = data.skills||{};
-  normalizeActiveSkillPointCaps(true);
+  data.skills = data.skills || {};
+  normalizeSkillPointStateObject(data);
+  G.skillPoints = data.skillPoints || 0;
+  G.pendingSkillPoint = !!data.pendingSkillPoint;
+  G.skills = data.skills || {};
+  normalizeSkillPointEntitlement();
   G.skillCooldowns = {};
   G.combat = {battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0,flamestealerFireball:null,darkYoungWailAt:0,darkYoungWailWarned:false,spinCleaverWhirlwindUntil:0,spinCleaverWhirlwindNextAt:0,spinCleaverWhirlwindStr:0,spinCleaverWhirlwindSp:0};
   G.legendaryEssence = data.legendaryEssence||0;
@@ -12415,6 +12513,9 @@ function loadGame() {
     if (!raw) return false;
     const save = JSON.parse(raw);
     if (!save?.slots) return false;
+    let skillPointSaveChanged = false;
+    save.slots.forEach(slot => { if (normalizeSkillPointStateObject(slot)) skillPointSaveChanged = true; });
+    if (skillPointSaveChanged) localStorage.setItem(SAVE_KEY_V2, JSON.stringify(save));
     G.activeSlot = save.activeSlot||0;
     const data = save.slots[G.activeSlot];
     if (!data?.playerClass) return false;
@@ -12482,12 +12583,14 @@ function loadClassSlot(slotIdx) {
   try { save = JSON.parse(localStorage.getItem(SAVE_KEY_V2)||'{}'); } catch(e){}
   const data = (save.slots||[])[slotIdx];
   if (!data?.playerClass) return;
+  normalizeSkillPointStateObject(data);
   // Save current slot first if active
   if (G.started) {
     save.slots = save.slots||[null,null,null];
     save.slots[G.activeSlot] = serializeClassState();
   }
   save.activeSlot = slotIdx;
+  if (Array.isArray(save.slots)) save.slots.forEach(slot => normalizeSkillPointStateObject(slot));
   localStorage.setItem(SAVE_KEY_V2, JSON.stringify(save));
   G.activeSlot = slotIdx;
   resetGameState();
@@ -12567,7 +12670,7 @@ function resetGameState() {
   G.level=1; G.exp=0; G.hp=10; G.maxHp=10; G.mp=10; G.maxMp=10;
   G.hpRegen=1; G.mpRegen=1;
   G.stats={str:0,agi:0,int:0,vit:0};
-  G.statsPoints=0; G.skillPoints=0; G.pendingSkillPoint=false;
+  G.statsPoints=0; G.skillPoints=STARTING_SKILL_POINTS; G.pendingSkillPoint=G.skillPoints>0;
   G.kills=0; G.gold=0; G.legendaryEssence=0; G.gearEssence=0;
   G.zone='fields'; G.subZone=null;
   G.prevCombatZone='fields'; G.prevCombatSubZone=null;
@@ -12864,12 +12967,16 @@ function applyOfflineProgress(result) {
   // EXP + level ups
   G.exp += exp;
   let levelsGained = 0;
+  let skillPointsGained = 0;
   while (G.level < MAX_PLAYER_LEVEL && G.exp >= expToLevel(G.level)) {
     G.exp -= expToLevel(G.level);
     G.level++;
     G.statsPoints += 3;
-    G.skillPoints++;
-    G.pendingSkillPoint = true;
+    if (grantsSkillPointAtLevel(G.level)) {
+      G.skillPoints++;
+      G.pendingSkillPoint = true;
+      skillPointsGained++;
+    }
     levelsGained++;
   }
   updateDerived();
@@ -12903,7 +13010,7 @@ function applyOfflineProgress(result) {
   const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
 
   log(`— OFFLINE PROGRESS (${timeStr} away) —`);
-  log(`~${kills} kills | +${gold}g | +${exp} EXP${levelsGained > 0 ? ` | +${levelsGained} level${levelsGained > 1 ? 's' : ''}` : ''}`);
+  log(`~${kills} kills | +${gold}g | +${exp} EXP${levelsGained > 0 ? ` | +${levelsGained} level${levelsGained > 1 ? 's' : ''}` : ''}${skillPointsGained > 0 ? ` | +${skillPointsGained} skill pt${skillPointsGained > 1 ? 's' : ''}` : (levelsGained > 0 && (G.level || 1) > SKILL_POINT_AWARD_LEVEL_CAP ? ' | skill pts capped at Lv50' : '')}`);
   log(`${potsAdded} potions | ${itemsAdded} items`);
   if (survival) {
     log(`Offline danger estimate: ${fmtNum(survival.totalIncoming)} incoming dmg - ${fmtNum(survival.totalRegen)} HP regen = ${fmtNum(survival.netDamage)} net dmg.`);
@@ -15127,6 +15234,8 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
   const ok = loadGame();
   if (ok) {
     G.started = true;
+    normalizeSkillPointEntitlement();
+    saveGame(false);
     document.getElementById('class-select-screen').style.cssText = 'display:none';
     initClassUI();
     ['autoheal','lootfilter','autoequip','autosell','townRun','skipEvents'].forEach(k => {
