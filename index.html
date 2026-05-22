@@ -12620,6 +12620,127 @@ function installMobileGearListFix() {
   let tag = document.getElementById('mobile-gear-list-final-fix');
   if (!tag) { tag = document.createElement('style'); tag.id = 'mobile-gear-list-final-fix'; document.head.appendChild(tag); }
   tag.textContent = `
+    /* Gear selection readability fix: the lists use inline styles in JS, so these
+       high-specificity rules intentionally win after the UI font-size override. */
+    #bs-reroll-list,
+    #salvage-list,
+    #upgrade-item-list,
+    #overgear-item-list,
+    #overgear-gamble-list {
+      gap:8px !important;
+    }
+
+    #bs-reroll-list > .reroll-row,
+    #salvage-list > .salvage-row,
+    #upgrade-item-list > .upgrade-row,
+    #overgear-item-list > .overgear-card,
+    #overgear-gamble-list > .overgear-card {
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      min-height:62px !important;
+      box-sizing:border-box !important;
+      padding:11px 13px !important;
+      margin:0 !important;
+      overflow:visible !important;
+      line-height:1.35 !important;
+    }
+
+    .salvage-main,
+    .reroll-main {
+      display:grid !important;
+      grid-template-columns:minmax(0, 1fr) minmax(112px, max-content) !important;
+      align-items:center !important;
+      gap:14px !important;
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+    }
+
+    #upgrade-item-list > .upgrade-row,
+    #overgear-item-list > .overgear-card {
+      display:grid !important;
+      grid-template-columns:minmax(0, 1fr) minmax(112px, max-content) !important;
+      align-items:center !important;
+      gap:14px !important;
+    }
+
+    #overgear-gamble-list > .overgear-card {
+      display:block !important;
+    }
+
+    .salvage-main > div:first-child,
+    .reroll-main > div:first-child,
+    #upgrade-item-list > .upgrade-row > div:first-child,
+    #overgear-item-list > .overgear-card > div:first-child,
+    #overgear-gamble-list > .overgear-card > div:first-child {
+      min-width:0 !important;
+      width:auto !important;
+      max-width:100% !important;
+      overflow:visible !important;
+    }
+
+    .salvage-main > div:first-child > div:first-child,
+    .reroll-main > div:first-child > div:first-child,
+    #upgrade-item-list > .upgrade-row > div:first-child > div:first-child,
+    #overgear-item-list > .overgear-card > div:first-child > div:first-child,
+    #overgear-gamble-list > .overgear-card > div:first-child > div:first-child,
+    .salvage-row [style*="white-space:nowrap"],
+    .reroll-row [style*="white-space:nowrap"],
+    .upgrade-row [style*="white-space:nowrap"],
+    .overgear-card [style*="white-space:nowrap"] {
+      font-size:max(15px, calc(var(--ui-font-size) * 0.88)) !important;
+      line-height:1.35 !important;
+      white-space:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+      overflow-wrap:break-word !important;
+      word-break:normal !important;
+    }
+
+    .salvage-main > div:first-child > div:nth-child(2),
+    .reroll-main > div:first-child > div:nth-child(2),
+    #upgrade-item-list > .upgrade-row > div:first-child > div:nth-child(2),
+    #overgear-item-list > .overgear-card > div:first-child > div:nth-child(2),
+    #overgear-gamble-list > .overgear-card > div:first-child > div:nth-child(2) {
+      font-size:max(12px, calc(var(--ui-font-size) * 0.68)) !important;
+      line-height:1.35 !important;
+      margin-top:3px !important;
+      white-space:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+    }
+
+    .salvage-main button,
+    .reroll-main button,
+    #upgrade-item-list > .upgrade-row > button,
+    #overgear-item-list > .overgear-card > button,
+    #overgear-gamble-list > .overgear-card button {
+      width:auto !important;
+      min-width:112px !important;
+      max-width:190px !important;
+      min-height:34px !important;
+      box-sizing:border-box !important;
+      margin:0 !important;
+      padding:8px 12px !important;
+      white-space:normal !important;
+      overflow-wrap:break-word !important;
+      word-break:normal !important;
+      line-height:1.2 !important;
+      text-align:center !important;
+      justify-self:end !important;
+      flex:none !important;
+      font-size:max(11px, calc(var(--ui-font-size) * 0.64)) !important;
+    }
+
+    .salvage-stats,
+    .reroll-stats {
+      margin-top:8px !important;
+      padding-top:8px !important;
+      line-height:1.45 !important;
+      font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
+    }
+
     @media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
       #town-screen-reroll,
       #town-screen-salvage,
@@ -12646,14 +12767,10 @@ function installMobileGearListFix() {
       #overgear-item-list > .overgear-card,
       #overgear-gamble-list > .overgear-card {
         display:block !important;
-        width:100% !important;
-        max-width:100% !important;
-        min-width:0 !important;
-        box-sizing:border-box !important;
+        min-height:0 !important;
         margin:0 0 10px 0 !important;
         padding:10px !important;
         overflow:hidden !important;
-        line-height:1.35 !important;
       }
 
       .salvage-main,
@@ -12667,23 +12784,6 @@ function installMobileGearListFix() {
         justify-content:flex-start !important;
         gap:8px !important;
         width:100% !important;
-        max-width:100% !important;
-        min-width:0 !important;
-        box-sizing:border-box !important;
-      }
-
-      .salvage-main > div,
-      .reroll-main > div,
-      #upgrade-item-list > .upgrade-row > div,
-      #overgear-item-list > .overgear-card > div,
-      #overgear-gamble-list > .overgear-card > div {
-        display:block !important;
-        flex:none !important;
-        width:100% !important;
-        max-width:100% !important;
-        min-width:0 !important;
-        box-sizing:border-box !important;
-        overflow:hidden !important;
       }
 
       .salvage-main button,
@@ -12691,127 +12791,11 @@ function installMobileGearListFix() {
       #upgrade-item-list > .upgrade-row > button,
       #overgear-item-list > .overgear-card > button,
       #overgear-gamble-list > .overgear-card button {
-        display:block !important;
-        flex:none !important;
         width:100% !important;
-        max-width:100% !important;
+        max-width:none !important;
         min-width:0 !important;
-        box-sizing:border-box !important;
-        margin:2px 0 0 0 !important;
-        padding:8px 10px !important;
         min-height:34px !important;
-        white-space:normal !important;
-        overflow-wrap:break-word !important;
-        word-break:normal !important;
-        line-height:1.2 !important;
-        text-align:center !important;
-        letter-spacing:0.8px !important;
-      }
-
-      .salvage-row [style*="white-space:nowrap"],
-      .reroll-row [style*="white-space:nowrap"],
-      .upgrade-row [style*="white-space:nowrap"],
-      .overgear-card [style*="white-space:nowrap"] {
-        white-space:normal !important;
-        overflow:visible !important;
-        text-overflow:clip !important;
-      }
-
-      .salvage-row div,
-      .reroll-row div,
-      .upgrade-row div,
-      .overgear-card div {
-        max-width:100% !important;
-        overflow-wrap:break-word !important;
-        word-break:normal !important;
-      }
-    }
-
-    @media (min-width:701px), (hover:hover) and (pointer:fine) {
-      #bs-reroll-list,
-      #salvage-list,
-      #upgrade-item-list,
-      #overgear-item-list,
-      #overgear-gamble-list {
-        display:flex !important;
-        flex-direction:column !important;
-        gap:6px !important;
-        overflow-x:hidden !important;
-      }
-
-      #bs-reroll-list > .reroll-row,
-      #salvage-list > .salvage-row,
-      #upgrade-item-list > .upgrade-row,
-      #overgear-item-list > .overgear-card,
-      #overgear-gamble-list > .overgear-card {
-        width:100% !important;
-        max-width:100% !important;
-        min-width:0 !important;
-        box-sizing:border-box !important;
-        overflow:visible !important;
-        margin:0 !important;
-      }
-
-      .salvage-main,
-      .reroll-main {
-        display:grid !important;
-        grid-template-columns:minmax(260px, 1fr) max-content !important;
-        align-items:center !important;
-        gap:12px !important;
-        width:100% !important;
-        max-width:100% !important;
-        min-width:0 !important;
-      }
-
-      #upgrade-item-list > .upgrade-row,
-      #overgear-item-list > .overgear-card {
-        display:grid !important;
-        grid-template-columns:minmax(280px, 1fr) max-content !important;
-        align-items:center !important;
-        gap:12px !important;
-        width:100% !important;
-        max-width:100% !important;
-        min-width:0 !important;
-      }
-
-      /* Overgear gamble rows have no action button; keep them as readable stacked text cards on desktop. */
-      #overgear-gamble-list > .overgear-card {
-        display:block !important;
-      }
-
-      .salvage-main > div:first-child,
-      .reroll-main > div:first-child,
-      #upgrade-item-list > .upgrade-row > div:first-child,
-      #overgear-item-list > .overgear-card > div:first-child {
-        min-width:0 !important;
-        width:auto !important;
-        max-width:100% !important;
-        overflow:visible !important;
-      }
-
-      .salvage-row [style*="white-space:nowrap"],
-      .reroll-row [style*="white-space:nowrap"],
-      .upgrade-row [style*="white-space:nowrap"],
-      .overgear-card [style*="white-space:nowrap"] {
-        white-space:normal !important;
-        overflow:visible !important;
-        text-overflow:clip !important;
-      }
-
-      .salvage-main button,
-      .reroll-main button,
-      #upgrade-item-list > .upgrade-row > button,
-      #overgear-item-list > .overgear-card > button {
-        width:auto !important;
-        min-width:110px !important;
-        max-width:180px !important;
-        margin:0 !important;
-        white-space:normal !important;
-        overflow-wrap:break-word !important;
-        line-height:1.2 !important;
-        text-align:center !important;
-        justify-self:end !important;
-        flex:none !important;
+        margin:2px 0 0 0 !important;
       }
     }
   `;
