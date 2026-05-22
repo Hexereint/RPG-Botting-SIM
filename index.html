@@ -1767,6 +1767,82 @@ body.chaos-active #map-panel .subzone-row,
   }
 }
 
+
+
+/* FINAL EQUIPMENT STATS VISIBILITY FIX ---------------------------------
+   Keep equipment cards tall/readable and let stat previews show on hover
+   or click without clipping behind adjacent rows. */
+#bs-reroll-list > .reroll-row,
+#salvage-list > .salvage-row,
+#upgrade-item-list > .upgrade-row,
+#overgear-item-list > .overgear-card,
+#overgear-gamble-list > .overgear-card {
+  height:auto !important;
+  min-height:max(92px, calc(var(--ui-font-size) * 5.1)) !important;
+  overflow:visible !important;
+  contain:none !important;
+}
+
+#bs-reroll-list,
+#salvage-list,
+#upgrade-item-list,
+#overgear-item-list,
+#overgear-gamble-list {
+  overflow-x:hidden !important;
+}
+
+.salvage-main,
+.reroll-main {
+  overflow:visible !important;
+}
+
+.salvage-main > div:first-child,
+.reroll-main > div:first-child,
+#upgrade-item-list > .upgrade-row > div:first-child,
+#overgear-item-list > .overgear-card > div:first-child,
+#overgear-gamble-list > .overgear-card > div:first-child {
+  overflow:visible !important;
+}
+
+.salvage-row:hover .salvage-stats,
+.salvage-row:focus-within .salvage-stats,
+.salvage-row.salvage-expanded .salvage-stats,
+.reroll-row:hover .reroll-stats,
+.reroll-row:focus-within .reroll-stats,
+.reroll-row.reroll-selected .reroll-stats {
+  display:block !important;
+  position:static !important;
+  clear:both !important;
+  margin-top:10px !important;
+  padding-top:10px !important;
+  max-height:260px !important;
+  overflow:auto !important;
+  border-top:1px solid var(--border) !important;
+  background:rgba(0,0,0,0.18) !important;
+  line-height:1.45 !important;
+  font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
+  z-index:auto !important;
+}
+
+.salvage-stats,
+.reroll-stats {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  white-space:normal !important;
+  overflow-wrap:break-word !important;
+}
+
+@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
+  #bs-reroll-list > .reroll-row,
+  #salvage-list > .salvage-row,
+  #upgrade-item-list > .upgrade-row,
+  #overgear-item-list > .overgear-card,
+  #overgear-gamble-list > .overgear-card {
+    min-height:max(98px, calc(var(--ui-font-size) * 5.4)) !important;
+    overflow:visible !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -13307,6 +13383,82 @@ function installMobileGearListFix() {
     max-width:none !important;
     min-width:0 !important;
     justify-self:stretch !important;
+  }
+}
+
+
+/* FINAL EQUIPMENT STATS VISIBILITY FIX ---------------------------------
+   Keep equipment cards tall/readable and let stat previews show on hover
+   or click without clipping behind adjacent rows. */
+#bs-reroll-list > .reroll-row,
+#salvage-list > .salvage-row,
+#upgrade-item-list > .upgrade-row,
+#overgear-item-list > .overgear-card,
+#overgear-gamble-list > .overgear-card {
+  height:auto !important;
+  min-height:max(92px, calc(var(--ui-font-size) * 5.1)) !important;
+  overflow:visible !important;
+  contain:none !important;
+}
+
+#bs-reroll-list,
+#salvage-list,
+#upgrade-item-list,
+#overgear-item-list,
+#overgear-gamble-list {
+  overflow-x:hidden !important;
+}
+
+.salvage-main,
+.reroll-main {
+  overflow:visible !important;
+}
+
+.salvage-main > div:first-child,
+.reroll-main > div:first-child,
+#upgrade-item-list > .upgrade-row > div:first-child,
+#overgear-item-list > .overgear-card > div:first-child,
+#overgear-gamble-list > .overgear-card > div:first-child {
+  overflow:visible !important;
+}
+
+.salvage-row:hover .salvage-stats,
+.salvage-row:focus-within .salvage-stats,
+.salvage-row.salvage-expanded .salvage-stats,
+.reroll-row:hover .reroll-stats,
+.reroll-row:focus-within .reroll-stats,
+.reroll-row.reroll-selected .reroll-stats {
+  display:block !important;
+  position:static !important;
+  clear:both !important;
+  margin-top:10px !important;
+  padding-top:10px !important;
+  max-height:260px !important;
+  overflow:auto !important;
+  border-top:1px solid var(--border) !important;
+  background:rgba(0,0,0,0.18) !important;
+  line-height:1.45 !important;
+  font-size:max(12px, calc(var(--ui-font-size) * 0.70)) !important;
+  z-index:auto !important;
+}
+
+.salvage-stats,
+.reroll-stats {
+  width:100% !important;
+  max-width:100% !important;
+  box-sizing:border-box !important;
+  white-space:normal !important;
+  overflow-wrap:break-word !important;
+}
+
+@media (max-width:700px) and (orientation:portrait) and (pointer:coarse) {
+  #bs-reroll-list > .reroll-row,
+  #salvage-list > .salvage-row,
+  #upgrade-item-list > .upgrade-row,
+  #overgear-item-list > .overgear-card,
+  #overgear-gamble-list > .overgear-card {
+    min-height:max(98px, calc(var(--ui-font-size) * 5.4)) !important;
+    overflow:visible !important;
   }
 }
 
