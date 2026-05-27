@@ -2097,6 +2097,20 @@ body.chaos-active #map-panel .subzone-row,
     </div>
   </div>
 
+  <!-- CLASS ADVANCEMENT CONFIRM DIALOG -->
+  <div id="adv-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:410;align-items:center;justify-content:center;padding:14px;">
+    <div style="background:#0d0d0d;border:1px solid #aa8833;padding:18px;max-width:560px;width:min(96vw,560px);max-height:86vh;overflow:auto;box-shadow:0 12px 36px rgba(0,0,0,0.85);">
+      <div id="adv-confirm-title" style="font-size:14px;font-weight:bold;color:#ffcc66;margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;">CLASS ADVANCEMENT</div>
+      <div id="adv-confirm-identity" style="font-size:11px;color:#e8e8e8;line-height:1.55;margin-bottom:10px;"></div>
+      <div id="adv-confirm-skills" style="font-size:10px;color:#aaaaaa;line-height:1.55;margin-bottom:12px;border-top:1px solid #2a2a2a;border-bottom:1px solid #2a2a2a;padding:9px 0;"></div>
+      <div style="font-size:10px;color:#ccaa66;line-height:1.45;margin-bottom:14px;">All allocated skill points will be refunded. This choice is permanent unless you use a Class Reset Scroll.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+        <button id="adv-confirm-no" onclick="hideClassAdvancementConfirm()" style="background:#000;border:1px solid #383838;color:#e8e8e8;font-family:inherit;font-size:10px;padding:7px 16px;cursor:pointer;letter-spacing:1px;">CANCEL</button>
+        <button id="adv-confirm-yes" onclick="confirmPendingClassAdvancement()" style="background:#1a1400;border:1px solid #aa8833;color:#ffcc44;font-family:inherit;font-size:10px;padding:7px 16px;cursor:pointer;letter-spacing:1px;">CONFIRM ADVANCEMENT</button>
+      </div>
+    </div>
+  </div>
+
   <!-- LOG -->
   <div id="log-container">
     <div class="log-header">
@@ -2765,7 +2779,7 @@ function effectiveCooldown(baseCd, skillKey) {
 
 const ACTIVE_SKILL_POINT_CAP = 20;
 const STARTING_SKILL_POINTS = 1;
-const SKILL_POINT_AWARD_LEVEL_CAP = 100;
+const SKILL_POINT_AWARD_LEVEL_CAP = 50; // Total earned skill points are capped at 50; Lv51-100 do not award skill points.
 function grantsSkillPointAtLevel(level) {
   return (Number(level) || 0) <= SKILL_POINT_AWARD_LEVEL_CAP;
 }
@@ -2896,7 +2910,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Swordmaster', identity:'Slow precision crits, guarded counters, and high commitment blade skills.',
       passives:{
         innerfocus:{name:'Inner Focus',desc:'Attack interval +1.0s. Bonus attack speed is reduced, CDR becomes attack delay, and crit damage scales with current attack interval.',enabled:true},
-        measuredguard:{name:'Measured Guard',desc:'Gain damage reduction from slower attack intervals. While not attacking, incoming hits may trigger a 50% damage counter.',enabled:true}
+        measuredguard:{name:'Measured Guard',desc:'Gain damage reduction from slower attack intervals. While not attacking, incoming hits may trigger a 50% damage counter with up to 50% counter chance.',enabled:true}
       },
       skills:{
         shieldbash:{name:'Iai Counter',desc:'2s counter stance, then delayed high-damage strike. Reduces damage taken while preparing.',mpCost:20,cooldown:40000,enabled:false,skillPts:0},
@@ -3054,16 +3068,70 @@ function getBaseClassKit(cls) {
     skills:{ fireball:{name:'Fireball',desc:'AOE burst — base 40→200 dmg + INT scaling, full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce between targets — stronger INT scaling',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; stronger INT scaling',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore 10→40% max MP + INT scaling',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack + INT scaling",mpCost:60,cooldown:30000,enabled:false,skillPts:0} }
   };
 }
+
+function advancementSkillListHtml(adv) {
+  return Object.entries(adv?.skills || {}).map(([slot, sk]) => {
+    const baseName = getBaseClassKit(G.playerClass || 'wizard')?.skills?.[slot]?.name || slot;
+    return `<div style="margin:3px 0;"><span style="color:#e8e8e8;">${escapeHtml(sk.name)}</span> <span style="color:#666;">replaces</span> ${escapeHtml(baseName)}</div>`;
+  }).join('');
+}
+function showClassAdvancementConfirm(advId) {
+  const adv = CLASS_ADVANCEMENTS[G.playerClass || '']?.[advId];
+  if (!adv) { log('Invalid class advancement.', 'system'); return; }
+  G._pendingClassAdvancement = advId;
+  const overlay = document.getElementById('adv-confirm-overlay');
+  const title = document.getElementById('adv-confirm-title');
+  const identity = document.getElementById('adv-confirm-identity');
+  const skills = document.getElementById('adv-confirm-skills');
+  if (!overlay || !title || !identity || !skills) {
+    applyClassAdvancementConfirmed(advId);
+    return;
+  }
+  title.textContent = `Advance to ${adv.name}?`;
+  identity.innerHTML = `<b style="color:#ffcc66;">Core identity:</b> ${escapeHtml(adv.identity)}`;
+  const passiveText = Object.values(adv.passives || {}).map(p => `<div style="margin:3px 0;"><span style="color:#d8c7ff;">${escapeHtml(p.name)}</span> — ${escapeHtml(p.desc)}</div>`).join('');
+  skills.innerHTML = `<div style="color:#ffcc66;margin-bottom:5px;letter-spacing:1px;text-transform:uppercase;">New Passives</div>${passiveText}<div style="color:#ffcc66;margin:9px 0 5px;letter-spacing:1px;text-transform:uppercase;">Replacement Skills</div>${advancementSkillListHtml(adv)}`;
+  overlay.style.display = 'flex';
+}
+function hideClassAdvancementConfirm() {
+  const overlay = document.getElementById('adv-confirm-overlay');
+  if (overlay) overlay.style.display = 'none';
+  G._pendingClassAdvancement = null;
+}
+function confirmPendingClassAdvancement() {
+  const advId = G._pendingClassAdvancement;
+  hideClassAdvancementConfirm();
+  if (advId) applyClassAdvancementConfirmed(advId);
+}
+function activeBuffName(skillKey, fallback) {
+  return G.skills?.[skillKey]?.name || fallback;
+}
+function buffIconCode(name, fallback) {
+  const cleaned = String(name || fallback || '').replace(/[^A-Za-z ]/g,'').trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return cleaned.slice(0,2).toUpperCase() || String(fallback || '').slice(0,2).toUpperCase();
+}
+
 function applyClassAdvancement(advId) {
   const adv = CLASS_ADVANCEMENTS[G.playerClass || '']?.[advId];
   if (!adv) { log('Invalid class advancement.', 'system'); return; }
   if (G.level < 50) { log('Class Advancement unlocks at Lv50.', 'system'); return; }
   if (G.classAdvancement) { log(`Already advanced as ${currentAdvancementDef()?.name || G.classAdvancement}. Use a Class Reset Scroll first.`, 'system'); return; }
-  const skillsText = Object.entries(adv.skills).map(([slot,sk]) => `• ${sk.name} replaces ${slot}`).join('\n');
-  if (!confirm(`Advance to ${adv.name}?\n\n${adv.identity}\n\n${skillsText}\n\nThis choice is permanent unless you use a Class Reset Scroll.`)) return;
+  showClassAdvancementConfirm(advId);
+  return;
+}
+function applyClassAdvancementConfirmed(advId) {
+  const adv = CLASS_ADVANCEMENTS[G.playerClass || '']?.[advId];
+  if (!adv) { log('Invalid class advancement.', 'system'); return; }
+  if (G.level < 50) { log('Class Advancement unlocks at Lv50.', 'system'); return; }
+  if (G.classAdvancement) { log(`Already advanced as ${currentAdvancementDef()?.name || G.classAdvancement}. Use a Class Reset Scroll first.`, 'system'); return; }
   const oldSkills = G.skills || {};
+  let refundedPoints = 0;
+  for (const v of Object.values(oldSkills)) refundedPoints += clampSkillPointValue(v?.skillPts || 0);
+  if (refundedPoints > 0) G.skillPoints = Math.max(0, (G.skillPoints || 0) + refundedPoints);
   const newSkills = {};
-  for (const [k,v] of Object.entries(adv.skills)) newSkills[k] = cloneSkillObj(v, oldSkills[k]);
+  for (const [k,v] of Object.entries(adv.skills)) newSkills[k] = cloneSkillObj(v);
   const oldPassives = G.passives || {};
   const newPassives = {};
   for (const [k,v] of Object.entries(adv.passives)) newPassives[k] = clonePassiveObj(v, oldPassives[k]);
@@ -3071,7 +3139,10 @@ function applyClassAdvancement(advId) {
   G.skills = newSkills;
   G.passives = newPassives;
   G.skillCooldowns = {};
-  log(`Class Advancement applied: ${adv.name}`, 'system');
+  G.pendingSkillPoint = G.skillPoints > 0;
+  normalizeSkillPointEntitlement();
+  updateDerived();
+  log(`Class Advancement applied: ${adv.name}${refundedPoints ? ` — refunded ${refundedPoints} skill point${refundedPoints!==1?'s':''}` : ''}`, 'system');
   renderSkills(); renderStats(); saveGame(false);
 }
 function resetToBaseClassFromAdvancement(refundSkills=true) {
@@ -3106,7 +3177,7 @@ function renderClassAdvancementChoices(container) {
   if (G.level < 50) {
     const locked = document.createElement('div');
     locked.className = 'skill-card';
-    locked.innerHTML = `<div class="skill-info"><div class="skill-name">Locked</div><div class="skill-desc">Class Advancement unlocks at Lv50.</div></div>`;
+    locked.innerHTML = `<div class="skill-info"><div class="skill-name">Locked</div><div class="skill-desc">Class Advancement unlocks at Lv50. Skill points stop being awarded after Lv50.</div></div>`;
     wrap.appendChild(locked);
     container.appendChild(wrap);
     return;
@@ -3128,7 +3199,7 @@ function renderClassAdvancementChoices(container) {
     btn.type = 'button';
     btn.className = 'skill-card';
     btn.style.cssText = 'width:100%;text-align:left;cursor:pointer;border-color:#554422;';
-    btn.innerHTML = `<div class="skill-info"><div class="skill-name">${adv.name}</div><div class="skill-desc"><b>Identity:</b> ${adv.identity}<br><b>New skills:</b> ${skillList}</div><div class="skill-cost">Click to preview and confirm advancement.</div></div>`;
+    btn.innerHTML = `<div class="skill-info"><div class="skill-name">${adv.name}</div><div class="skill-desc"><b>Identity:</b> ${adv.identity}<br><b>New skills:</b> ${skillList}</div><div class="skill-cost">Click to preview and confirm advancement. Allocated skill points will be refunded.</div></div>`;
     btn.addEventListener('click', () => applyClassAdvancement(advId));
     wrap.appendChild(btn);
   }
@@ -3275,7 +3346,7 @@ function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now())
     const pct = Math.min(0.35, interval * 0.08);
     const old = dmg; dmg = Math.ceil(dmg * (1-pct));
     if (old > dmg) log(`Measured Guard reduces damage by ${Math.round(pct*100)}%`, 'dmgtaken');
-    const chance = Math.min(25, interval * 5);
+    const chance = Math.min(50, interval * 10);
     if (Math.random()*100 < chance && monster && monster.hp > 0) {
       const counter = Math.round(calcDamage() * 0.5);
       dealRawAdvancementDamage(monster, counter, ts, 'Measured Guard Counter');
@@ -4431,8 +4502,8 @@ function updatePlayerStatusIcons(now=fxNow()) {
   if (!G.started || G.zone === 'town' || G.monsters.length === 0) { el.innerHTML = ''; return; }
   const icons = [];
   if ((G.combat?.dodgeIframeUntil || 0) > now) icons.push(playerStatusIcon('DG', '#bfefff', playerStatusPctFromUntil(G.combat.dodgeIframeUntil, G.combat.dodgeStartedAt, DODGE_IFRAME_MS, now), 'Dodge: invulnerable', 'buff'));
-  if ((G.combat?.warCryUntil || 0) > now) icons.push(playerStatusIcon('WC', '#ffcc55', playerStatusPctFromUntil(G.combat.warCryUntil, G.combat.warCryStartedAt, 10000, now), 'War Cry damage buff', 'buff'));
-  if ((G.combat?.fortifyUntil || 0) > now) icons.push(playerStatusIcon('FT', '#88cc99', playerStatusPctFromUntil(G.combat.fortifyUntil, G.combat.fortifyStartedAt, 6000, now), 'Fortify damage reduction', 'buff'));
+  if ((G.combat?.warCryUntil || 0) > now) icons.push(playerStatusIcon(buffIconCode(activeBuffName('warcry','War Cry'),'WC'), '#ffcc55', playerStatusPctFromUntil(G.combat.warCryUntil, G.combat.warCryStartedAt, 10000, now), `${activeBuffName('warcry','War Cry')} damage buff`, 'buff'));
+  if ((G.combat?.fortifyUntil || 0) > now) icons.push(playerStatusIcon(buffIconCode(activeBuffName('fortify','Fortify'),'FT'), '#88cc99', playerStatusPctFromUntil(G.combat.fortifyUntil, G.combat.fortifyStartedAt, 6000, now), `${activeBuffName('fortify','Fortify')} damage reduction`, 'buff'));
   if ((G.potionShield || 0) > 0) {
     const maxShield = Math.max(1, G.potionShieldMax || G.potionShield || 1);
     icons.push(playerStatusIcon('SH', '#99ee99', Math.max(10, Math.min(100, (G.potionShield / maxShield) * 100)), 'Potion shield', 'buff'));
@@ -8503,7 +8574,7 @@ function gameTick(ts) {
           if (isFortifyActive(ts)) {
             const fortifyReduction = Math.min(0.75, (G.combat.fortifyPct || 50) / 100);
             mdmg = Math.ceil(mdmg * (1 - fortifyReduction));
-            log(`Fortify reduces incoming damage by ${Math.round(fortifyReduction*100)}% to ${fmtNum(mdmg)}`, 'dmgtaken');
+            log(`${activeBuffName('fortify','Fortify')} reduces incoming damage by ${Math.round(fortifyReduction*100)}% to ${fmtNum(mdmg)}`, 'dmgtaken');
           }
           mdmg = applyBattleHardenedReduction(mdmg);
           mdmg = applyGeneralIncomingDamageReduction(mdmg);
@@ -11006,7 +11077,7 @@ function updateCharacterStatBreakdowns() {
   if (cls === 'rogue') dmgLines.push(`Rogue AGI scaling: ${agi.total} AGI (${agi.base} allocated + ${agi.equip} equipment) × 0.35 => +${Math.floor(agi.total*0.35)}`);
   if (cls === 'wizard') dmgLines.push(`Wizard INT scaling: ${int_.total} INT (${int_.base} allocated + ${int_.equip} equipment) × 0.45 => +${Math.floor(int_.total*0.45)}`);
   dmgLines.push(`Base damage total: ${calcBaseDamage()}`);
-  if (isWarCryActive()) dmgLines.push(`War Cry: +${Math.round(G.combat.warCryPct || 0)}% => ${Math.round(calcBaseDamage() * (1 + (G.combat.warCryPct || 0)/100))}`);
+  if (isWarCryActive()) dmgLines.push(`${activeBuffName('warcry','War Cry')}: +${Math.round(G.combat.warCryPct || 0)}% => ${Math.round(calcBaseDamage() * (1 + (G.combat.warCryPct || 0)/100))}`);
   dmgLines.push(`Final shown damage: ${calcDamage()}`);
   if (cls === 'warrior' && G.passives?.battlehard?.enabled && (G.combat?.battleHardenedStacks || 0) > 0) dmgLines.push(`Battle Hardened: ${G.combat.battleHardenedStacks} stack(s) × 5% incoming damage reduction`);
   setCharacterStatTip('s-dmg', dmgLines);
@@ -11094,8 +11165,8 @@ function renderStats() {
     const baseDmg = calcBaseDamage();
     const buffedDmg = calcDamage();
     const secs = Math.max(0, Math.ceil((G.combat.warCryUntil - performance.now()) / 1000));
-    dmgEl.innerHTML = `${buffedDmg} <span style="color:#ffcc55">(+${Math.round(G.combat.warCryPct)}% War Cry, ${secs}s)</span>`;
-    dmgEl.title = `Base damage ${baseDmg}; War Cry buffed damage ${buffedDmg}`;
+    dmgEl.innerHTML = `${buffedDmg} <span style="color:#ffcc55">(+${Math.round(G.combat.warCryPct)}% ${activeBuffName('warcry','War Cry')}, ${secs}s)</span>`;
+    dmgEl.title = `Base damage ${baseDmg}; ${activeBuffName('warcry','War Cry')} buffed damage ${buffedDmg}`;
   } else {
     dmgEl.textContent = calcDamage();
     dmgEl.title = '';
@@ -11458,9 +11529,84 @@ function executeDamageThreshold() {
   return hasMythicMod('executioner') ? 50 : 30;
 }
 
+function scaledSkillPreviewDamage(raw, k) {
+  return fmtNum(Math.max(0, Math.round((Number(raw) || 0) * skillPowerFactor(k))));
+}
+function advancementSkillDamagePreview(k) {
+  const adv = currentAdvancementId();
+  if (!adv) return '';
+  const str=effStat('str'), agi=effStat('agi'), int_=effStat('int'), base=calcDamage();
+  const name = G.skills?.[k]?.name || k;
+  const lvl = activeSkillLevel(k);
+  const pf = Math.round(skillPowerFactor(k)*100);
+  const scaled = (raw) => scaledSkillPreviewDamage(raw, k);
+  const line = (txt) => `${name} Lv${lvl}: ${txt}`;
+  if (adv==='swordmaster') {
+    if (k==='shieldbash') return line(`~${scaled(base*(1.5+calcAtkInterval()*0.5)+str*3)} dmg after 2s counter stance; 15% damage reduction while preparing`);
+    if (k==='whirlwind') return line(`~${scaled(base+str*2)} dmg to all enemies; no AoE falloff`);
+    if (k==='warcry') return line(`+${Math.min(40,15+str*0.05).toFixed(0)}% damage for 8s`);
+    if (k==='fortify') return line(`${Math.min(35,25+effStat('vit')*0.03).toFixed(0)}% damage reduction for 6s; next crit empowered`);
+    if (k==='execute') return line(`~${scaled((base*1.2+str*2)*(calcCritDamage()/100))} guaranteed crit dmg`);
+  }
+  if (adv==='berserker') {
+    if (k==='shieldbash') return line(`~${scaled(base*1.8+str*2)} dmg; applies Cracked Armor`);
+    if (k==='whirlwind') return line(`~${scaled(base*0.45+str*0.75)} dmg per hit per enemy; ${G.hp/G.maxHp<=0.4?5:4} hits`);
+    if (k==='fortify') return line(`8s frenzy: attack speed/damage boost; drains 5% Max HP per second`);
+    if (k==='execute') { const enemyMissing=G.monsters?.[0]?1-G.monsters[0].hp/Math.max(1,G.monsters[0].maxHp):0; const selfMissing=1-G.hp/Math.max(1,G.maxHp); return line(`~${scaled((base*2.2+str*3)*(1+enemyMissing)*(1+selfMissing/2))} dmg vs current target state`); }
+  }
+  if (adv==='juggernaut') {
+    if (k==='shieldbash') return line(`~${scaled(base*1.2+G.maxHp*0.06+effStat('vit')*2)} dmg + stun/reset`);
+    if (k==='whirlwind') return line(`~${scaled(base+G.maxHp*0.04+effStat('vit')*1.5)} dmg to all enemies`);
+    if (k==='warcry') return line(`8s: +${Math.min(35,20+effStat('vit')*0.02).toFixed(0)}% Max HP scaling and ${Math.min(20,10+effStat('vit')*0.01).toFixed(0)}% DR`);
+    if (k==='execute') return line(`~${scaled(base*2+G.maxHp*0.10+effStat('vit')*3)} dmg; costs ${fmtNum(Math.round(G.maxHp*0.10))} HP`);
+  }
+  if (adv==='assassin') {
+    if (k==='cheapshot') return line(`~${scaled(base*1.6+agi*2)} dmg; next Assassinate +${Math.min(40,25+agi*0.03).toFixed(0)}%`);
+    if (k==='smokebomb') return line(`3s dodge window; next damaging skill +${Math.min(80,40+agi*0.10).toFixed(0)}% Crit Damage`);
+    if (k==='flurry') return line(`~${scaled(base*0.60+agi*0.5)} dmg x4; crits reduce Assassinate cooldown`);
+    if (k==='marktarget') return line(`Contract lasts up to ${(Math.min(12000,8000+agi*5)/1000).toFixed(1)}s; first Assassinate hit refreshes its cooldown`);
+    if (k==='assassinate') return line(`~${scaled((skillBaseDamage('assassinate',skillPts20(k))+base*(2+Math.max(0,agi-str)*0.05))*(1+calcCritDamage()*0.5/100))} dmg after 1.5s cast`);
+  }
+  if (adv==='nightshade') {
+    if (k==='cheapshot') return line(`~${scaled(base*0.8+agi*1.2)} dmg; applies 3 poison stacks (${fmtNum(poisonDamagePerStack())}/stack/s)`);
+    if (k==='smokebomb') return line(`delays enemy attacks; applies 5 poison stacks (${fmtNum(poisonDamagePerStack())}/stack/s)`);
+    if (k==='flurry') return line(`~${scaled(base*0.25+agi*0.25)} dmg x5; applies 1 poison stack per hit`);
+    if (k==='marktarget') return line(`8s: basic attacks and damaging skills apply +1 poison stack`);
+    if (k==='assassinate') { const stacks=G.monsters?.[0]?.poisonStacks||0; return line(`3s cast; consumes all poison stacks. Current target preview: ~${fmtNum(stacks*poisonDamagePerStack())} dmg at ${stacks} stacks`); }
+  }
+  if (adv==='flamemage') {
+    if (k==='fireball') return line(`~${scaled(base*2+int_*3)} fire dmg to target; applies Burn (${fmtNum(burnDamagePerStack())}/stack/s)`);
+    if (k==='chainlightning') return line(`~${scaled(base*0.25+int_*0.8)} dmg per 0.5s tick to all enemies for 5s; each hit applies Burn`);
+    if (k==='frostnova') return line(`6s Firewall: 20% damage reduction; attackers gain 1 Burn stack`);
+    if (k==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP and boosts MP regen for 5s`);
+    if (k==='chronosphere') return line(`8s Overheat: more fire damage, +1 Burn stack, stronger explosions`);
+  }
+  if (adv==='frostmage') {
+    if (k==='fireball') return line(`~${scaled(base*1.8+int_*3)} frost dmg; applies 1 Frostbite stack`);
+    if (k==='chainlightning') return line(`~${scaled(base*0.35+int_)} dmg per second for 5s; applies Frostbite every second`);
+    if (k==='frostnova') return line(`existing Frost Nova scaling; applies AoE frost control`);
+    if (k==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP; all enemies attack interval +2.0s for 5s`);
+    if (k==='chronosphere') return line(`6s: 35% damage reduction and ${fmtNum(Math.round(G.maxMp*0.35))} shield`);
+  }
+  if (adv==='lightningmage') {
+    if (k==='fireball') return line(`~${scaled(base*1.6+int_*2.8)} lightning dmg`);
+    if (k==='chainlightning') return line(`~${scaled(base*0.75+int_*1.4)} dmg per enemy bounce; up to 14 bounces; player bounces restore MP`);
+    if (k==='frostnova') return line(`~${scaled(base*0.9+int_*1.8)} AoE dmg; interrupts and delays enemies`);
+    if (k==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.22+int_*2.0+100))} MP; cooldown recovery bonus for 5s`);
+    if (k==='chronosphere') return line(`8s Static Field: enemy damage restores MP equal to 30% of damage dealt`);
+  }
+  if (adv==='arcanist') {
+    if (k==='fireball') return line(`~${scaled(base*1.4+int_*2.5)} Arcane dmg; can crit`);
+    if (k==='chainlightning') { const hp=G.monsters?.[0]?.hp||0; return line(`~${scaled(base*0.5+int_*2.0)} base AoE dmg + ${fmtNum(Math.round(hp*0.05))} current-HP bonus on current target; can crit except HP bonus`); }
+    if (k==='frostnova') return line(`~${scaled(base*1.4+int_*3.0)} AoE dmg; enemy attack interval +2.0s for 5s; can crit`);
+    if (k==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP; basic attack interval becomes 0.6s for 8s`);
+    if (k==='chronosphere') return line(`6s Chrono Singularity: delays incoming damage`);
+  }
+  return `${name} Lv${lvl}: ${pf}% effect power`;
+}
 function skillDamagePreview(k) {
   if (G.classAdvancement) {
-    return `Lv${activeSkillLevel(k)}/${ACTIVE_SKILL_POINT_CAP}: ${Math.round(skillPowerFactor(k)*100)}% effect power · ${Math.round(skillEconomyFactor(k)*100)}% MP/CD economy`;
+    return advancementSkillDamagePreview(k);
   }
   const str=effStat('str'), agi=effStat('agi'), int_=effStat('int');
   const base=calcDamage();
@@ -11607,19 +11753,33 @@ function wireSkillControl(el, handler) {
 }
 function wireSkillHoldControl(el, handler) {
   if (!el) return;
-  const HOLD_DELAY_MS = 420;
-  const HOLD_REPEAT_MS = 190;
+  const HOLD_DELAY_MS = 650;
+  const HOLD_REPEAT_MS = 650;
   let holdTimer = null;
   let repeatTimer = null;
   let didRepeat = false;
   let pointerId = null;
+  let holdUpgradeCount = 0;
 
   const clearHold = () => {
     if (holdTimer) clearTimeout(holdTimer);
     if (repeatTimer) clearInterval(repeatTimer);
+    if (holdUpgradeCount > 0) {
+      const key = el?.dataset?.upgrade;
+      const skill = key && G.skills ? G.skills[key] : null;
+      const name = skill?.name || 'Skill';
+      const pts = skill ? clampSkillPointValue(skill.skillPts || 0) : 0;
+      log(`Skill hold upgrade: ${name} +${holdUpgradeCount} pts${skill ? ` → ${pts}/${ACTIVE_SKILL_POINT_CAP} pts` : ''}`, 'system');
+    }
     holdTimer = null;
     repeatTimer = null;
     pointerId = null;
+    holdUpgradeCount = 0;
+  };
+
+  const runHeldHandler = () => {
+    const didUpgrade = handler({ held:true }) !== false;
+    if (didUpgrade) holdUpgradeCount++;
   };
 
   el.addEventListener('pointerdown', e => {
@@ -11629,12 +11789,14 @@ function wireSkillHoldControl(el, handler) {
     try { el.setPointerCapture(pointerId); } catch (_) {}
     holdTimer = setTimeout(() => {
       didRepeat = true;
-      handler();
+      runHeldHandler();
       repeatTimer = setInterval(() => {
         if (el.disabled || G.skillPoints <= 0) { clearHold(); return; }
-        handler();
+        runHeldHandler();
       }, HOLD_REPEAT_MS);
     }, HOLD_DELAY_MS);
+    document.addEventListener('pointerup', clearHold, { once:true });
+    document.addEventListener('pointercancel', clearHold, { once:true });
   });
 
   ['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(evt => {
@@ -11645,7 +11807,7 @@ function wireSkillHoldControl(el, handler) {
     e.preventDefault();
     e.stopPropagation();
     if (didRepeat) { didRepeat = false; return; }
-    handler();
+    handler({ held:false });
   });
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -11688,8 +11850,11 @@ function updateSkillsRuntimeUI() {
     if (cd) cd.innerHTML = skillCdLabel(k, v);
     const eff = document.getElementById(`skill-effcd-${k}`);
     if (eff) eff.innerHTML = skillEffCdLabel(k, v);
+    const currentPreview = skillDamagePreview(k);
     const prev = document.getElementById(`skill-preview-${k}`);
-    if (prev) prev.textContent = skillDamagePreview(k);
+    if (prev) prev.textContent = currentPreview;
+    const card = document.querySelector(`[data-skill="${k}"]`);
+    if (card) card.title = currentPreview || v.desc || v.name;
     const pts = document.getElementById(`skill-pts-${k}`);
     if (pts) pts.textContent = `Pts: ${clampSkillPointValue(v.skillPts || 0)}/${ACTIVE_SKILL_POINT_CAP}`;
   }
@@ -11763,6 +11928,7 @@ function renderSkills() {
       ? `<span style="color:var(--red)">${(cdRemain/1000).toFixed(1)}s</span>`
       : `<span style="color:#446644">READY</span>`;
     const preview = skillDamagePreview(k);
+    div.title = preview || v.desc || v.name;
     const sp = clampSkillPointValue(v.skillPts || 0);
     const canUpgrade = G.skillPoints > 0 && sp < ACTIVE_SKILL_POINT_CAP;
     div.innerHTML=`
@@ -11782,23 +11948,28 @@ function renderSkills() {
     `;
     wireSkillControl(div.querySelector(`#stog-${k}`), () => toggleSkill(k));
     wireSkillControl(div.querySelector('[data-cast]'), () => requestManualSkillCast(k));
-    if (canUpgrade) wireSkillHoldControl(div.querySelector('[data-upgrade]'), () => upgradeSkill(k));
+    if (canUpgrade) wireSkillHoldControl(div.querySelector('[data-upgrade]'), (ctx) => upgradeSkill(k, ctx));
     aList.appendChild(div);
   }
   renderClassAdvancementChoices(aList);
   G._skillRenderSig = skillPanelSignature();
 }
 
-function upgradeSkill(k) {
-  if (G.skillPoints <= 0) return;
-  if (!G.skills[k]) return;
+function upgradeSkill(k, opts={}) {
+  if (G.skillPoints <= 0) return false;
+  if (!G.skills[k]) return false;
   const cur = clampSkillPointValue(G.skills[k].skillPts || 0);
-  if (cur >= ACTIVE_SKILL_POINT_CAP) { log(`${G.skills[k].name} is capped at ${ACTIVE_SKILL_POINT_CAP} pts`, 'system'); renderSkills(); return; }
+  if (cur >= ACTIVE_SKILL_POINT_CAP) {
+    if (!opts.held) log(`${G.skills[k].name} is capped at ${ACTIVE_SKILL_POINT_CAP} pts`, 'system');
+    renderSkills();
+    return false;
+  }
   G.skills[k].skillPts = cur + 1;
   G.skillPoints--;
   if (G.skillPoints <= 0) G.pendingSkillPoint = false;
-  log(`Skill upgraded: ${G.skills[k].name} → ${G.skills[k].skillPts}/${ACTIVE_SKILL_POINT_CAP} pts`);
+  if (!opts.held) log(`Skill upgraded: ${G.skills[k].name} → ${G.skills[k].skillPts}/${ACTIVE_SKILL_POINT_CAP} pts`);
   renderSkills();
+  return true;
 }
 
 function togglePassive(k) {
@@ -16092,6 +16263,10 @@ window.addEventListener('beforeunload', () => { if (G.started) saveGame(false); 
 // Initialize class selection listeners
 // Wire swap class button
 document.getElementById('swap-class-btn').addEventListener('click', swapClass);
+document.getElementById('adv-confirm-overlay')?.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'adv-confirm-overlay') hideClassAdvancementConfirm();
+});
+
 document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
   document.getElementById('swap-confirm-overlay').style.display = 'none';
 });
