@@ -2913,11 +2913,11 @@ const CLASS_ADVANCEMENTS = {
         measuredguard:{name:'Measured Guard',desc:'Gain damage reduction from slower attack intervals. While not attacking, incoming hits may trigger a 50% damage counter with up to 50% counter chance.',enabled:true}
       },
       skills:{
-        shieldbash:{name:'Iai Counter',desc:'2s counter stance, then delayed high-damage strike. Reduces damage taken while preparing.',mpCost:20,cooldown:40000,enabled:false,skillPts:0},
+        shieldbash:{name:'Iai Counter',desc:'2s counter stance, then delayed high-damage strike. Reduces damage taken while preparing.',mpCost:20,cooldown:20000,enabled:false,skillPts:0},
         whirlwind:{name:'Crescent Slash',desc:'AOE slash that deals full damage to all enemies with no falloff.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
         warcry:{name:'Quick Sheath',desc:'STR-scaling damage buff.',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
         fortify:{name:'Stillblade Stance',desc:'Defensive stance with damage reduction and empowered next critical strike.',mpCost:30,cooldown:35000,enabled:false,skillPts:0},
-        execute:{name:'Mortal Strike',desc:'Guaranteed critical strike with STR scaling.',mpCost:35,cooldown:15000,enabled:false,skillPts:0}
+        execute:{name:'Mortal Strike',desc:'Guaranteed critical strike with 70% basic-damage scaling and STR scaling.',mpCost:20,cooldown:45000,enabled:false,skillPts:0}
       }
     },
     berserker: {
@@ -2931,7 +2931,7 @@ const CLASS_ADVANCEMENTS = {
         whirlwind:{name:'Blood Cyclone',desc:'AOE multi-hit spin. Gains an extra hit below 40% HP; each hit can lifesteal.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
         warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
         fortify:{name:'Blood Frenzy',desc:'8s offensive state: attack speed and damage, but lose 5% Max HP per second.',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
-        execute:{name:'Guillotine',desc:'Missing-HP execution strike. No guaranteed crit.',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
+        execute:{name:'Guillotine',desc:'Missing-HP execution strike.',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
       }
     },
     juggernaut: {
@@ -3044,6 +3044,23 @@ function hasAdvancement(id) { return currentAdvancementId() === id; }
 function currentAdvancementDef() {
   return CLASS_ADVANCEMENTS[G.playerClass || '']?.[currentAdvancementId() || ''] || null;
 }
+function classDisplayInfo(cls=G.playerClass) {
+  const names = { warrior:'⚔ WARRIOR', rogue:'🗡 ROGUE', wizard:'🔮 WIZARD' };
+  const icons = { warrior:'⚔', rogue:'🗡', wizard:'🔮' };
+  const colors = { warrior:'var(--orange)', rogue:'var(--green)', wizard:'var(--purple)' };
+  const adv = currentAdvancementDef();
+  return {
+    text: adv ? `${icons[cls] || ''} ${adv.name}`.trim().toUpperCase() : (names[cls] || String(cls || '—').toUpperCase()),
+    color: colors[cls] || '#fff'
+  };
+}
+function updateHeaderClass() {
+  const el = document.getElementById('header-class');
+  if (!el) return;
+  const info = classDisplayInfo(G.playerClass);
+  el.textContent = info.text;
+  el.style.color = info.color;
+}
 function cloneSkillObj(obj, oldObj=null) {
   return Object.assign({}, obj, {
     enabled: oldObj ? !!oldObj.enabled : false,
@@ -3143,7 +3160,7 @@ function applyClassAdvancementConfirmed(advId) {
   normalizeSkillPointEntitlement();
   updateDerived();
   log(`Class Advancement applied: ${adv.name}${refundedPoints ? ` — refunded ${refundedPoints} skill point${refundedPoints!==1?'s':''}` : ''}`, 'system');
-  renderSkills(); renderStats(); saveGame(false);
+  updateHeaderClass(); renderSkills(); renderStats(); renderSkillPriority(); renderSkillConditions(); saveGame(false);
 }
 function resetToBaseClassFromAdvancement(refundSkills=true) {
   if (!G.playerClass) return;
@@ -3164,7 +3181,7 @@ function resetToBaseClassFromAdvancement(refundSkills=true) {
   normalizeSkillPointEntitlement();
   updateDerived();
   log(`${oldAdv} reset — returned to basic ${cls.toUpperCase()}.`, 'system');
-  renderSkills(); renderStats(); saveGame(false);
+  updateHeaderClass(); renderSkills(); renderStats(); renderSkillPriority(); renderSkillConditions(); saveGame(false);
 }
 function renderClassAdvancementChoices(container) {
   if (!container) return;
@@ -3437,7 +3454,7 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     else if (k==='whirlwind') { let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+str*2, ts, 'Crescent Slash'); log(`[Crescent Slash] total ${fmtNum(total)} damage`, 'spelldmg'); }
     else if (k==='warcry') { const pct=Math.min(40,15+str*0.05); G.combat.warCryPct=pct; G.combat.warCryUntil=ts+8000; log(`[Quick Sheath] +${pct.toFixed(0)}% damage for 8s`, 'spellcast'); }
     else if (k==='fortify') { G.combat.fortifyPct=Math.min(35,25+effStat('vit')*0.03); G.combat.fortifyUntil=ts+6000; G.combat.stillbladeUntil=ts+6000; log(`[Stillblade Stance] ${G.combat.fortifyPct.toFixed(0)}% damage reduction for 6s`, 'spellcast'); }
-    else if (k==='execute') { const dmg=(base*1.2+str*2)*(calcCritDamage()/100); hitTarget(dmg, 'Mortal Strike'); }
+    else if (k==='execute') { const dmg=(base*0.7+str*2)*(calcCritDamage()/100); hitTarget(dmg, 'Mortal Strike'); }
     else handled=false;
   } else if (adv === 'berserker') {
     if (k==='shieldbash') { dealt=hitTarget(base*1.8+str*2, 'Skullbreaker'); if (target) { target.crackedArmorPct = (G.hp/G.maxHp)<=0.5?15:10; target.crackedArmorUntil=ts+6000; log(`Cracked Armor: target takes +${target.crackedArmorPct}% damage for 6s`, 'spelldmg'); } }
@@ -4814,6 +4831,12 @@ function tagLabel(t) {
   })[t] || t;
 }
 
+function applyEliteTagHpModifiers(hp, tags=[]) {
+  let out = Math.max(1, Math.round(Number(hp) || 1));
+  if (Array.isArray(tags) && tags.includes('REFLECT')) out = Math.max(1, Math.round(out * 0.80));
+  return out;
+}
+
 function formatMonsterName(prefix, baseName, isElite, tags) {
   let html = '';
   if (prefix) html += `${prefix} `;
@@ -5605,6 +5628,7 @@ function spawnRouteEliteSwarm(zc, sourceLabel='Boss tile fallback') {
     const tags = rollEliteTags(maxEliteTags, forceMaxEliteTags);
     let baseHp = Math.round(randi(zc.hp[0], zc.hp[1]) * prefix.hpMult * 2);
     if (G.zone==='abyss') baseHp = Math.round(baseHp * G.abyssDifficulty);
+    baseHp = applyEliteTagHpModifiers(baseHp, tags);
     const shield = tags.includes('SHIELDED') ? Math.round(baseHp * 0.4) : 0;
     const arcaneShield = tags.includes('ARCANE_SHIELDED') ? Math.round(baseHp * 0.4) : 0;
     const dmgMult = prefix.dmgMult * 1.2;
@@ -5934,6 +5958,7 @@ function spawnMonsters() {
     baseHp = Math.round(baseHp * prefix.hpMult);
     if (elite) baseHp = Math.round(baseHp * 2);
     if (G.zone==='abyss') baseHp = Math.round(baseHp * G.abyssDifficulty);
+    baseHp = applyEliteTagHpModifiers(baseHp, tags);
 
     let shield = tags.includes('SHIELDED') ? Math.round(baseHp * 0.4) : 0;
     let arcaneShield = tags.includes('ARCANE_SHIELDED') ? Math.round(baseHp * 0.4) : 0;
@@ -6017,7 +6042,8 @@ function spawnBatCave(zc) {
     const prefix = rollPrefix(true);
     const canElite = prefix.name !== 'Lesser' && i===0 && Math.random()<zc.eliteChance;
     const tags = canElite ? rollEliteTags(1) : [];
-    const baseHp = Math.round(randi(zc.hp[0],zc.hp[1])*prefix.hpMult*(canElite?2:1));
+    let baseHp = Math.round(randi(zc.hp[0],zc.hp[1])*prefix.hpMult*(canElite?2:1));
+    baseHp = applyEliteTagHpModifiers(baseHp, tags);
     let shield=tags.includes('SHIELDED')?Math.round(baseHp*0.4):0; let arcaneShield=tags.includes('ARCANE_SHIELDED')?Math.round(baseHp*0.4):0;
     let atkMin=2000,atkMax=5000;
     if(tags.includes('FAST')){atkMin=1000;atkMax=1000;}
@@ -6046,6 +6072,7 @@ function spawnForbiddenLibrary(zc) {
     const canElite = prefix.name!=='Lesser' && i===0 && Math.random()<zc.eliteChance;
     const tags = canElite ? rollEliteTags(1) : [];
     let baseHp = Math.round(randi(zc.hp[0],zc.hp[1])*0.6*prefix.hpMult*(canElite?2:1));
+    baseHp = applyEliteTagHpModifiers(baseHp, tags);
     let shield=tags.includes('SHIELDED')?Math.round(baseHp*0.4):0; let arcaneShield=tags.includes('ARCANE_SHIELDED')?Math.round(baseHp*0.4):0;
     const dmgMult = 1.8 * prefix.dmgMult * (canElite?1.2:1);
     let atkMin=2000,atkMax=4000;
@@ -6089,6 +6116,7 @@ function spawnWitchCoven(zc) {
   const canElite = prefix.name!=='Lesser' && Math.random()<zc.eliteChance;
   const tags = canElite ? rollEliteTags(2, true) : [];
   let witchHp = Math.round(randi(zc.hp[0],zc.hp[1])*0.6*prefix.hpMult*(canElite?2:1));
+  witchHp = applyEliteTagHpModifiers(witchHp, tags);
   let shield=tags.includes('SHIELDED')?Math.round(witchHp*0.4):0; let arcaneShield=tags.includes('ARCANE_SHIELDED')?Math.round(witchHp*0.4):0;
   const dmgMult = 1.6*prefix.dmgMult*(canElite?1.2:1);
   let atkMin=3000,atkMax=5000;
@@ -6554,6 +6582,7 @@ function spawnAbyssalPortalElite(ts=performance.now()) {
   const prefix = rollPrefix(true);
   const tags = rollEliteTags(zc.maxEliteTags || 1, true);
   let baseHp = Math.round(randi(zc.hp[0], zc.hp[1]) * prefix.hpMult * 2.1);
+  baseHp = applyEliteTagHpModifiers(baseHp, tags);
   const dmgMult = prefix.dmgMult * 1.25;
   let atkMin = tags.includes('FAST') ? 1000 : 1000;
   let atkMax = tags.includes('FAST') ? 1000 : 2000;
@@ -8041,7 +8070,8 @@ function gameTick(ts) {
         if (target.tags && target.tags.includes('REFLECT')) {
           target.reflectBasicHits = (target.reflectBasicHits || 0) + 1;
           if (target.reflectBasicHits % 3 === 0) {
-            const reflected = Math.round(dmg * 0.15);
+            const reflectCap = Math.max(1, Math.floor(G.maxHp * 0.40));
+            const reflected = Math.min(reflectCap, Math.max(0, Math.round(dmg * 0.15)));
             G.hp = Math.max(0, G.hp - reflected);
             applyKitarasqueHeartHeal(reflected);
             log(`Reflect triggers (${target.reflectBasicHits}/3): ${fmtNum(reflected)} dmg reflected`, 'dmgtaken');
@@ -11546,7 +11576,7 @@ function advancementSkillDamagePreview(k) {
     if (k==='whirlwind') return line(`~${scaled(base+str*2)} dmg to all enemies; no AoE falloff`);
     if (k==='warcry') return line(`+${Math.min(40,15+str*0.05).toFixed(0)}% damage for 8s`);
     if (k==='fortify') return line(`${Math.min(35,25+effStat('vit')*0.03).toFixed(0)}% damage reduction for 6s; next crit empowered`);
-    if (k==='execute') return line(`~${scaled((base*1.2+str*2)*(calcCritDamage()/100))} guaranteed crit dmg`);
+    if (k==='execute') return line(`~${scaled((base*0.7+str*2)*(calcCritDamage()/100))} guaranteed crit dmg`);
   }
   if (adv==='berserker') {
     if (k==='shieldbash') return line(`~${scaled(base*1.8+str*2)} dmg; applies Cracked Armor`);
@@ -11708,7 +11738,31 @@ function getLivePassiveDesc(k, v) {
     d = `${base + bonus}% chance to dodge incoming attacks${bonus ? ` (${base}% base + ${bonus}% Hood of Shadows)` : ''}.`;
   }
   if (k==='manashield') d = `Absorbs ${10+Math.floor(G.level/4)}% of incoming damage as MP drain instead of HP loss.`;
-  if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=hasMythicMod('arcanist_crown')?3:5; const suffix=(threshold===1?'st':threshold===2?'nd':threshold===3?'rd':'th'); d = `Every ${threshold}${suffix} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
+  if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=hasMythicMod('arcanist_crown')?3:5; const suffix=(threshold===1?'st':threshold===2?'nd':'th'); d = `Every ${threshold}${suffix} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
+
+  const now = performance.now ? performance.now() : 0;
+  const atkInterval = calcAtkInterval ? calcAtkInterval() : 2;
+  const critDmg = calcCritDamage ? calcCritDamage() : 100;
+  const intStat = effStat ? effStat('int') : 0;
+  const agiStat = effStat ? effStat('agi') : 0;
+  if (k==='innerfocus') d = `Current attack interval ${atkInterval.toFixed(2)}s. Current Crit DMG ${critDmg}%. CDR adds +${calcCDR().toFixed(2)}s attack delay instead of cooldown reduction.`;
+  if (k==='measuredguard') { const dr=Math.min(0.35, atkInterval*0.08); const chance=Math.min(50, atkInterval*10); d = `Current: ${Math.round(dr*100)}% incoming damage reduction. Counter chance ${chance.toFixed(0)}%; counter damage ~${fmtNum(Math.round(calcDamage()*0.5))}.`; }
+  if (k==='ragewithin') { const missingTens=Math.max(0, Math.floor((100 - (G.hp/Math.max(1,G.maxHp))*100)/10)); d = `Current missing-HP tier: ${missingTens}. Basic damage +${missingTens*4}%, attack interval -${(missingTens*0.03).toFixed(2)}s. Floor: 0.3s.`; }
+  if (k==='bloodsurvival') { const hpPct=(G.hp/Math.max(1,G.maxHp))*100; let ls=0; if(hpPct<=10)ls=0.80; else if(hpPct<=80)ls=((80-hpPct)/70)*0.80; if((G.combat.bloodFrenzyUntil||0)>now)ls*=1.25; d = `Current lifesteal: ${(ls*100).toFixed(0)}% of damage dealt. Starts below 80% HP; reaches 80% at 10% HP.`; }
+  if (k==='titanicforce') d = `Basic attacks gain +${fmtNum(Math.round(G.maxHp*0.05))} damage from 5% of Max HP (${fmtNum(G.maxHp)}).`;
+  if (k==='unbreakablebody') { const dr=Math.min(0.40, G.maxHp/10000); d = `Current incoming damage reduction: ${Math.round(dr*100)}% from ${fmtNum(G.maxHp)} Max HP. Cap: 40%.`; }
+  if (k==='deathblowmastery') d = `Assassinate damage +${(critDmg*0.5).toFixed(0)}% from current ${critDmg}% Crit Damage.`;
+  if (k==='vanishstep') { const active=(G.combat.vanishDodgeUntil||0)>now; d = `Dodge chance +5% passively${active ? ' and +30% during current vanish window' : ''}. Current advancement dodge bonus: ${active?35:5}%.`; }
+  if (k==='venomconversion') d = `Poison damage is currently ${fmtNum(poisonDamagePerStack())}/stack/s. Crit Damage bonus and Crit Chance overflow (${Math.max(0, calcRawCritChance()-100).toFixed(1)}%) increase poison damage. Attack interval floor: 0.8s.`;
+  if (k==='toxicveil') { const stacks=G.monsters?.[0]?.poisonStacks||0; d = `Dodge chance +5%. Current target poison DR: ${Math.round(Math.min(0.25, stacks*0.01)*100)}% from ${stacks} stack${stacks!==1?'s':''}. Cap: 25%.`; }
+  if (k==='ignition') d = `Burn deals ${fmtNum(burnDamagePerStack())}/stack/s. At 10 stacks, explosion deals ~${fmtNum(burnDamagePerStack()*20)} fire damage to all enemies.`;
+  if (k==='explosivemana') { const pct=Math.min(0.45,(35+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 75% efficiency. Absorbed damage triggers an explosion for 75% of absorbed damage.`; }
+  if (k==='frostbite') d = `Frost skills apply Frostbite. At 4 stacks: Freeze/interruption. Boss freeze window: 0.7s with a 4s boss cooldown.`;
+  if (k==='icearmor') { const pct=Math.min(0.45,(35+intStat/30)/100); const stacks=G.monsters?.[0]?.frostbiteStacks||0; d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 85% efficiency. Current target Frostbite slow: +${(stacks*0.3).toFixed(1)}s attack interval.`; }
+  if (k==='energyoverload') { const restore=G.maxMp*0.06+intStat*0.45; const casts=G.combat.overloadCasts||0; d = `Every 3rd skill cast is free and restores ~${fmtNum(Math.round(restore))} MP. Casts until next: ${Math.max(0,3-casts)}.`; }
+  if (k==='arcbattery') { const pct=Math.min(0.55,(45+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Cap: 55%.`; }
+  if (k==='arcaneimbuement') d = `Basic attacks gain +${fmtNum(Math.round(calcDamage()*0.35+intStat*1.5))} Arcane damage. Damaging spells can crit at ${calcCritChance()}% Crit Chance.`;
+  if (k==='manaweave') { const pct=Math.min(0.50,(40+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Basic attacks restore ~${fmtNum(Math.round(G.maxMp*0.01+intStat*0.15))} MP; spell crits restore ~${fmtNum(Math.round(G.maxMp*0.03+intStat*0.35))} MP.`; }
   return d;
 }
 
@@ -11753,8 +11807,8 @@ function wireSkillControl(el, handler) {
 }
 function wireSkillHoldControl(el, handler) {
   if (!el) return;
-  const HOLD_DELAY_MS = 650;
-  const HOLD_REPEAT_MS = 650;
+  const HOLD_DELAY_MS = 300;
+  const HOLD_REPEAT_MS = 300;
   let holdTimer = null;
   let repeatTimer = null;
   let didRepeat = false;
@@ -12277,10 +12331,7 @@ function selectClass(cls) {
   G.playerClass=cls; G.classAdvancement=null; G.started=true;
   const screen = document.getElementById('class-select-screen');
   screen.style.cssText = 'display:none';
-  const names={warrior:'⚔ WARRIOR',rogue:'🗡 ROGUE',wizard:'🔮 WIZARD'};
-  const colors={warrior:'var(--orange)',rogue:'var(--green)',wizard:'var(--purple)'};
-  document.getElementById('header-class').textContent=names[cls];
-  document.getElementById('header-class').style.color=colors[cls];
+  updateHeaderClass();
   
   // Initialize class skills (simplified for length)
   if (cls==='warrior') {
@@ -12358,11 +12409,8 @@ function initClassSetup(cls) {
 }
 
 function initClassUI() {
-  const names={warrior:'⚔ WARRIOR',rogue:'🗡 ROGUE',wizard:'🔮 WIZARD'};
-  const colors={warrior:'var(--orange)',rogue:'var(--green)',wizard:'var(--purple)'};
   const cls = G.playerClass;
-  document.getElementById('header-class').textContent = names[cls]||cls;
-  document.getElementById('header-class').style.color = colors[cls]||'#fff';
+  updateHeaderClass();
   loadConfigUI();
   refreshMerchant(); buildBsItemSelect(); buildSalvageSelect();
   renderSkills(); renderPriorityQueue(); renderStats(); renderEquipSlots();
@@ -12951,7 +12999,7 @@ function renderSkillPriority() {
       <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
         <div class="skill-priority-rank" style="font-size:12px;color:#777;min-width:24px;text-align:center;">#${idx+1}</div>
         <div style="min-width:0;">
-          <div class="skill-priority-name" style="font-size:13px;color:#ccaa44;font-weight:bold;line-height:1.35;">${meta?.label || skill.name}</div>
+          <div class="skill-priority-name" style="font-size:13px;color:#ccaa44;font-weight:bold;line-height:1.35;">${escapeHtml(skill?.name || meta?.label || k)}</div>
           <div class="skill-priority-sub" style="font-size:11px;color:#777;line-height:1.35;">${skill.enabled ? 'Enabled' : 'Disabled'} · ${meta?.condLabel || 'Condition applies'}</div>
         </div>
       </div>
@@ -12992,7 +13040,7 @@ function renderSkillConditions() {
     row.style.cssText = 'padding:9px 0;border-bottom:1px solid var(--bg3);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;';
     row.innerHTML = `
       <div style="flex:1;min-width:120px;">
-        <div class="skill-cond-name" style="font-size:13px;color:#ccaa44;font-weight:bold;line-height:1.35;">${meta.label}</div>
+        <div class="skill-cond-name" style="font-size:13px;color:#ccaa44;font-weight:bold;line-height:1.35;">${escapeHtml(v?.name || meta.label || k)}</div>
         <div class="skill-cond-label" style="font-size:11px;color:#888;line-height:1.35;">${meta.condLabel}</div>
       </div>
       <div style="display:flex;align-items:center;gap:4px;">
