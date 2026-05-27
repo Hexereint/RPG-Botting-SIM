@@ -640,6 +640,9 @@ select.config-input { width:auto; cursor:pointer; }
 .flamestealer-channel-bar { height:5px; background:rgba(0,0,0,0.72); border:1px solid rgba(255,136,68,0.22); overflow:hidden; }
 .flamestealer-channel-fill { height:100%; width:0%; background:linear-gradient(90deg, #773111, #ff8844, #ffd0a0); box-shadow:0 0 10px rgba(255,136,68,0.75); transition:width 0.12s linear; }
 .sprite-plinth.channeling { border-color:rgba(255,136,68,0.72); box-shadow:0 0 16px rgba(255,112,45,0.38), inset 0 0 24px rgba(255,136,68,0.09); animation:channelPulse 0.72s ease-in-out infinite alternate; }
+.player-duration-channel { border-color:rgba(190,210,255,0.46); background:rgba(8,12,28,0.72); box-shadow:0 0 12px rgba(160,180,255,0.12), inset 0 0 12px rgba(160,180,255,0.08); }
+.player-duration-fill { background:linear-gradient(90deg, #39446f, #b8c8ff, #ffffff); box-shadow:0 0 10px rgba(184,200,255,0.72); }
+.sprite-plinth.iai-countering { border-color:rgba(190,210,255,0.72); box-shadow:0 0 16px rgba(160,180,255,0.38), inset 0 0 24px rgba(160,180,255,0.09); }
 @keyframes channelPulse { from { filter:brightness(1); } to { filter:brightness(1.38); } }
 #player-hp-fill { background:#cc4444; }
 #player-mp-fill { background:#445588; }
@@ -2131,6 +2134,10 @@ body.chaos-active #map-panel .subzone-row,
               <div class="combat-mini-bar"><div id="player-hp-fill" style="width:100%"></div></div>
               <div class="combat-mini-bar"><div id="player-mp-fill" style="width:100%"></div></div>
             </div>
+            <div id="player-duration-channel" class="flamestealer-channel player-duration-channel">
+              <div class="flamestealer-channel-label"><span id="player-duration-label">Iai Counter</span><span id="player-duration-time">2.0s</span></div>
+              <div class="flamestealer-channel-bar"><div id="player-duration-fill" class="flamestealer-channel-fill player-duration-fill"></div></div>
+            </div>
             <div id="flamestealer-channel" class="flamestealer-channel">
               <div class="flamestealer-channel-label"><span>Flamestealer Channel</span><span id="flamestealer-channel-time">4.0s</span></div>
               <div class="flamestealer-channel-bar"><div id="flamestealer-channel-fill" class="flamestealer-channel-fill"></div></div>
@@ -2302,6 +2309,7 @@ const G = {
     healThreshold: 40, potionPref: 'healing',
     fleeThreshold: 20,
     chaosDifficulty: 0,
+    logFontSize: 10,
     liveMapRouteSize: 15,
     equipRules: {
       priorityStat: 'total',
@@ -2646,11 +2654,7 @@ function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
       const heal = Math.max(1, Math.round(attemptedGluttony * bossHealMultiplier(monster)));
       const before = monster.hp;
       monster.hp = Math.min(monster.maxHp, monster.hp + heal);
-      const reflect = Math.max(1, Math.round(attemptedGluttony * 0.35));
-      const reflectedTaken = applyPlayerDamage(reflect, 'Guzmak\'s Gluttony', now);
-      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP and returning ${fmtNum(reflect)} damage!`, 'dmgtaken');
-      if (reflectedTaken > 0) applyKitarasqueHeartHeal(reflectedTaken);
-      if (G.hp <= 0) { G.hp = 0; die(); }
+      log(`<span class="log-monster">Guzmak, the Devourer</span> absorbs skill damage through Guzmak's Gluttony, healing ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
     }
     return { attempted:attemptedGluttony, dealt:0, shieldAbsorbed:0, arcaneBlocked:false, gluttonyAbsorbed:true, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
   }
@@ -2675,6 +2679,9 @@ function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
 }
 function isFortifyActive(now=performance.now()) {
   return G.playerClass === 'warrior' && (G.combat?.fortifyUntil || 0) > now;
+}
+function ironWallReflectDamage() {
+  return Math.max(0, Math.round((calcDamage() + G.maxHp * 0.70) * skillPowerFactor('fortify')));
 }
 function queueChronosphereDamage(monster, dmg, releaseAt) {
   if (!G.combat.chronoDamageQueue) G.combat.chronoDamageQueue = [];
@@ -2944,7 +2951,7 @@ const CLASS_ADVANCEMENTS = {
         shieldbash:{name:'Aegis Bash',desc:'Enhanced HP-scaling shield stun.',mpCost:8,cooldown:10000,enabled:false,skillPts:0},
         whirlwind:{name:'Shield Burst',desc:'HP-scaling AOE shield shockwave.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
         warcry:{name:"Titan's Challenge",desc:'8s Max HP and damage reduction buff. HP-scaling damage uses boosted Max HP.',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
-        fortify:{name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
+        fortify:{name:'Iron Wall',desc:'Damage reduction plus thorns retaliation. While active, attackers take thorns damage based on basic damage and Max HP.',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
         execute:{name:'Seismic Slam',desc:'Sacrifice 10% Max HP and add that damage to a heavy slam.',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
       }
     }
@@ -3294,6 +3301,10 @@ function isAdvancementChanneling(ts=performance.now()) {
   const ch = G.combat?.advChannel;
   return !!(ch && (ch.until || 0) > ts);
 }
+function isAdvancementCastLocked(ts=performance.now()) {
+  const act = G.combat?.advDelayed;
+  return !!(act && act.type === 'assassinate' && (act.releaseAt || 0) > ts);
+}
 function tickAdvancementChannel(ts=performance.now()) {
   const ch = G.combat?.advChannel;
   if (!ch) return false;
@@ -3324,6 +3335,7 @@ function releaseAdvancementDelayedActions(ts=performance.now()) {
   const target = G.monsters.find(m => m && m.hp > 0 && (m.id === act.targetId)) || G.monsters[0];
   if (!target) { log(`[${act.label}] fizzles — no target.`, 'spellcast'); return true; }
   if (act.type === 'iai') {
+    G.combat.iaiCounterUntil = 0;
     dealRawAdvancementDamage(target, act.damage, ts, 'Iai Counter');
   } else if (act.type === 'assassinate') {
     const oldKey = G.combat.currentSkillKey; G.combat.currentSkillKey = 'assassinate';
@@ -3450,7 +3462,7 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     return res.dealt || 0;
   };
   if (adv === 'swordmaster') {
-    if (k==='shieldbash') { G.combat.advDelayed = {type:'iai', label:'Iai Counter', releaseAt:ts+2000, targetId:target?.id, damage:base*(1.5+calcAtkInterval()*0.5)+str*3}; G.combat.iiaGuardUntil = ts+2000; log('[Iai Counter] stance begins — strike releases in 2s.', 'spellcast'); }
+    if (k==='shieldbash') { G.combat.advDelayed = {type:'iai', label:'Iai Counter', startedAt:ts, releaseAt:ts+2000, targetId:target?.id, damage:base*(1.5+calcAtkInterval()*0.5)+str*3}; G.combat.iaiCounterStartedAt = ts; G.combat.iaiCounterUntil = ts+2000; G.combat.iiaGuardUntil = ts+2000; log('[Iai Counter] stance begins — strike releases in 2s.', 'spellcast'); }
     else if (k==='whirlwind') { let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+str*2, ts, 'Crescent Slash'); log(`[Crescent Slash] total ${fmtNum(total)} damage`, 'spelldmg'); }
     else if (k==='warcry') { const pct=Math.min(40,15+str*0.05); G.combat.warCryPct=pct; G.combat.warCryUntil=ts+8000; log(`[Quick Sheath] +${pct.toFixed(0)}% damage for 8s`, 'spellcast'); }
     else if (k==='fortify') { G.combat.fortifyPct=Math.min(35,25+effStat('vit')*0.03); G.combat.fortifyUntil=ts+6000; G.combat.stillbladeUntil=ts+6000; log(`[Stillblade Stance] ${G.combat.fortifyPct.toFixed(0)}% damage reduction for 6s`, 'spellcast'); }
@@ -3466,6 +3478,7 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     if (k==='shieldbash') { dealt=hitTarget(base*1.2+G.maxHp*0.06+effStat('vit')*2, 'Aegis Bash'); if (target) target.lastAttack=ts; }
     else if (k==='whirlwind') { let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+G.maxHp*0.04+effStat('vit')*1.5, ts, 'Shield Burst'); log(`[Shield Burst] total ${fmtNum(total)} damage`, 'spelldmg'); }
     else if (k==='warcry') { G.combat.titansChallengeUntil=ts+8000; G.combat.titansChallengeMaxHpBonus=Math.min(35,20+effStat('vit')*0.02); G.combat.titansChallengeDR=Math.min(20,10+effStat('vit')*0.01); log(`[Titan's Challenge] +${G.combat.titansChallengeMaxHpBonus.toFixed(0)}% Max HP scaling and ${G.combat.titansChallengeDR.toFixed(0)}% DR for 8s`, 'spellcast'); }
+    else if (k==='fortify') { const dur=(5+effStat('vit')*0.05+sp*0.15); const fortifyPct=Math.min(75,35+sp*1.25+Math.min(10,effStat('vit')*0.05)); G.combat.fortifyPct=fortifyPct; G.combat.fortifyStartedAt=ts; G.combat.fortifyUntil=ts+dur*1000; log(`[Iron Wall] ${fortifyPct.toFixed(0)}% damage reduction for ${dur.toFixed(1)}s. Thorns reflect ${fmtNum(ironWallReflectDamage())} damage to attackers.`, 'spellcast'); }
     else if (k==='execute') { const selfDmg=Math.round(G.maxHp*0.10); G.hp=Math.max(1,G.hp-selfDmg); hitTarget(base*2.0+selfDmg+effStat('vit')*3, 'Seismic Slam'); }
     else handled=false;
   } else if (adv === 'assassin') {
@@ -3473,7 +3486,7 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     else if (k==='smokebomb') { G.combat.cloakDaggerUntil=ts+3000; G.combat.cloakDaggerCritBonus=Math.min(80,40+agi*0.10); G.combat.vanishDodgeUntil=ts+3000; log(`[Cloak and Dagger] dodge window and next damaging skill +${G.combat.cloakDaggerCritBonus.toFixed(0)}% Crit Damage`, 'spellcast'); }
     else if (k==='flurry') { let crits=0,total=0; for(let i=0;i<4;i++){ let dmg=base*0.60+agi*0.5; const isCrit=Math.random()*100<calcCritChance(); if(isCrit){crits++; dmg*=calcCritDamage()/100;} total += hitTarget(dmg, 'Phantom Rush'); } if(crits>0){ const red=Math.min(2.5,1.5+agi*0.002)*1000*crits; G.skillCooldowns.assassinate=Math.max(0,(G.skillCooldowns.assassinate||0)-red); log(`Phantom Rush reduces Assassinate cooldown by ${(red/1000).toFixed(1)}s`, 'spellcast'); } }
     else if (k==='marktarget') { if (target){ target.contractKill=true; target.contractKillUntil=ts+Math.min(12000,8000+agi*5); log(`Contract Kill marks ${safeMonsterName(target)}. First Assassinate refreshes its cooldown.`, 'spellcast'); } }
-    else if (k==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; G.combat.advDelayed={type:'assassinate', label:'Assassinate', releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+3000; log('[Assassinate] 1.5s cast begins.', 'spellcast'); }
+    else if (k==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; G.combat.advDelayed={type:'assassinate', label:'Assassinate', startedAt:ts, releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+3000; log('[Assassinate] 1.5s cast begins. Basic attacks and other skills are locked until it lands.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'nightshade') {
     if (k==='cheapshot') { hitTarget(base*0.8+agi*1.2, 'Toxin Dart', false, t=>addPoisonStacks(t,3,ts,'Toxin Dart')); }
@@ -4583,11 +4596,39 @@ function updateCombatViewport() {
   const pmpf = document.getElementById('player-mp-fill');
   if (pmpf) pmpf.style.width = `${Math.max(0, Math.min(100, G.mp/G.maxMp*100))}%`;
 
+  const iaiUntil = Number(G.combat?.iaiCounterUntil || 0);
+  const iaiStarted = Number(G.combat?.iaiCounterStartedAt || (iaiUntil ? iaiUntil - 2000 : 0));
+  const delayedAction = G.combat?.advDelayed || null;
+  const assassinateUntil = delayedAction && delayedAction.type === 'assassinate' ? Number(delayedAction.releaseAt || 0) : 0;
+  const assassinateStarted = delayedAction && delayedAction.type === 'assassinate' ? Number(delayedAction.startedAt || (assassinateUntil ? assassinateUntil - 1500 : 0)) : 0;
+  const pDurEl = document.getElementById('player-duration-channel');
+  const pDurFill = document.getElementById('player-duration-fill');
+  const pDurTime = document.getElementById('player-duration-time');
+  const pDurLabel = document.getElementById('player-duration-label');
+  const heroPlinth = document.querySelector('.hero-plinth');
+  const playerCastUntil = iaiUntil > now ? iaiUntil : (assassinateUntil > now ? assassinateUntil : 0);
+  const playerCastStarted = iaiUntil > now ? iaiStarted : assassinateStarted;
+  const playerCastLabel = iaiUntil > now ? 'Iai Counter' : 'Assassinate';
+  if (pDurEl && playerCastUntil > now) {
+    const total = Math.max(1, playerCastUntil - playerCastStarted);
+    const remaining = Math.max(0, playerCastUntil - now);
+    const pct = Math.max(0, Math.min(100, 100 - (remaining / total * 100)));
+    pDurEl.classList.add('visible');
+    if (pDurFill) pDurFill.style.width = `${pct}%`;
+    if (pDurTime) pDurTime.textContent = `${(remaining / 1000).toFixed(1)}s`;
+    if (pDurLabel) pDurLabel.textContent = playerCastLabel;
+    if (heroPlinth) heroPlinth.classList.add('iai-countering');
+  } else {
+    if (pDurEl) pDurEl.classList.remove('visible');
+    if (pDurFill) pDurFill.style.width = '0%';
+    if (pDurTime) pDurTime.textContent = '0.0s';
+    if (heroPlinth) heroPlinth.classList.remove('iai-countering');
+  }
+
   const channel = G.combat?.flamestealerFireball;
   const channelEl = document.getElementById('flamestealer-channel');
   const channelFill = document.getElementById('flamestealer-channel-fill');
   const channelTime = document.getElementById('flamestealer-channel-time');
-  const heroPlinth = document.querySelector('.hero-plinth');
   if (channelEl && channel && (channel.finishAt || 0) > now) {
     const total = Math.max(1, (channel.finishAt || now) - (channel.startedAt || ((channel.finishAt || now) - 4000)));
     const remaining = Math.max(0, (channel.finishAt || now) - now);
@@ -5148,7 +5189,7 @@ function spawnGuzmakBoss(zc) {
     dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
     expMin:520, expMax:760, atkMin:1000, atkMax:3000,
     isBoss:true, isElite:false, isGuzmak:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
-    lastAttack:now, uniqueBossKey:'guzmak_devourer', guzmakHitThreshold:5, guzmakHitsTaken:0, guzmakRegenTick:0
+    lastAttack:now, uniqueBossKey:'guzmak_devourer', guzmakGluttonyTriggered60:false, guzmakRegenTick:0
   };
   G.monsters = [m];
   logEncounterFlavor(m, 1, false, true, 'maw');
@@ -5233,16 +5274,11 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
       const before = monster.hp;
       monster.hp = Math.min(monster.maxHp, monster.hp + heal);
       if (monster.hp > before) log(`<span class="log-monster">Guzmak</span> Eternal Hunger heals ${fmtNum(monster.hp-before)} HP from your basic attack.`, 'dmgtaken');
-    } else if (!monster.guzmakEternalHunger && (monster.guzmakGluttonyUntil || 0) <= ts) {
-      monster.guzmakHitsTaken = (monster.guzmakHitsTaken || 0) + 1;
-      const threshold = 5;
-      monster.guzmakHitThreshold = threshold;
-      if (monster.guzmakHitsTaken >= threshold) {
-        monster.guzmakHitsTaken = 0;
-        monster.guzmakGluttonyStartedAt = ts;
-        monster.guzmakGluttonyUntil = ts + 5000;
-        log(`<span style="color:#77ff55">Guzmak casts Guzmak's Gluttony! Skill damage is absorbed for 5s. Next cast after ${threshold} attacks taken.</span>`, 'dmgtaken');
-      }
+    } else if (!monster.guzmakEternalHunger && !monster.guzmakGluttonyTriggered60 && hpPct <= 60) {
+      monster.guzmakGluttonyTriggered60 = true;
+      monster.guzmakGluttonyStartedAt = ts;
+      monster.guzmakGluttonyUntil = ts + 4000;
+      log(`<span style="color:#77ff55">Guzmak casts Guzmak's Gluttony at 60% HP! Skill damage is absorbed for 4s.</span>`, 'dmgtaken');
     }
   }
 }
@@ -7986,14 +8022,15 @@ function gameTick(ts) {
   if(G.monsters.length>0){
     const flamestealerCasting = isFlamestealerCasting(ts);
     const advancementChanneling = isAdvancementChanneling(ts);
-    if ((G.combat.aislongFrozenUntil || 0) > ts || flamestealerCasting || advancementChanneling) {
-      // Frozen or channeling: player cannot attack or cast skills, but enemies continue attacking.
+    const advancementCastLocked = isAdvancementCastLocked(ts);
+    if ((G.combat.aislongFrozenUntil || 0) > ts || flamestealerCasting || advancementChanneling || advancementCastLocked) {
+      // Frozen, channeling, or locked in an advancement cast: player cannot attack or cast skills, but enemies continue attacking.
       G.lastAttack = ts;
     }
     // Attack speed — apply freezing penalty
     const freezePenalty = G.debuffs.freezing ? 2.0 : 1.0;
     const atkMs = calcAtkInterval() * 1000 * freezePenalty;
-    if((G.combat.aislongFrozenUntil || 0) <= ts && !flamestealerCasting && !advancementChanneling && ts-G.lastAttack>=atkMs){
+    if((G.combat.aislongFrozenUntil || 0) <= ts && !flamestealerCasting && !advancementChanneling && !advancementCastLocked && ts-G.lastAttack>=atkMs){
       G.lastAttack=ts;
       const target = G.monsters[0];
       if (!target) { updateUI(); requestAnimationFrame(gameTick); return; }
@@ -8116,7 +8153,7 @@ function gameTick(ts) {
     const canGlobalSkillCast = ts - (G.combat.lastGlobalSkillCastAt || 0) >= globalSkillThrottleMs;
     const manualSkillKey = G.combat.manualSkillCast;
     const manualTargetlessCast = manualSkillKey && isTargetlessSkill(manualSkillKey);
-    if((G.monsters.length>0 || manualTargetlessCast) && canGlobalSkillCast && (G.combat.aislongFrozenUntil || 0) <= ts && !isFlamestealerCasting(ts) && !isAdvancementChanneling(ts)){
+    if((G.monsters.length>0 || manualTargetlessCast) && canGlobalSkillCast && (G.combat.aislongFrozenUntil || 0) <= ts && !isFlamestealerCasting(ts) && !isAdvancementChanneling(ts) && !isAdvancementCastLocked(ts)){
       const skillOrder = (manualSkillKey && G.skills?.[manualSkillKey]) ? [manualSkillKey] : getSkillCastOrder();
       for(const k of skillOrder){
         const v = G.skills?.[k];
@@ -8604,7 +8641,18 @@ function gameTick(ts) {
           if (isFortifyActive(ts)) {
             const fortifyReduction = Math.min(0.75, (G.combat.fortifyPct || 50) / 100);
             mdmg = Math.ceil(mdmg * (1 - fortifyReduction));
-            log(`${activeBuffName('fortify','Fortify')} reduces incoming damage by ${Math.round(fortifyReduction*100)}% to ${fmtNum(mdmg)}`, 'dmgtaken');
+            const fortifyName = activeBuffName('fortify','Fortify');
+            log(`${fortifyName} reduces incoming damage by ${Math.round(fortifyReduction*100)}% to ${fmtNum(mdmg)}`, 'dmgtaken');
+            if (hasAdvancement('juggernaut') && m && m.hp > 0) {
+              const thornDmg = ironWallReflectDamage();
+              if (thornDmg > 0) {
+                const thornRes = dealSkillDamageToMonster(m, thornDmg, ts);
+                if (thornRes.dealt > 0) {
+                  log(`[Iron Wall] thorns hit <span class="log-monster">${m.baseName||m.name}</span> for ${fmtNum(thornRes.dealt)} dmg`, 'spelldmg');
+                  if (m.hp <= 0) killMonster(m, ts);
+                }
+              }
+            }
           }
           mdmg = applyBattleHardenedReduction(mdmg);
           mdmg = applyGeneralIncomingDamageReduction(mdmg);
@@ -8650,7 +8698,7 @@ function gameTick(ts) {
             log(`<span class="log-monster">${m.baseName||m.name}</span> hits you for ${fmtNum(mdmg)}`, 'dmgtaken');
             if ((G.combat.staticFieldUntil || 0) > ts && mdmg > 0) restoreMpAdv(mdmg * 0.30, 'Static Field');
             if (m.tags && m.tags.includes('VAMPIRIC') && mdmg > 0) {
-              const vampHeal = Math.max(1, Math.round(mdmg * 2.0));
+              const vampHeal = Math.max(1, Math.round(mdmg * 0.50));
               const beforeVamp = m.hp;
               m.hp = Math.min(m.maxHp, m.hp + vampHeal);
               const restoredVamp = Math.max(0, Math.round(m.hp - beforeVamp));
@@ -11588,6 +11636,7 @@ function advancementSkillDamagePreview(k) {
     if (k==='shieldbash') return line(`~${scaled(base*1.2+G.maxHp*0.06+effStat('vit')*2)} dmg + stun/reset`);
     if (k==='whirlwind') return line(`~${scaled(base+G.maxHp*0.04+effStat('vit')*1.5)} dmg to all enemies`);
     if (k==='warcry') return line(`8s: +${Math.min(35,20+effStat('vit')*0.02).toFixed(0)}% Max HP scaling and ${Math.min(20,10+effStat('vit')*0.01).toFixed(0)}% DR`);
+    if (k==='fortify') { const dur=(5+effStat('vit')*0.05+skillPts20(k)*0.15).toFixed(1); const red=Math.min(75,35+skillPts20(k)*1.25+Math.min(10,effStat('vit')*0.05)).toFixed(0); return line(`${red}% damage reduction for ${dur}s; thorns reflect ~${fmtNum(ironWallReflectDamage())} dmg per incoming hit`); }
     if (k==='execute') return line(`~${scaled(base*2+G.maxHp*0.10+effStat('vit')*3)} dmg; costs ${fmtNum(Math.round(G.maxHp*0.10))} HP`);
   }
   if (adv==='assassin') {
@@ -11632,7 +11681,7 @@ function advancementSkillDamagePreview(k) {
     if (k==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP; basic attack interval becomes 0.6s for 8s`);
     if (k==='chronosphere') return line(`6s Chrono Singularity: delays incoming damage`);
   }
-  return `${name} Lv${lvl}: ${pf}% effect power`;
+  return `${name} Lv${lvl}: skill level improves power, MP cost, and cooldown`;
 }
 function skillDamagePreview(k) {
   if (G.classAdvancement) {
@@ -13084,8 +13133,15 @@ function checkSkillCondition(k) {
 }
 
 function setLogFontSize(val) {
-  document.getElementById('log-output').style.fontSize = val + 'px';
-  document.getElementById('cfg-font-size-val').textContent = val;
+  val = Math.max(8, Math.min(16, parseInt(val, 10) || 10));
+  if (G && G.config) G.config.logFontSize = val;
+  const logOut = document.getElementById('log-output');
+  if (logOut) logOut.style.fontSize = val + 'px';
+  const input = document.getElementById('cfg-font-size');
+  if (input) input.value = val;
+  const label = document.getElementById('cfg-font-size-val');
+  if (label) label.textContent = val;
+  if (G?.started) saveGame(false);
 }
 
 function setUiFontSize(val) {
@@ -13549,6 +13605,7 @@ function applyClassData(data) {
   const DEFAULT_CONFIG = {
     paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false,
     uiFontSize:18,
+    logFontSize:10,
     liveMapRouteSize:15,
     chaosDifficulty:0,
     healThreshold:40, potionPref:'healing', fleeThreshold:20,
@@ -13579,6 +13636,7 @@ function applyClassData(data) {
   }
   if (data.config?.skillPriority) G.config.skillPriority = Array.isArray(data.config.skillPriority) ? data.config.skillPriority.slice() : DEFAULT_CONFIG.skillPriority.slice();
   G.config.chaosDifficulty = Math.max(0, Math.min(4, parseInt(G.config.chaosDifficulty || 0, 10) || 0));
+  G.config.logFontSize = Math.max(8, Math.min(16, parseInt(G.config.logFontSize || 10, 10) || 10));
   G.config.liveMapRouteSize = Math.max(6, Math.min(18, parseInt(G.config.liveMapRouteSize || 15, 10) || 15));
   G.config.paused = false;
   G.config.manualPause = false;
@@ -16376,7 +16434,7 @@ document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
 requestAnimationFrame(gameTick);
 setUiFontSize(G?.config?.uiFontSize || 18);
 setLiveMapRouteSize(G?.config?.liveMapRouteSize || 15);
-setLogFontSize(10);
+setLogFontSize(G?.config?.logFontSize || 10);
 </script>
 </body>
 </html>
