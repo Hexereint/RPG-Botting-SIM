@@ -2929,7 +2929,7 @@ const CLASS_ADVANCEMENTS = {
       skills:{
         shieldbash:{name:'Skullbreaker',desc:'Burst strike that applies Cracked Armor, increasing damage taken.',mpCost:8,cooldown:10000,enabled:false,skillPts:0},
         whirlwind:{name:'Blood Cyclone',desc:'AOE multi-hit spin. Gains an extra hit below 40% HP; each hit can lifesteal.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
-        warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
+        warcry:{name:'Enrage',desc:'Berserker damage buff; duration and power scale with skill points.',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
         fortify:{name:'Blood Frenzy',desc:'8s offensive state: attack speed and damage, but lose 5% Max HP per second.',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
         execute:{name:'Guillotine',desc:'Missing-HP execution strike.',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
       }
@@ -6782,7 +6782,7 @@ const MYTHIC_ITEMS = {
     ],
     legging:[
       { name:"Titan's Girdle",      mod:'titan_girdle',   desc:'Fortify costs 0 MP',                                         val:0    },
-      { name:"Berserker's Boots",   mod:'berserker_boots', desc:"War Cry cooldown reduced by 50%",                           val:50   },
+      { name:"Berserker's Boots",   mod:'berserker_boots', desc:"War Cry / Enrage cooldown reduced by 50%",                 val:50   },
     ],
     weapon: [
       { name:"Executioner's Edge",  mod:'executioner',    desc:'Execute threshold raised to %val%%%',                        val:50   },
@@ -13526,6 +13526,14 @@ function applyClassData(data) {
   G.skillPoints = data.skillPoints || 0;
   G.pendingSkillPoint = !!data.pendingSkillPoint;
   G.skills = data.skills || {};
+  // Keep saved advancement skill display data synced with current definitions after balance/name updates.
+  const advDefForSave = currentAdvancementDef();
+  if (advDefForSave && advDefForSave.skills) {
+    for (const [k,v] of Object.entries(advDefForSave.skills)) G.skills[k] = cloneSkillObj(v, G.skills[k]);
+  }
+  if (advDefForSave && advDefForSave.passives) {
+    for (const [k,v] of Object.entries(advDefForSave.passives)) G.passives[k] = clonePassiveObj(v, G.passives[k]);
+  }
   normalizeSkillPointEntitlement();
   G.skillCooldowns = {};
   G.combat = {battleHardenedStacks:0,tookDamageThisFight:false,overloadCasts:0,warCryUntil:0,warCryPct:0,fortifyUntil:0,smokeBombCharges:0,smokeBombDelayCount:0,chronoDamageQueue:[],everlastingWinterAttacks:0,flamestealerFireball:null,darkYoungWailAt:0,darkYoungWailWarned:false,spinCleaverWhirlwindUntil:0,spinCleaverWhirlwindNextAt:0,spinCleaverWhirlwindStr:0,spinCleaverWhirlwindSp:0};
