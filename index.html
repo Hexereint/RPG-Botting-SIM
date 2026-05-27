@@ -2183,6 +2183,7 @@ const G = {
   started: false,
   tutorialDone: false,
   playerClass: null,
+  classAdvancement: null,
   level: 1, exp: 0,
   hp: 10, maxHp: 10, mp: 10, maxMp: 10,
   hpRegen: 1, mpRegen: 1,
@@ -2596,6 +2597,7 @@ function applyBattleHardenedReduction(mdmg) {
 function targetDamageMultiplier(target, now=performance.now()) {
   let mult = 1;
   if (target && (target.markTargetUntil || 0) > now) mult *= 1 + ((target.markTargetPct || 0) / 100);
+  if (target && (target.crackedArmorUntil || 0) > now) mult *= 1 + ((target.crackedArmorPct || 0) / 100);
   return mult;
 }
 function applyTargetDamageMods(target, dmg, now=performance.now()) {
@@ -2622,7 +2624,8 @@ function bossHealMultiplier(monster=null) {
   return hasMythicMod('vaalix_tiara') && monster && monster.isBoss ? 0.5 : 1;
 }
 function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
-  const ascendedSkillDmg = Math.max(0, Math.round(applyAscendSkillDamage(baseDmg) * chaoticSkillDamageMultiplier(monster, now)));
+  const scaledBaseDmg = applySkillPointPower(baseDmg, G.combat?.currentSkillKey || null);
+  const ascendedSkillDmg = Math.max(0, Math.round(applyAscendSkillDamage(scaledBaseDmg) * chaoticSkillDamageMultiplier(monster, now)));
   if (monster && monster.isGuzmak && (monster.guzmakGluttonyUntil || 0) > now) {
     const attemptedGluttony = Math.max(0, Math.round(ascendedSkillDmg || 0));
     if (attemptedGluttony > 0) {
@@ -2687,11 +2690,23 @@ function agiAtkIntervalReductionPerPoint() {
 }
 function calcAtkInterval() {
   const agi = effStat('agi');
-  let base = Math.max(0.5, 2 - agi * agiAtkIntervalReductionPerPoint());
+  let floor = 0.5;
+  let base = 2 - agi * agiAtkIntervalReductionPerPoint();
+  if (hasAdvancement('berserker') && G.passives?.ragewithin?.enabled) {
+    const missingTens = Math.floor((100 - (G.hp / Math.max(1, G.maxHp)) * 100) / 10);
+    base -= missingTens * 0.03;
+    floor = 0.3;
+  }
+  if (hasAdvancement('nightshade')) floor = Math.max(floor, 0.8);
+  if (hasAdvancement('arcanist') && (G.combat?.arcaneInfusionUntil || 0) > performance.now()) floor = Math.min(floor, 0.6), base = Math.min(base, 0.6);
+  if (hasAdvancement('swordmaster') && G.passives?.innerfocus?.enabled) {
+    base += 1.0 + calcCDR();
+    floor = Math.max(floor, 0.5);
+  }
   if (G.zone === 'hoarspire') base += 0.5;
   if ((G.combat?.everlastingWinterAttacks || 0) > 0) base += 2.0;
-  if (isSwiftnessPotionActive()) base -= 1.0;
-  base = Math.max(0.5, base);
+  if (isSwiftnessPotionActive()) base -= hasAdvancement('swordmaster') ? 0.3 : 1.0;
+  base = Math.max(floor, base);
   return +base.toFixed(2);
 }
 function calcRawCritChance() {
@@ -2709,17 +2724,34 @@ function calcCritChance() {
 }
 function calcCritDamage() {
   let cd = 100 + totalEquipSubStat('critdamage');
-  // Rogue mastery: crit chance above 100% spills into crit damage.
-  // 1% excess crit chance = +3% crit damage.
-  if (G.playerClass === 'rogue') cd += calcCritOverflow() * 3;
+  // Rogue mastery: crit chance above 100% spills into crit damage. Nightshade redirects overflow into poison instead.
+  if (G.playerClass === 'rogue' && !hasAdvancement('nightshade')) cd += calcCritOverflow() * 3;
+  if (hasAdvancement('swordmaster') && G.passives?.innerfocus?.enabled) cd *= Math.max(1, calcAtkInterval());
   return +cd.toFixed(0);
 }
 function calcCDR() {
   return +totalEquipSubStat('cdr').toFixed(2);
 }
+function activeSkillLevel(k) {
+  const sp = clampSkillPointValue(G.skills?.[k]?.skillPts || 0);
+  return Math.max(1, Math.min(ACTIVE_SKILL_POINT_CAP, sp || 1));
+}
+function activeSkillProgress(k) {
+  return (activeSkillLevel(k) - 1) / Math.max(1, ACTIVE_SKILL_POINT_CAP - 1);
+}
+function skillPowerFactor(k) {
+  return 0.60 + activeSkillProgress(k) * 0.40;
+}
+function skillEconomyFactor(k) {
+  return 1.30 - activeSkillProgress(k) * 0.30;
+}
+function applySkillPointPower(dmg, k) {
+  if (!k) return dmg;
+  return Math.max(0, Math.round((Number(dmg) || 0) * skillPowerFactor(k)));
+}
 function effectiveCooldown(baseCd, skillKey) {
-  // Skill points no longer reduce cooldowns. Only equipment CDR and mythic effects can alter cooldowns.
-  let cd = baseCd - calcCDR()*1000;
+  // Advancement skill document values are Lv20 values. Lower skill points have longer cooldowns.
+  let cd = (baseCd || 0) * skillEconomyFactor(skillKey) - calcCDR()*1000;
   // Freezing Orb: Frost Nova cooldown -40%
   if (skillKey==='frostnova' && hasMythicMod('ethereal')) cd *= 0.6;
   // Hiddenblade of Sin: Assassinate cooldown -50%
@@ -2733,7 +2765,7 @@ function effectiveCooldown(baseCd, skillKey) {
 
 const ACTIVE_SKILL_POINT_CAP = 20;
 const STARTING_SKILL_POINTS = 1;
-const SKILL_POINT_AWARD_LEVEL_CAP = 50;
+const SKILL_POINT_AWARD_LEVEL_CAP = 100;
 function grantsSkillPointAtLevel(level) {
   return (Number(level) || 0) <= SKILL_POINT_AWARD_LEVEL_CAP;
 }
@@ -2855,6 +2887,543 @@ function skillBaseDamage(k, sp=skillPts20(k)) {
     frostnova:       25 + n * 3,
   };
   return bases[k] || 0;
+}
+
+
+const CLASS_ADVANCEMENTS = {
+  warrior: {
+    swordmaster: {
+      name:'Swordmaster', identity:'Slow precision crits, guarded counters, and high commitment blade skills.',
+      passives:{
+        innerfocus:{name:'Inner Focus',desc:'Attack interval +1.0s. Bonus attack speed is reduced, CDR becomes attack delay, and crit damage scales with current attack interval.',enabled:true},
+        measuredguard:{name:'Measured Guard',desc:'Gain damage reduction from slower attack intervals. While not attacking, incoming hits may trigger a 50% damage counter.',enabled:true}
+      },
+      skills:{
+        shieldbash:{name:'Iai Counter',desc:'2s counter stance, then delayed high-damage strike. Reduces damage taken while preparing.',mpCost:20,cooldown:40000,enabled:false,skillPts:0},
+        whirlwind:{name:'Crescent Slash',desc:'AOE slash that deals full damage to all enemies with no falloff.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
+        warcry:{name:'Quick Sheath',desc:'STR-scaling damage buff.',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
+        fortify:{name:'Stillblade Stance',desc:'Defensive stance with damage reduction and empowered next critical strike.',mpCost:30,cooldown:35000,enabled:false,skillPts:0},
+        execute:{name:'Mortal Strike',desc:'Guaranteed critical strike with STR scaling.',mpCost:35,cooldown:15000,enabled:false,skillPts:0}
+      }
+    },
+    berserker: {
+      name:'Berserker', identity:'Low-HP speed, lifesteal, and brutal missing-health execution damage.',
+      passives:{
+        ragewithin:{name:'Rage Within',desc:'+4% damage and +3% attack speed per 10% missing HP. Can break attack interval floor to 0.3s.',enabled:true},
+        bloodsurvival:{name:'Blood Survival',desc:'Lifesteal begins below 80% HP and scales up to 80% lifesteal at 10% HP.',enabled:true}
+      },
+      skills:{
+        shieldbash:{name:'Skullbreaker',desc:'Burst strike that applies Cracked Armor, increasing damage taken.',mpCost:8,cooldown:10000,enabled:false,skillPts:0},
+        whirlwind:{name:'Blood Cyclone',desc:'AOE multi-hit spin. Gains an extra hit below 40% HP; each hit can lifesteal.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
+        warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
+        fortify:{name:'Blood Frenzy',desc:'8s offensive state: attack speed and damage, but lose 5% Max HP per second.',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
+        execute:{name:'Guillotine',desc:'Missing-HP execution strike. No guaranteed crit.',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
+      }
+    },
+    juggernaut: {
+      name:'Juggernaut', identity:'HP-scaling tank bruiser with shield impacts and Max HP damage conversion.',
+      passives:{
+        titanicforce:{name:'Titanic Force',desc:'Basic attacks deal bonus damage equal to 5% of Max HP.',enabled:true},
+        unbreakablebody:{name:'Unbreakable Body',desc:'Reduce incoming damage by 1% per 100 Max HP, capped at 40%. Stacks multiplicatively.',enabled:true}
+      },
+      skills:{
+        shieldbash:{name:'Aegis Bash',desc:'Enhanced HP-scaling shield stun.',mpCost:8,cooldown:10000,enabled:false,skillPts:0},
+        whirlwind:{name:'Shield Burst',desc:'HP-scaling AOE shield shockwave.',mpCost:14,cooldown:18000,enabled:false,skillPts:0},
+        warcry:{name:"Titan's Challenge",desc:'8s Max HP and damage reduction buff. HP-scaling damage uses boosted Max HP.',mpCost:18,cooldown:28000,enabled:false,skillPts:0},
+        fortify:{name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0},
+        execute:{name:'Seismic Slam',desc:'Sacrifice 10% Max HP and add that damage to a heavy slam.',mpCost:30,cooldown:40000,enabled:false,skillPts:0}
+      }
+    }
+  },
+  rogue: {
+    assassin: {
+      name:'Assassin', identity:'Crit-damage burst, Assassinate cooldown manipulation, and evasive kill windows.',
+      passives:{
+        deathblowmastery:{name:'Deathblow Mastery',desc:'Assassinate deals increased damage based on Crit Damage. Every 100% Crit Damage adds 50% Assassinate damage.',enabled:true},
+        vanishstep:{name:'Vanish Step',desc:'+5% dodge chance. After casting Assassinate, gain +30% dodge chance for 3s.',enabled:true}
+      },
+      skills:{
+        cheapshot:{name:'Vital Strike',desc:'Applies Vital Wound, causing next Assassinate against target to deal increased damage.',mpCost:20,cooldown:12000,enabled:false,skillPts:0},
+        smokebomb:{name:'Cloak and Dagger',desc:'3s dodge window and next damaging skill gains bonus Crit Damage.',mpCost:25,cooldown:35000,enabled:false,skillPts:0},
+        flurry:{name:'Phantom Rush',desc:'4-hit crit flurry. Each crit reduces Assassinate cooldown.',mpCost:30,cooldown:18000,enabled:false,skillPts:0},
+        marktarget:{name:'Contract Kill',desc:'First Assassinate hit on contracted target refreshes Assassinate cooldown.',mpCost:20,cooldown:35000,enabled:false,skillPts:0},
+        assassinate:{name:'Assassinate',desc:'1.5s cast devastating assassination attack.',mpCost:35,cooldown:55000,enabled:false,skillPts:0}
+      }
+    },
+    nightshade: {
+      name:'Nightshade', identity:'Unlimited poison stacks, poison damage conversion, and Black Lotus detonation.',
+      passives:{
+        venomconversion:{name:'Venom Conversion',desc:'Poison stacks have no limit. Crit Damage and overflow Crit Chance increase poison damage. Attack interval cannot go below 0.8s.',enabled:true},
+        toxicveil:{name:'Toxic Veil',desc:'+5% dodge chance. Poisoned enemies deal 1% less damage per poison stack, capped at 25%.',enabled:true}
+      },
+      skills:{
+        cheapshot:{name:'Toxin Dart',desc:'Light hit that applies 3 poison stacks.',mpCost:15,cooldown:8000,enabled:false,skillPts:0},
+        smokebomb:{name:'Poison Mist',desc:'Delays enemy attacks and applies 5 poison stacks.',mpCost:25,cooldown:30000,enabled:false,skillPts:0},
+        flurry:{name:'Venom Flurry',desc:'5 hits. Each hit applies poison; Virulent Blood doubles stack gain.',mpCost:30,cooldown:16000,enabled:false,skillPts:0},
+        marktarget:{name:'Virulent Blood',desc:'For 8s, basic attacks and damaging skills apply +1 poison stack.',mpCost:25,cooldown:25000,enabled:false,skillPts:0},
+        assassinate:{name:'Black Lotus',desc:'3s cast. Consumes all poison stacks into immediate damage with no multiplier.',mpCost:45,cooldown:35000,enabled:false,skillPts:0}
+      }
+    }
+  },
+  wizard: {
+    flamemage: {
+      name:'Flamemage', identity:'Burn stacking, high fire damage, AoE explosions, and explosive mana retaliation.',
+      passives:{
+        ignition:{name:'Ignition',desc:'Fire skills always apply Burn. At 10 stacks, Burn explodes and hits all enemies.',enabled:true},
+        explosivemana:{name:'Explosive Mana',desc:'Redirect damage to MP, scaling with INT. MP absorption triggers a fire explosion.',enabled:true}
+      },
+      skills:{
+        fireball:{name:'Inferno Blast',desc:'200% damage + INT fire nuke. Triggers Ignition.',mpCost:60,cooldown:25000,enabled:false,skillPts:0},
+        chainlightning:{name:'Incineration Ray',desc:'5s AoE channel. Hits every 0.5s and applies Burn.',mpCost:45,cooldown:25000,enabled:false,skillPts:0},
+        frostnova:{name:'Firewall',desc:'6s defensive fire wall. -20% incoming damage and burns attackers. No direct damage.',mpCost:35,cooldown:30000,enabled:false,skillPts:0},
+        manasurge:{name:'Sparkstarter',desc:'Restore MP, then increase MP regen for 5s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        chronosphere:{name:'Overheat',desc:'8s fire steroid: more fire damage, extra Burn stacks, and higher MP costs.',mpCost:50,cooldown:45000,enabled:false,skillPts:0}
+      }
+    },
+    frostmage: {
+      name:'Frostmage', identity:'Frostbite stacks, Freeze interrupts, attack interval control, and MP-efficient survival.',
+      passives:{
+        frostbite:{name:'Frostbite',desc:'Frost skills apply Frostbite. At 4 stacks, Freeze and interrupt enemies. Bosses freeze 0.7s every 4s.',enabled:true},
+        icearmor:{name:'Ice Armor',desc:'Redirect damage to MP. Enemies with Frostbite have attack interval increased by +0.3s per stack.',enabled:true}
+      },
+      skills:{
+        fireball:{name:'Glacial Spike',desc:'Frost burst that applies 1 Frostbite stack. Bonus damage to Frozen target.',mpCost:25,cooldown:15000,enabled:false,skillPts:0},
+        chainlightning:{name:'Frostbeam',desc:'5s channel. Deals frost damage and applies Frostbite every second.',mpCost:45,cooldown:25000,enabled:false,skillPts:0},
+        frostnova:{name:'Frost Nova',desc:'Existing frost AoE/control skill.',mpCost:15,cooldown:18000,enabled:false,skillPts:0},
+        manasurge:{name:'Mana Coolant',desc:'Restore MP and increase all enemy attack intervals by +2s for 5s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        chronosphere:{name:'Ice Barrier',desc:'6s defensive barrier: 35% damage reduction and shield equal to 35% Max MP.',mpCost:50,cooldown:45000,enabled:false,skillPts:0}
+      }
+    },
+    lightningmage: {
+      name:'Lightningmage', identity:'Mana cycling, free casts, reduced cooldown flow, and extreme chain lightning.',
+      passives:{
+        energyoverload:{name:'Energy Overload',desc:'Every 3rd skill cast is free and restores MP: 6% Max MP + INT x 0.45.',enabled:true},
+        arcbattery:{name:'Arc Battery',desc:'Redirect damage to MP, scaling with INT. Starts higher and caps at 55%.',enabled:true}
+      },
+      skills:{
+        fireball:{name:'Lightning Spear',desc:'Fast single-target lightning spell.',mpCost:25,cooldown:12000,enabled:false,skillPts:0},
+        chainlightning:{name:'Greater Chain Lightning',desc:'Bounces up to 14 times; can bounce to player to restore MP without damage.',mpCost:40,cooldown:20000,enabled:false,skillPts:0},
+        frostnova:{name:'Thunderclap',desc:'AoE lightning interrupt and attack delay.',mpCost:35,cooldown:25000,enabled:false,skillPts:0},
+        manasurge:{name:'Mana Conduit',desc:'Stronger MP restore. For 5s, skill cooldowns reduce by 2s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        chronosphere:{name:'Static Field',desc:'8s field: enemy damage restores MP equal to 30% of damage dealt.',mpCost:50,cooldown:45000,enabled:false,skillPts:0}
+      }
+    },
+    arcanist: {
+      name:'Arcanist', identity:'Arcane basic attacks, spell crits, spatial damage, and time defense.',
+      passives:{
+        arcaneimbuement:{name:'Arcane Imbuement',desc:'Basic attacks gain Arcane damage based on basic damage and INT. Damaging spells can critically strike.',enabled:true},
+        manaweave:{name:'Mana Weave',desc:'Redirect damage to MP. Basic attacks and spell critical strikes restore MP.',enabled:true}
+      },
+      skills:{
+        fireball:{name:'Arcane Blades',desc:'Basic-attack-scaling Arcane spell that can crit.',mpCost:25,cooldown:12000,enabled:false,skillPts:0},
+        chainlightning:{name:'Spatial Rend',desc:'AoE current-HP damage: base + INT + 5% enemy current HP. Current-HP part cannot crit.',mpCost:45,cooldown:25000,enabled:false,skillPts:0},
+        frostnova:{name:'Gravity Ball',desc:'High-damage AoE. Enemies attack interval +2s for 5s. Can crit.',mpCost:40,cooldown:30000,enabled:false,skillPts:0},
+        manasurge:{name:'Arcane Infusion',desc:'Restore MP. For 8s, basic attack interval becomes 0.6s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        chronosphere:{name:'Chrono Singularity',desc:'6s time distortion that delays incoming damage.',mpCost:60,cooldown:50000,enabled:false,skillPts:0}
+      }
+    }
+  }
+};
+
+function currentAdvancementId() { return G.classAdvancement || null; }
+function hasAdvancement(id) { return currentAdvancementId() === id; }
+function currentAdvancementDef() {
+  return CLASS_ADVANCEMENTS[G.playerClass || '']?.[currentAdvancementId() || ''] || null;
+}
+function cloneSkillObj(obj, oldObj=null) {
+  return Object.assign({}, obj, {
+    enabled: oldObj ? !!oldObj.enabled : false,
+    skillPts: oldObj ? clampSkillPointValue(oldObj.skillPts || 0) : 0
+  });
+}
+function clonePassiveObj(obj, oldObj=null) {
+  return Object.assign({}, obj, { enabled: oldObj ? oldObj.enabled !== false : true });
+}
+
+function getBaseClassKit(cls) {
+  if (cls === 'warrior') return {
+    passives:{ berserker:{name:'Berserker Rage',desc:'Basic attack damage increases as HP drops. Scales with level.',enabled:true}, battlehard:{name:'Battle Hardened',desc:'Stack 5% incoming damage reduction on consecutive kills without taking damage.',enabled:true} },
+    skills:{ shieldbash:{name:'Shield Bash',desc:'Hit + stun — base 20→60 dmg',mpCost:8,cooldown:10000,enabled:false,skillPts:0}, whirlwind:{name:'Whirlwind',desc:'AOE — base 12→42 dmg, 40% falloff per extra target',mpCost:14,cooldown:18000,enabled:false,skillPts:0}, warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0}, fortify:{name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0}, execute:{name:'Execute',desc:'Massive hit only at enemy HP ≤30%',mpCost:30,cooldown:40000,enabled:false,skillPts:0} }
+  };
+  if (cls === 'rogue') return {
+    passives:{ shadowstep:{name:'Shadowstep',desc:'Chance to strike twice on basic attacks. Scales with level.',enabled:true}, evasion:{name:'Evasion',desc:'Chance to dodge incoming attacks. Scales with level.',enabled:true} },
+    skills:{ cheapshot:{name:'Cheap Shot',desc:'Guaranteed crit',mpCost:10,cooldown:14000,enabled:false,skillPts:0}, smokebomb:{name:'Smoke Bomb',desc:'Delay next 2 enemy attacks',mpCost:12,cooldown:22000,enabled:false,skillPts:0}, flurry:{name:'Flurry',desc:'5 separate rapid strikes',mpCost:20,cooldown:20000,enabled:false,skillPts:0}, marktarget:{name:'Mark Target',desc:'Increase dmg 8s',mpCost:8,cooldown:26000,enabled:false,skillPts:0}, assassinate:{name:'Assassinate',desc:'Devastating strike',mpCost:35,cooldown:55000,enabled:false,skillPts:0} }
+  };
+  return {
+    passives:{ manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} },
+    skills:{ fireball:{name:'Fireball',desc:'AOE burst — base 40→200 dmg + INT scaling, full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce between targets — stronger INT scaling',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; stronger INT scaling',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore 10→40% max MP + INT scaling',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack + INT scaling",mpCost:60,cooldown:30000,enabled:false,skillPts:0} }
+  };
+}
+function applyClassAdvancement(advId) {
+  const adv = CLASS_ADVANCEMENTS[G.playerClass || '']?.[advId];
+  if (!adv) { log('Invalid class advancement.', 'system'); return; }
+  if (G.level < 50) { log('Class Advancement unlocks at Lv50.', 'system'); return; }
+  if (G.classAdvancement) { log(`Already advanced as ${currentAdvancementDef()?.name || G.classAdvancement}. Use a Class Reset Scroll first.`, 'system'); return; }
+  const skillsText = Object.entries(adv.skills).map(([slot,sk]) => `• ${sk.name} replaces ${slot}`).join('\n');
+  if (!confirm(`Advance to ${adv.name}?\n\n${adv.identity}\n\n${skillsText}\n\nThis choice is permanent unless you use a Class Reset Scroll.`)) return;
+  const oldSkills = G.skills || {};
+  const newSkills = {};
+  for (const [k,v] of Object.entries(adv.skills)) newSkills[k] = cloneSkillObj(v, oldSkills[k]);
+  const oldPassives = G.passives || {};
+  const newPassives = {};
+  for (const [k,v] of Object.entries(adv.passives)) newPassives[k] = clonePassiveObj(v, oldPassives[k]);
+  G.classAdvancement = advId;
+  G.skills = newSkills;
+  G.passives = newPassives;
+  G.skillCooldowns = {};
+  log(`Class Advancement applied: ${adv.name}`, 'system');
+  renderSkills(); renderStats(); saveGame(false);
+}
+function resetToBaseClassFromAdvancement(refundSkills=true) {
+  if (!G.playerClass) return;
+  const oldAdv = currentAdvancementDef()?.name || G.classAdvancement || 'Advancement';
+  if (refundSkills) {
+    for (const k of Object.keys(G.skills || {})) {
+      const pts = clampSkillPointValue(G.skills[k]?.skillPts || 0);
+      G.skillPoints += pts;
+    }
+  }
+  const cls = G.playerClass;
+  const kit = getBaseClassKit(cls);
+  G.passives = kit.passives;
+  G.skills = kit.skills;
+  G.classAdvancement = null;
+  G.skillCooldowns = {};
+  G.pendingSkillPoint = G.skillPoints > 0;
+  normalizeSkillPointEntitlement();
+  updateDerived();
+  log(`${oldAdv} reset — returned to basic ${cls.toUpperCase()}.`, 'system');
+  renderSkills(); renderStats(); saveGame(false);
+}
+function renderClassAdvancementChoices(container) {
+  if (!container) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:6px;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:9px;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;';
+  title.textContent = 'Class Advancement';
+  wrap.appendChild(title);
+  if (G.level < 50) {
+    const locked = document.createElement('div');
+    locked.className = 'skill-card';
+    locked.innerHTML = `<div class="skill-info"><div class="skill-name">Locked</div><div class="skill-desc">Class Advancement unlocks at Lv50.</div></div>`;
+    wrap.appendChild(locked);
+    container.appendChild(wrap);
+    return;
+  }
+  if (G.classAdvancement) {
+    const adv = currentAdvancementDef();
+    const card = document.createElement('div');
+    card.className = 'skill-card';
+    card.style.borderColor = '#aa8833';
+    card.innerHTML = `<div class="skill-info"><div class="skill-name">${adv?.name || G.classAdvancement}</div><div class="skill-desc">${adv?.identity || 'Class advancement active.'}</div><div class="skill-cost">Use a Class Reset Scroll to return to your basic class.</div></div>`;
+    wrap.appendChild(card);
+    container.appendChild(wrap);
+    return;
+  }
+  const choices = CLASS_ADVANCEMENTS[G.playerClass || ''] || {};
+  for (const [advId, adv] of Object.entries(choices)) {
+    const skillList = Object.values(adv.skills).map(s => s.name).join(' · ');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'skill-card';
+    btn.style.cssText = 'width:100%;text-align:left;cursor:pointer;border-color:#554422;';
+    btn.innerHTML = `<div class="skill-info"><div class="skill-name">${adv.name}</div><div class="skill-desc"><b>Identity:</b> ${adv.identity}<br><b>New skills:</b> ${skillList}</div><div class="skill-cost">Click to preview and confirm advancement.</div></div>`;
+    btn.addEventListener('click', () => applyClassAdvancement(advId));
+    wrap.appendChild(btn);
+  }
+  container.appendChild(wrap);
+}
+
+function safeMonsterName(m) { return m?.baseName || m?.name || 'enemy'; }
+function dealRawAdvancementDamage(monster, dmg, ts, label='Effect') {
+  if (!monster || monster.hp <= 0 || dmg <= 0) return 0;
+  const res = dealSkillDamageToMonster(monster, dmg, ts);
+  if (res.dealt > 0) {
+    log(`[${label}] hits <span class="log-monster">${safeMonsterName(monster)}</span> for ${fmtNum(res.dealt)} dmg`, 'spelldmg');
+    if (monster.hp <= 0) killMonster(monster, ts);
+  }
+  return res.dealt || 0;
+}
+function burnDamagePerStack() { return Math.max(1, Math.round(calcDamage()*0.06 + effStat('int')*0.5)); }
+function addBurnStacks(monster, stacks=1, ts=performance.now(), source='Burn') {
+  if (!monster || monster.hp <= 0) return;
+  monster.burnStacks = Math.max(0, (monster.burnStacks || 0) + stacks);
+  monster.burnUntil = ts + 5000;
+  log(`${source} applies ${stacks} Burn stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.burnStacks}/10)`, 'spelldmg');
+  while ((monster.burnStacks || 0) >= 10) {
+    monster.burnStacks -= 10;
+    const explosion = burnDamagePerStack() * 10 * 2;
+    log(`<span style="color:#ff8844">Ignition explodes from ${safeMonsterName(monster)} for ${fmtNum(explosion)} fire damage to all enemies!</span>`, 'spelldmg');
+    for (const t of [...G.monsters]) dealRawAdvancementDamage(t, explosion, ts, 'Ignition');
+  }
+}
+function poisonDamagePerStack() {
+  const agi = effStat('agi');
+  const critPoisonBonus = calcCritDamage() * 0.25 / 100;
+  const overflow = Math.max(0, calcRawCritChance() - 100);
+  const overflowPoisonBonus = overflow * 0.03;
+  return Math.max(1, Math.round((calcDamage()*0.02 + agi*0.075) * (1 + critPoisonBonus + overflowPoisonBonus)));
+}
+function addPoisonStacks(monster, stacks=1, ts=performance.now(), source='Poison') {
+  if (!monster || monster.hp <= 0) return;
+  monster.poisonStacks = Math.max(0, (monster.poisonStacks || 0) + stacks);
+  monster.poisonUntil = ts + 12000;
+  log(`${source} applies ${stacks} poison stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.poisonStacks})`, 'spelldmg');
+}
+function addFrostbite(monster, stacks=1, ts=performance.now(), source='Frostbite') {
+  if (!monster || monster.hp <= 0) return;
+  monster.frostbiteStacks = Math.max(0, (monster.frostbiteStacks || 0) + stacks);
+  monster.frostbiteUntil = ts + 8000;
+  log(`${source} applies ${stacks} Frostbite stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.frostbiteStacks}/4)`, 'spelldmg');
+  if ((monster.frostbiteStacks || 0) >= 4) {
+    const isBoss = !!monster.isBoss;
+    if (isBoss && (monster.frostBossFreezeLockUntil || 0) > ts) return;
+    monster.frostbiteStacks = 0;
+    const freezeMs = isBoss ? 700 : 1000;
+    monster.frozenUntil = Math.max(monster.frozenUntil || 0, ts + freezeMs);
+    if (isBoss) monster.frostBossFreezeLockUntil = ts + 4000;
+    monster.lastAttack = ts;
+    log(`<span style="color:#aaddff">${safeMonsterName(monster)} is Frozen for ${(freezeMs/1000).toFixed(1)}s!</span>`, 'spelldmg');
+  }
+}
+function tickAdvancementDots(ts=performance.now()) {
+  if (!G.combat) return;
+  const burnTick = Math.floor(ts / 1000);
+  if (G.combat.lastBurnTick !== burnTick) {
+    G.combat.lastBurnTick = burnTick;
+    for (const m of [...G.monsters]) {
+      if (!m || m.hp <= 0) continue;
+      if ((m.burnStacks || 0) > 0 && (m.burnUntil || 0) > ts) dealRawAdvancementDamage(m, burnDamagePerStack() * (m.burnStacks || 0), ts, 'Burn');
+      if ((m.poisonStacks || 0) > 0 && (m.poisonUntil || 0) > ts) dealRawAdvancementDamage(m, poisonDamagePerStack() * (m.poisonStacks || 0), ts, 'Poison');
+      if ((m.burnUntil || 0) <= ts) m.burnStacks = 0;
+      if ((m.poisonUntil || 0) <= ts) m.poisonStacks = 0;
+      if ((m.frostbiteUntil || 0) <= ts) m.frostbiteStacks = 0;
+    }
+  }
+}
+function isAdvancementChanneling(ts=performance.now()) {
+  const ch = G.combat?.advChannel;
+  return !!(ch && (ch.until || 0) > ts);
+}
+function tickAdvancementChannel(ts=performance.now()) {
+  const ch = G.combat?.advChannel;
+  if (!ch) return false;
+  if ((ch.until || 0) <= ts) { G.combat.advChannel = null; return false; }
+  if (ts < (ch.nextTick || 0)) return true;
+  ch.nextTick = ts + ch.tickMs;
+  if (ch.type === 'incineration') {
+    const dmg = Math.round(calcDamage()*0.25 + effStat('int')*0.8);
+    for (const t of [...G.monsters]) {
+      const res = dealSkillDamageToMonster(t, dmg, ts);
+      if (res.dealt > 0) { addBurnStacks(t, 1, ts, 'Incineration Ray'); if (t.hp<=0) killMonster(t, ts); }
+    }
+    log(`[Incineration Ray] burns all enemies for ~${fmtNum(dmg)} per hit`, 'spelldmg');
+  } else if (ch.type === 'frostbeam') {
+    const target = G.monsters[0];
+    if (!target) return true;
+    const dmg = Math.round(calcDamage()*0.35 + effStat('int')*1.0);
+    const res = dealSkillDamageToMonster(target, dmg, ts);
+    if (res.dealt > 0) addFrostbite(target, 1, ts, 'Frostbeam');
+    if (target.hp<=0) killMonster(target, ts);
+  }
+  return true;
+}
+function releaseAdvancementDelayedActions(ts=performance.now()) {
+  const act = G.combat?.advDelayed;
+  if (!act || (act.releaseAt || 0) > ts) return false;
+  G.combat.advDelayed = null;
+  const target = G.monsters.find(m => m && m.hp > 0 && (m.id === act.targetId)) || G.monsters[0];
+  if (!target) { log(`[${act.label}] fizzles — no target.`, 'spellcast'); return true; }
+  if (act.type === 'iai') {
+    dealRawAdvancementDamage(target, act.damage, ts, 'Iai Counter');
+  } else if (act.type === 'assassinate') {
+    const oldKey = G.combat.currentSkillKey; G.combat.currentSkillKey = 'assassinate';
+    const res = dealSkillDamageToMonster(target, act.damage, ts);
+    G.combat.currentSkillKey = oldKey;
+    if (res.dealt > 0) {
+      if (act.contract && target.contractKill) { G.skillCooldowns.assassinate = 0; target.contractKill = false; log('Contract Kill refreshes Assassinate!', 'spellcast'); }
+      log(`[Assassinate] hits <span class="log-monster">${safeMonsterName(target)}</span> for ${fmtNum(res.dealt)} dmg`, 'spelldmg');
+      if (target.hp<=0) killMonster(target, ts);
+    }
+  } else if (act.type === 'blacklotus') {
+    const stacks = Math.max(0, target.poisonStacks || 0);
+    const dmg = stacks * poisonDamagePerStack();
+    target.poisonStacks = 0;
+    target.poisonUntil = 0;
+    dealRawAdvancementDamage(target, dmg, ts, 'Black Lotus');
+  }
+  return true;
+}
+function restoreMpAdv(amount, label='MP') {
+  const before = G.mp;
+  G.mp = Math.min(G.maxMp, G.mp + Math.max(0, Math.round(amount || 0)));
+  const gained = Math.max(0, Math.round(G.mp - before));
+  if (gained > 0) log(`+${fmtNum(gained)} MP [${label}] (${fmtNum(G.mp)}/${fmtNum(G.maxMp)})`, 'mpgain');
+  return gained;
+}
+function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now()) {
+  let dmg = Math.max(0, Math.round(mdmg || 0));
+  const adv = currentAdvancementId();
+  if (adv === 'juggernaut' && G.passives?.unbreakablebody?.enabled) {
+    const pct = Math.min(0.40, G.maxHp / 100 / 100);
+    const old = dmg; dmg = Math.ceil(dmg * (1-pct));
+    if (old > dmg) log(`Unbreakable Body reduces damage by ${Math.round(pct*100)}%`, 'dmgtaken');
+  }
+  if (adv === 'swordmaster' && G.passives?.measuredguard?.enabled) {
+    const interval = calcAtkInterval();
+    const pct = Math.min(0.35, interval * 0.08);
+    const old = dmg; dmg = Math.ceil(dmg * (1-pct));
+    if (old > dmg) log(`Measured Guard reduces damage by ${Math.round(pct*100)}%`, 'dmgtaken');
+    const chance = Math.min(25, interval * 5);
+    if (Math.random()*100 < chance && monster && monster.hp > 0) {
+      const counter = Math.round(calcDamage() * 0.5);
+      dealRawAdvancementDamage(monster, counter, ts, 'Measured Guard Counter');
+    }
+  }
+  if (adv === 'nightshade' && G.passives?.toxicveil?.enabled && monster) {
+    const stacks = Math.max(0, monster.poisonStacks || 0);
+    if (stacks > 0) {
+      const pct = Math.min(0.25, stacks * 0.01);
+      const old = dmg; dmg = Math.ceil(dmg * (1-pct));
+      if (old > dmg) log(`Toxic Veil reduces damage by ${Math.round(pct*100)}%`, 'dmgtaken');
+    }
+  }
+  // Wizard advancement Mana Shield equivalents.
+  const passiveMap = {
+    flamemage:['explosivemana', 0.75, Math.min(0.45, (35 + effStat('int')/30)/100)],
+    frostmage:['icearmor', 0.85, Math.min(0.45, (35 + effStat('int')/30)/100)],
+    lightningmage:['arcbattery', 0.80, Math.min(0.55, (45 + effStat('int')/30)/100)],
+    arcanist:['manaweave', 0.80, Math.min(0.50, (40 + effStat('int')/30)/100)]
+  };
+  const cfg = passiveMap[adv];
+  if (cfg && G.passives?.[cfg[0]]?.enabled && G.mp > 0 && dmg > 0) {
+    const [key, efficiency, pct] = cfg;
+    const damageToRedirect = dmg * pct;
+    const mpCost = damageToRedirect / efficiency;
+    const mpSpent = Math.min(G.mp, mpCost);
+    const absorbed = mpSpent * efficiency;
+    G.mp = Math.max(0, G.mp - mpSpent);
+    dmg = Math.max(0, Math.ceil(dmg - absorbed));
+    log(`${G.passives[key].name} absorbs ${fmtNum(absorbed)} damage (${fmtNum(G.mp)}/${fmtNum(G.maxMp)} MP)`, 'dmgtaken');
+    if (adv === 'flamemage' && absorbed > 0 && ts >= (G.combat.explosiveManaNextAt || 0)) {
+      G.combat.explosiveManaNextAt = ts + 1000;
+      const ex = Math.round(absorbed * 0.75);
+      for (const t of [...G.monsters]) dealRawAdvancementDamage(t, ex, ts, 'Explosive Mana');
+    }
+  }
+  return dmg;
+}
+function applyAdvancementDamageDealt(monster, kind, amount, ts=performance.now()) {
+  const adv = currentAdvancementId();
+  if (!monster || amount <= 0) return;
+  if (adv === 'berserker' && G.passives?.bloodsurvival?.enabled) {
+    const hpPct = (G.hp / Math.max(1, G.maxHp)) * 100;
+    let ls = 0;
+    if (hpPct <= 10) ls = 0.80;
+    else if (hpPct <= 80) ls = ((80 - hpPct) / 70) * 0.80;
+    if ((G.combat.bloodFrenzyUntil || 0) > ts) ls *= 1.25;
+    const heal = amount * ls;
+    if (heal > 0) {
+      const before = G.hp; G.hp = Math.min(G.maxHp, G.hp + heal);
+      if (G.hp > before) log(`Blood Survival lifesteals ${fmtNum(G.hp-before)} HP`, 'basicattack');
+    }
+  }
+  if (adv === 'arcanist' && G.passives?.manaweave?.enabled) {
+    if (kind === 'basic') restoreMpAdv(G.maxMp*0.01 + effStat('int')*0.15, 'Mana Weave');
+    if (kind === 'skill' && G.combat.lastArcanistSpellCrit) restoreMpAdv(G.maxMp*0.03 + effStat('int')*0.35, 'Mana Weave Crit');
+  }
+  if (adv === 'nightshade' && (G.combat.virulentBloodUntil || 0) > ts) {
+    addPoisonStacks(monster, 1, ts, 'Virulent Blood');
+  }
+}
+function maybeCritArcanistSpell(dmg, label='Spell') {
+  if (!hasAdvancement('arcanist') || !G.passives?.arcaneimbuement?.enabled) { G.combat.lastArcanistSpellCrit = false; return {dmg, crit:false}; }
+  const crit = Math.random()*100 < calcCritChance();
+  if (!crit) { G.combat.lastArcanistSpellCrit = false; return {dmg, crit:false}; }
+  const cd = Math.max(100, calcCritDamage() * 0.60);
+  G.combat.lastArcanistSpellCrit = true;
+  return { dmg: Math.round(dmg * cd / 100), crit:true };
+}
+function advSkillDamage(dmg) { return Math.max(1, Math.round(dmg)); }
+function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
+  const adv = currentAdvancementId();
+  if (!adv) return false;
+  const str=effStat('str'), agi=effStat('agi'), int_=effStat('int'), base=calcDamage();
+  let handled = true;
+  let dealt = 0;
+  const hitTarget = (dmg, label, canCrit=false, extraFn=null) => {
+    if (!target) return 0;
+    let final = advSkillDamage(dmg);
+    let critText = '';
+    if (canCrit) { const c = maybeCritArcanistSpell(final, label); final = c.dmg; critText = c.crit ? ' [CRIT]' : ''; }
+    const res = dealSkillDamageToMonster(target, final, ts);
+    if (res.dealt > 0) { log(`[${label}] hits <span class="log-monster">${safeMonsterName(target)}</span> for ${fmtNum(res.dealt)} dmg${critText}`, 'spelldmg'); if (extraFn) extraFn(target); if (target.hp<=0) killMonster(target, ts); }
+    return res.dealt || 0;
+  };
+  if (adv === 'swordmaster') {
+    if (k==='shieldbash') { G.combat.advDelayed = {type:'iai', label:'Iai Counter', releaseAt:ts+2000, targetId:target?.id, damage:base*(1.5+calcAtkInterval()*0.5)+str*3}; G.combat.iiaGuardUntil = ts+2000; log('[Iai Counter] stance begins — strike releases in 2s.', 'spellcast'); }
+    else if (k==='whirlwind') { let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+str*2, ts, 'Crescent Slash'); log(`[Crescent Slash] total ${fmtNum(total)} damage`, 'spelldmg'); }
+    else if (k==='warcry') { const pct=Math.min(40,15+str*0.05); G.combat.warCryPct=pct; G.combat.warCryUntil=ts+8000; log(`[Quick Sheath] +${pct.toFixed(0)}% damage for 8s`, 'spellcast'); }
+    else if (k==='fortify') { G.combat.fortifyPct=Math.min(35,25+effStat('vit')*0.03); G.combat.fortifyUntil=ts+6000; G.combat.stillbladeUntil=ts+6000; log(`[Stillblade Stance] ${G.combat.fortifyPct.toFixed(0)}% damage reduction for 6s`, 'spellcast'); }
+    else if (k==='execute') { const dmg=(base*1.2+str*2)*(calcCritDamage()/100); hitTarget(dmg, 'Mortal Strike'); }
+    else handled=false;
+  } else if (adv === 'berserker') {
+    if (k==='shieldbash') { dealt=hitTarget(base*1.8+str*2, 'Skullbreaker'); if (target) { target.crackedArmorPct = (G.hp/G.maxHp)<=0.5?15:10; target.crackedArmorUntil=ts+6000; log(`Cracked Armor: target takes +${target.crackedArmorPct}% damage for 6s`, 'spelldmg'); } }
+    else if (k==='whirlwind') { const hits=(G.hp/G.maxHp)<=0.4?5:4; let total=0; for (let i=0;i<hits;i++) for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*0.45+str*0.75, ts, 'Blood Cyclone'); log(`[Blood Cyclone] ${hits} hits, ${fmtNum(total)} total damage`, 'spelldmg'); }
+    else if (k==='fortify') { G.combat.bloodFrenzyUntil=ts+8000; G.combat.bloodFrenzyStartedAt=ts; log('[Blood Frenzy] +attack speed/damage for 8s, draining 5% Max HP per second.', 'spellcast'); }
+    else if (k==='execute') { const enemyMissing = target ? 1-target.hp/Math.max(1,target.maxHp) : 0; const selfMissing = 1-G.hp/Math.max(1,G.maxHp); hitTarget((base*2.2+str*3)*(1+enemyMissing)*(1+selfMissing/2), 'Guillotine'); }
+    else handled=false;
+  } else if (adv === 'juggernaut') {
+    if (k==='shieldbash') { dealt=hitTarget(base*1.2+G.maxHp*0.06+effStat('vit')*2, 'Aegis Bash'); if (target) target.lastAttack=ts; }
+    else if (k==='whirlwind') { let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+G.maxHp*0.04+effStat('vit')*1.5, ts, 'Shield Burst'); log(`[Shield Burst] total ${fmtNum(total)} damage`, 'spelldmg'); }
+    else if (k==='warcry') { G.combat.titansChallengeUntil=ts+8000; G.combat.titansChallengeMaxHpBonus=Math.min(35,20+effStat('vit')*0.02); G.combat.titansChallengeDR=Math.min(20,10+effStat('vit')*0.01); log(`[Titan's Challenge] +${G.combat.titansChallengeMaxHpBonus.toFixed(0)}% Max HP scaling and ${G.combat.titansChallengeDR.toFixed(0)}% DR for 8s`, 'spellcast'); }
+    else if (k==='execute') { const selfDmg=Math.round(G.maxHp*0.10); G.hp=Math.max(1,G.hp-selfDmg); hitTarget(base*2.0+selfDmg+effStat('vit')*3, 'Seismic Slam'); }
+    else handled=false;
+  } else if (adv === 'assassin') {
+    if (k==='cheapshot') { dealt=hitTarget(base*1.6+agi*2, 'Vital Strike'); if (target) { target.vitalWoundUntil=ts+6000; target.vitalWoundBonus=Math.min(40,25+agi*0.03); log(`Vital Wound: next Assassinate +${target.vitalWoundBonus.toFixed(0)}% damage`, 'spelldmg'); } }
+    else if (k==='smokebomb') { G.combat.cloakDaggerUntil=ts+3000; G.combat.cloakDaggerCritBonus=Math.min(80,40+agi*0.10); G.combat.vanishDodgeUntil=ts+3000; log(`[Cloak and Dagger] dodge window and next damaging skill +${G.combat.cloakDaggerCritBonus.toFixed(0)}% Crit Damage`, 'spellcast'); }
+    else if (k==='flurry') { let crits=0,total=0; for(let i=0;i<4;i++){ let dmg=base*0.60+agi*0.5; const isCrit=Math.random()*100<calcCritChance(); if(isCrit){crits++; dmg*=calcCritDamage()/100;} total += hitTarget(dmg, 'Phantom Rush'); } if(crits>0){ const red=Math.min(2.5,1.5+agi*0.002)*1000*crits; G.skillCooldowns.assassinate=Math.max(0,(G.skillCooldowns.assassinate||0)-red); log(`Phantom Rush reduces Assassinate cooldown by ${(red/1000).toFixed(1)}s`, 'spellcast'); } }
+    else if (k==='marktarget') { if (target){ target.contractKill=true; target.contractKillUntil=ts+Math.min(12000,8000+agi*5); log(`Contract Kill marks ${safeMonsterName(target)}. First Assassinate refreshes its cooldown.`, 'spellcast'); } }
+    else if (k==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; G.combat.advDelayed={type:'assassinate', label:'Assassinate', releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+3000; log('[Assassinate] 1.5s cast begins.', 'spellcast'); }
+    else handled=false;
+  } else if (adv === 'nightshade') {
+    if (k==='cheapshot') { hitTarget(base*0.8+agi*1.2, 'Toxin Dart', false, t=>addPoisonStacks(t,3,ts,'Toxin Dart')); }
+    else if (k==='smokebomb') { G.combat.smokeBombCharges=5; for(const t of [...G.monsters]) addPoisonStacks(t,5,ts,'Poison Mist'); log('[Poison Mist] delays attacks and applies poison.', 'spellcast'); }
+    else if (k==='flurry') { let total=0; const extra=(G.combat.virulentBloodUntil||0)>ts?1:0; for(let i=0;i<5;i++){ const t=G.monsters[0]; if(!t) break; total+=hitTarget(base*0.25+agi*0.25, 'Venom Flurry', false, x=>addPoisonStacks(x,1+extra,ts,'Venom Flurry')); } log(`[Venom Flurry] ${fmtNum(total)} total damage`, 'spelldmg'); }
+    else if (k==='marktarget') { G.combat.virulentBloodUntil=ts+8000; log('[Virulent Blood] basic attacks and skills apply +1 poison stack for 8s.', 'spellcast'); }
+    else if (k==='assassinate') { G.combat.advDelayed={type:'blacklotus',label:'Black Lotus',releaseAt:ts+3000,targetId:target?.id}; log('[Black Lotus] 3s cast begins; will consume all poison stacks.', 'spellcast'); }
+    else handled=false;
+  } else if (adv === 'flamemage') {
+    if (k==='fireball') { hitTarget(base*2.0+int_*3, 'Inferno Blast', false, t=>addBurnStacks(t,1,ts,'Inferno Blast')); }
+    else if (k==='chainlightning') { G.combat.advChannel={type:'incineration',until:ts+5000,nextTick:ts,tickMs:500}; log('[Incineration Ray] channeling for 5s.', 'spellcast'); }
+    else if (k==='frostnova') { G.combat.firewallUntil=ts+6000; G.combat.firewallDR=Math.min(0.30,(20+int_*0.01)/100); log(`[Firewall] ${Math.round(G.combat.firewallDR*100)}% damage reduction for 6s. Attackers receive Burn.`, 'spellcast'); }
+    else if (k==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Sparkstarter'); G.combat.sparkstarterUntil=ts+5000; log('[Sparkstarter] MP regen increased for 5s.', 'spellcast'); }
+    else if (k==='chronosphere') { G.combat.overheatUntil=ts+8000; log('[Overheat] fire skills apply +1 Burn stack and deal more damage for 8s.', 'spellcast'); }
+    else handled=false;
+  } else if (adv === 'frostmage') {
+    if (k==='fireball') { let dmg=base*1.8+int_*3; if ((target?.frozenUntil||0)>ts) dmg*=1.25; hitTarget(dmg,'Glacial Spike',false,t=>addFrostbite(t,1,ts,'Glacial Spike')); }
+    else if (k==='chainlightning') { G.combat.advChannel={type:'frostbeam',until:ts+5000,nextTick:ts,tickMs:1000}; log('[Frostbeam] channeling for 5s.', 'spellcast'); }
+    else if (k==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Mana Coolant'); for(const m of G.monsters){m.frostNovaSlowAdd=Math.max(m.frostNovaSlowAdd||0,2000);m.frostNovaSlowUntil=Math.max(m.frostNovaSlowUntil||0,ts+5000);} log('[Mana Coolant] all enemy attack intervals +2.0s for 5s.', 'spellcast'); }
+    else if (k==='chronosphere') { G.combat.iceBarrierUntil=ts+6000; G.combat.iceBarrierShield=Math.max(G.combat.iceBarrierShield||0,G.maxMp*0.35); log(`[Ice Barrier] 35% DR and ${fmtNum(G.combat.iceBarrierShield)} shield for 6s`, 'spellcast'); }
+    else handled=false;
+  } else if (adv === 'lightningmage') {
+    if (k==='fireball') { hitTarget(base*1.6+int_*2.8,'Lightning Spear'); }
+    else if (k==='chainlightning') { const dmg=base*0.75+int_*1.4; let total=0; let previous=null; for(let i=1;i<=14;i++){ const bounceToPlayer = i>1 && Math.random()<0.22; if (bounceToPlayer){ restoreMpAdv(G.maxMp*0.02+int_*0.15,'Greater Chain Lightning'); previous=null; continue; } const live=G.monsters.filter(m=>m&&m.hp>0); if(!live.length) break; const t=(live.length>1&&previous)?(live.find(m=>m!==previous)||live[0]):live[0]; total+=dealRawAdvancementDamage(t,dmg,ts,'Greater Chain Lightning'); previous=t; } log(`[Greater Chain Lightning] finishes after up to 14 bounces (${fmtNum(total)} total damage)`, 'spelldmg'); }
+    else if (k==='frostnova') { let total=0; for(const t of [...G.monsters]){ total+=dealRawAdvancementDamage(t,base*0.9+int_*1.8,ts,'Thunderclap'); t.lastAttack=ts; t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,500); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+3000);} log(`[Thunderclap] interrupts ${G.monsters.length} enemies`, 'spellcast'); }
+    else if (k==='manasurge') { restoreMpAdv(G.maxMp*0.22+int_*2.0+100,'Mana Conduit'); G.combat.manaConduitUntil=ts+5000; log('[Mana Conduit] skill cooldowns reduced by 2s for 5s.', 'spellcast'); }
+    else if (k==='chronosphere') { G.combat.staticFieldUntil=ts+8000; log('[Static Field] enemy damage restores MP for 8s.', 'spellcast'); }
+    else handled=false;
+  } else if (adv === 'arcanist') {
+    if (k==='fireball') { hitTarget(base*1.4+int_*2.5,'Arcane Blades',true); }
+    else if (k==='chainlightning') { for(const t of [...G.monsters]){ let basePart=base*0.50+int_*2.0; const c=maybeCritArcanistSpell(basePart,'Spatial Rend'); let dmg=c.dmg + t.hp*0.05; const res=dealSkillDamageToMonster(t,dmg,ts); if(res.dealt>0){log(`[Spatial Rend] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } }
+    else if (k==='frostnova') { for(const t of [...G.monsters]){ let dmg=base*1.4+int_*3.0; const c=maybeCritArcanistSpell(dmg,'Gravity Ball'); const res=dealSkillDamageToMonster(t,c.dmg,ts); t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,2000); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+5000); if(res.dealt>0){log(`[Gravity Ball] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } }
+    else if (k==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Arcane Infusion'); G.combat.arcaneInfusionUntil=ts+8000; log('[Arcane Infusion] basic attack interval becomes 0.6s for 8s.', 'spellcast'); }
+    else if (k==='chronosphere') { G.combat.chronoSingularityUntil=ts+6000; for(const m of G.monsters){m.chronosphereDelayNext=true;m.chronosphereDamageDelay=3000;} log('[Chrono Singularity] incoming damage is delayed for 6s.', 'spellcast'); }
+    else handled=false;
+  } else handled=false;
+  if (handled && (G.combat.virulentBloodUntil || 0) > ts && target && ['cheapshot','flurry','fireball','chainlightning','frostnova'].includes(k)) addPoisonStacks(target,1,ts,'Virulent Blood');
+  return handled;
 }
 
 function performWhirlwindHit(ts=performance.now(), str=effStat('str'), sp=0, label='Whirlwind') {
@@ -4546,6 +5115,7 @@ function spawnKitarasqueMassBlobs(boss, ts=performance.now()) {
 }
 function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
   if (!monster || amount <= 0) return;
+  applyAdvancementDamageDealt(monster, kind, amount, ts);
   if (monster.isKitarasque) {
     const before = monster.hp;
     const heal = Math.max(1, Math.round(before * 0.05 * bossHealMultiplier(monster)));
@@ -7308,18 +7878,22 @@ function gameTick(ts) {
     requestAnimationFrame(gameTick);
     return;
   }
+  tickAdvancementDots(ts);
+  tickAdvancementChannel(ts);
+  releaseAdvancementDelayedActions(ts);
 
   // Combat
   if(G.monsters.length>0){
     const flamestealerCasting = isFlamestealerCasting(ts);
-    if ((G.combat.aislongFrozenUntil || 0) > ts || flamestealerCasting) {
-      // Frozen or channeling Flamestealer: player cannot attack or cast skills, but enemies continue attacking.
+    const advancementChanneling = isAdvancementChanneling(ts);
+    if ((G.combat.aislongFrozenUntil || 0) > ts || flamestealerCasting || advancementChanneling) {
+      // Frozen or channeling: player cannot attack or cast skills, but enemies continue attacking.
       G.lastAttack = ts;
     }
     // Attack speed — apply freezing penalty
     const freezePenalty = G.debuffs.freezing ? 2.0 : 1.0;
     const atkMs = calcAtkInterval() * 1000 * freezePenalty;
-    if((G.combat.aislongFrozenUntil || 0) <= ts && !flamestealerCasting && ts-G.lastAttack>=atkMs){
+    if((G.combat.aislongFrozenUntil || 0) <= ts && !flamestealerCasting && !advancementChanneling && ts-G.lastAttack>=atkMs){
       G.lastAttack=ts;
       const target = G.monsters[0];
       if (!target) { updateUI(); requestAnimationFrame(gameTick); return; }
@@ -7352,6 +7926,12 @@ function gameTick(ts) {
       }
 
       let dmg=applyFervorBasicDamage(calcDamage() + calcInfinityBladeBasicBonus(), ts);
+      if (hasAdvancement('juggernaut') && G.passives?.titanicforce?.enabled) dmg += Math.round(G.maxHp * 0.05);
+      if (hasAdvancement('arcanist') && G.passives?.arcaneimbuement?.enabled) dmg += Math.round(calcDamage()*0.35 + effStat('int')*1.5);
+      if (hasAdvancement('berserker') && G.passives?.ragewithin?.enabled) {
+        const missingTens = Math.floor((100 - (G.hp / Math.max(1, G.maxHp)) * 100) / 10);
+        dmg = Math.round(dmg * (1 + missingTens * 0.04));
+      }
 
       // Berserker Rage (Warrior) — bonus damage based on missing HP
       if (G.playerClass==='warrior' && G.passives?.berserker?.enabled) {
@@ -7435,7 +8015,7 @@ function gameTick(ts) {
     const canGlobalSkillCast = ts - (G.combat.lastGlobalSkillCastAt || 0) >= globalSkillThrottleMs;
     const manualSkillKey = G.combat.manualSkillCast;
     const manualTargetlessCast = manualSkillKey && isTargetlessSkill(manualSkillKey);
-    if((G.monsters.length>0 || manualTargetlessCast) && canGlobalSkillCast && (G.combat.aislongFrozenUntil || 0) <= ts && !isFlamestealerCasting(ts)){
+    if((G.monsters.length>0 || manualTargetlessCast) && canGlobalSkillCast && (G.combat.aislongFrozenUntil || 0) <= ts && !isFlamestealerCasting(ts) && !isAdvancementChanneling(ts)){
       const skillOrder = (manualSkillKey && G.skills?.[manualSkillKey]) ? [manualSkillKey] : getSkillCastOrder();
       for(const k of skillOrder){
         const v = G.skills?.[k];
@@ -7465,9 +8045,17 @@ function gameTick(ts) {
           }
         }
 
-        // Overload (Wizard) — every 5th cast (3rd with Arcanist's Crown) costs 0 MP and deals bonus damage
+        // Overload / Energy Overload — class-specific free cast logic.
         let overloadActive = false;
-        if (G.playerClass==='wizard' && G.passives?.overload?.enabled) {
+        let lightningOverloadRestore = 0;
+        if (hasAdvancement('lightningmage') && G.passives?.energyoverload?.enabled) {
+          G.combat.overloadCasts = (G.combat.overloadCasts||0) + 1;
+          if (G.combat.overloadCasts >= 3) {
+            overloadActive = true;
+            lightningOverloadRestore = G.maxMp * 0.06 + effStat('int') * 0.45;
+            G.combat.overloadCasts = 0;
+          }
+        } else if (G.playerClass==='wizard' && G.passives?.overload?.enabled) {
           const overloadThreshold = hasMythicMod('arcanist_crown') ? 3 : 5;
           G.combat.overloadCasts = (G.combat.overloadCasts||0) + 1;
           if (G.combat.overloadCasts >= overloadThreshold) {
@@ -7481,10 +8069,12 @@ function gameTick(ts) {
         G.combat.lastGlobalSkillCastAt = ts;
         if (!overloadActive) G.mp = Math.max(0, G.mp - effectiveMpCost);
         G.skillCooldowns[k] = effectiveCooldown(v.cooldown, k);
+        if ((G.combat.manaConduitUntil || 0) > ts) G.skillCooldowns[k] = Math.max(500, G.skillCooldowns[k] - 2000);
         // Log MP cost
         const mpSpent = overloadActive ? 0 : effectiveMpCost;
         if (mpSpent > 0) log(`-${fmtNum(mpSpent)} MP [${v.name}] (${fmtNum(G.mp)}/${G.maxMp})`, 'mpcost');
         else if (overloadActive) log(`[OVERLOAD] ${v.name} — free cast`, 'mpcost');
+        if (lightningOverloadRestore > 0) restoreMpAdv(lightningOverloadRestore, 'Energy Overload');
         if (applyWitchCurseSkillBacklash(v.name, ts)) {
           updateUI();
           requestAnimationFrame(gameTick);
@@ -7499,6 +8089,12 @@ function gameTick(ts) {
         let skillDmg = 0;
         let skillNote = '';
         let skillLogHandled = false;
+
+        G.combat.currentSkillKey = k;
+        if (handleAdvancementSkill(k, target, ts, overloadActive, v, sp)) {
+          G.combat.currentSkillKey = null;
+          break;
+        }
 
         // Titan's Girdle: Fortify costs 0 MP
         if (k==='fortify' && hasMythicMod('titan_girdle')) {
@@ -7778,6 +8374,7 @@ function gameTick(ts) {
         } else if (!skillLogHandled && skillNote) {
           log(`[${v.name}] ${skillNote}`, 'spellcast');
         }
+        G.combat.currentSkillKey = null;
         break; // one skill per attack tick
       }
     }
@@ -7787,7 +8384,9 @@ function gameTick(ts) {
     // Monsters attack
     for (const m of [...G.monsters]) {
       if (isSandwormUnderground(m, ts)) continue;
-      const frostNovaSlow = (m.frostNovaSlowUntil || 0) > ts ? Math.max(0, m.frostNovaSlowAdd || 0) : 0;
+      if ((m.frozenUntil || 0) > ts) { m.lastAttack = ts; continue; }
+      const frostbiteSlow = (hasAdvancement('frostmage') && G.passives?.icearmor?.enabled && (m.frostbiteUntil || 0) > ts) ? Math.max(0, (m.frostbiteStacks || 0) * 300) : 0;
+      const frostNovaSlow = ((m.frostNovaSlowUntil || 0) > ts ? Math.max(0, m.frostNovaSlowAdd || 0) : 0) + frostbiteSlow;
       const interval = randi(m.atkMin||2000, m.atkMax||5000) + (hasMythicMod('pale_furisode') ? 700 : 0) + frostNovaSlow;
       if (ts - m.lastAttack >= interval) {
         m.lastAttack = ts;
@@ -7866,6 +8465,11 @@ function gameTick(ts) {
             m.lastAttack = ts; continue;
           }
         }
+        const advDodge = (hasAdvancement('assassin') && G.passives?.vanishstep?.enabled ? 5 : 0) + (hasAdvancement('nightshade') && G.passives?.toxicveil?.enabled ? 5 : 0) + (((G.combat.vanishDodgeUntil || 0) > ts) ? 30 : 0);
+        if (advDodge > 0 && Math.random()*100 < advDodge) {
+          log(`Advanced dodge avoids attack from <span class="log-monster">${m.baseName||m.name}</span>!`, 'dmgtaken');
+          m.lastAttack = ts; continue;
+        }
         if (m.smokeBombLocked || (G.combat.smokeBombCharges || 0) > 0) {
           if (!m.smokeBombLocked) G.combat.smokeBombCharges = Math.max(0, (G.combat.smokeBombCharges || 0) - 1);
           m.lastAttack = ts;
@@ -7903,8 +8507,29 @@ function gameTick(ts) {
           }
           mdmg = applyBattleHardenedReduction(mdmg);
           mdmg = applyGeneralIncomingDamageReduction(mdmg);
+          if ((G.combat.firewallUntil || 0) > ts && mdmg > 0) {
+            const before = mdmg;
+            mdmg = Math.ceil(mdmg * (1 - (G.combat.firewallDR || 0.20)));
+            addBurnStacks(m, 1, ts, 'Firewall');
+            log(`Firewall reduces incoming damage (${fmtNum(before)} → ${fmtNum(mdmg)})`, 'dmgtaken');
+          }
+          if ((G.combat.iceBarrierUntil || 0) > ts && mdmg > 0) {
+            mdmg = Math.ceil(mdmg * 0.65);
+            const shield = Math.max(0, G.combat.iceBarrierShield || 0);
+            if (shield > 0) {
+              const abs = Math.min(shield, mdmg);
+              G.combat.iceBarrierShield = Math.max(0, shield - abs);
+              mdmg = Math.max(0, mdmg - abs);
+              log(`Ice Barrier shield absorbs ${fmtNum(abs)} damage`, 'dmgtaken');
+            }
+          }
+          if ((G.combat.titansChallengeUntil || 0) > ts && mdmg > 0) {
+            const pct = Math.min(0.20, (G.combat.titansChallengeDR || 0)/100);
+            mdmg = Math.ceil(mdmg * (1-pct));
+          }
+          mdmg = applyAdvancementIncomingMitigation(m, mdmg, ts);
           // Mana Shield (Wizard) — absorb % of damage with MP
-          if (G.playerClass==='wizard' && G.passives?.manashield?.enabled && G.mp > 0) {
+          if (G.playerClass==='wizard' && !G.classAdvancement && G.passives?.manashield?.enabled && G.mp > 0) {
             const absorbPct = hasMythicMod('void_mantle') ? 1.0 : (10 + Math.floor(G.level/4)) / 100;
             const mpDrainMult = hasMythicMod('void_mantle') ? 3 : 1;
             const absorbed = Math.min(Math.ceil(mdmg * absorbPct * 10) / 10, G.mp);
@@ -7922,6 +8547,7 @@ function gameTick(ts) {
           } else {
             G.hp -= mdmg;
             log(`<span class="log-monster">${m.baseName||m.name}</span> hits you for ${fmtNum(mdmg)}`, 'dmgtaken');
+            if ((G.combat.staticFieldUntil || 0) > ts && mdmg > 0) restoreMpAdv(mdmg * 0.30, 'Static Field');
             if (m.tags && m.tags.includes('VAMPIRIC') && mdmg > 0) {
               const vampHeal = Math.max(1, Math.round(mdmg * 2.0));
               const beforeVamp = m.hp;
@@ -7995,6 +8621,16 @@ function gameTick(ts) {
           if (G.monsters[0] === m && G.subZone==='crimson_rot') G.debuffs.crimsonRot = ts + 10000;
           if (G.hp <= 0) { G.hp=0; die(); return; }
         }
+      }
+    }
+
+    if ((G.combat.bloodFrenzyUntil || 0) > ts) {
+      const sec = Math.floor(ts / 1000);
+      if (G.combat.bloodFrenzyLastDrain !== sec) {
+        G.combat.bloodFrenzyLastDrain = sec;
+        const drain = Math.max(1, Math.round(G.maxHp * 0.05));
+        G.hp = Math.max(1, G.hp - drain);
+        log(`Blood Frenzy drains ${fmtNum(drain)} HP`, 'dmgtaken');
       }
     }
 
@@ -9455,17 +10091,28 @@ function renderMerchant() {
   const grid=document.getElementById('merchant-grid');
   grid.innerHTML='';
 
-  // Reset Scroll — permanent slot
-  const scrollDiv=document.createElement('div');
-  scrollDiv.className='shop-item';
-  scrollDiv.style.borderColor='#9977bb';
-  scrollDiv.innerHTML=`
+  // Reset Scrolls — permanent slots
+  const statScrollDiv=document.createElement('div');
+  statScrollDiv.className='shop-item';
+  statScrollDiv.style.borderColor='#9977bb';
+  statScrollDiv.innerHTML=`
     <div class="shop-item-tag" style="color:#9977bb;">Special</div>
-    <div class="shop-item-name" style="color:#9977bb">Reset Scroll</div>
-    <div class="shop-item-desc">Refunds all stat and skill points.</div>
-    <button class="shop-buy-btn" id="reset-scroll-btn" style="border-color:#9977bb;color:#9977bb;" ${G.gold<30000?'disabled':''}>Buy 30,000g</button>
+    <div class="shop-item-name" style="color:#9977bb">Stat Reset Scroll</div>
+    <div class="shop-item-desc">Refunds stat allocations only. Class and skills stay unchanged.</div>
+    <button class="shop-buy-btn" id="stat-reset-scroll-btn" style="border-color:#9977bb;color:#9977bb;" ${G.gold<15000?'disabled':''}>Buy 15,000g</button>
   `;
-  grid.appendChild(scrollDiv);
+  grid.appendChild(statScrollDiv);
+
+  const classScrollDiv=document.createElement('div');
+  classScrollDiv.className='shop-item';
+  classScrollDiv.style.borderColor='#bb8855';
+  classScrollDiv.innerHTML=`
+    <div class="shop-item-tag" style="color:#bb8855;">Special</div>
+    <div class="shop-item-name" style="color:#bb8855">Class Reset Scroll</div>
+    <div class="shop-item-desc">Removes your class advancement and returns you to the basic chosen class. Skill points are refunded.</div>
+    <button class="shop-buy-btn" id="class-reset-scroll-btn" style="border-color:#bb8855;color:#bb8855;" ${G.gold<30000?'disabled':''}>Buy 30,000g</button>
+  `;
+  grid.appendChild(classScrollDiv);
 
   // Potions
   for (const p of POTION_SHOP) {
@@ -9495,9 +10142,11 @@ function renderMerchant() {
     grid.appendChild(div);
   }
 
-  // Wire reset scroll button after render
-  const rsBtn = document.getElementById('reset-scroll-btn');
-  if (rsBtn) rsBtn.addEventListener('click', buyResetScroll);
+  // Wire reset scroll buttons after render
+  const statBtn = document.getElementById('stat-reset-scroll-btn');
+  if (statBtn) statBtn.addEventListener('click', buyStatResetScroll);
+  const classBtn = document.getElementById('class-reset-scroll-btn');
+  if (classBtn) classBtn.addEventListener('click', buyClassResetScroll);
 }
 
 function buyPotion(tier, price) {
@@ -9512,21 +10161,26 @@ function buyPotion(tier, price) {
   renderMerchant(); renderPotions(); renderStats();
 }
 
-function buyResetScroll() {
-  if (G.gold < 30000) { log('Not enough gold. Reset Scroll costs 30,000g.'); return; }
-  G.gold -= 30000;
+function buyStatResetScroll() {
+  if (G.gold < 15000) { log('Not enough gold. Stat Reset Scroll costs 15,000g.'); return; }
+  if (!confirm('Use Stat Reset Scroll? This refunds only stat allocations.')) return;
+  G.gold -= 15000;
   const totalStatPts = G.stats.str + G.stats.agi + G.stats.int + G.stats.vit;
   G.statsPoints += totalStatPts;
   G.stats = {str:0, agi:0, int:0, vit:0};
-  for (const k of Object.keys(G.skills)) {
-    G.skillPoints += G.skills[k].skillPts || 0;
-    G.skills[k].skillPts = 0;
-  }
-  G.pendingSkillPoint = G.skillPoints > 0;
   updateDerived();
-  log(`Reset Scroll used — ${totalStatPts} stat pts + skill pts refunded.`);
-  renderStats(); renderInventory(); renderSkills(); renderMerchant();
+  log(`Stat Reset Scroll used — ${totalStatPts} stat points refunded.`);
+  renderStats(); renderInventory(); renderSkills(); renderMerchant(); saveGame(false);
 }
+function buyClassResetScroll() {
+  if (G.gold < 30000) { log('Not enough gold. Class Reset Scroll costs 30,000g.'); return; }
+  if (!G.classAdvancement) { log('You do not have a class advancement to reset.', 'system'); return; }
+  if (!confirm('Use Class Reset Scroll? This removes your advancement and returns you to your basic chosen class. Skill points are refunded.')) return;
+  G.gold -= 30000;
+  resetToBaseClassFromAdvancement(true);
+  renderStats(); renderInventory(); renderSkills(); renderMerchant(); saveGame(false);
+}
+function buyResetScroll() { buyStatResetScroll(); }
 
 function buyMerchantItem(idx) {
   const item=G.merchantStock[idx];
@@ -10805,6 +11459,9 @@ function executeDamageThreshold() {
 }
 
 function skillDamagePreview(k) {
+  if (G.classAdvancement) {
+    return `Lv${activeSkillLevel(k)}/${ACTIVE_SKILL_POINT_CAP}: ${Math.round(skillPowerFactor(k)*100)}% effect power · ${Math.round(skillEconomyFactor(k)*100)}% MP/CD economy`;
+  }
   const str=effStat('str'), agi=effStat('agi'), int_=effStat('int');
   const base=calcDamage();
   const sp = skillPts20(k);
@@ -10930,7 +11587,7 @@ function skillPanelSignature() {
   const activeSig = Object.entries(G.skills || {})
     .map(([k,v]) => `${k}:${v.enabled?1:0}:${v.skillPts||0}`)
     .join('|');
-  return `${G.playerClass||''}|${G.skillPoints}|${G.pendingSkillPoint?1:0}|${passiveSig}|${activeSig}`;
+  return `${G.playerClass||''}:${G.classAdvancement||''}|${G.skillPoints}|${G.pendingSkillPoint?1:0}|${passiveSig}|${activeSig}`;
 }
 
 function wireSkillControl(el, handler) {
@@ -11046,8 +11703,9 @@ function skillNeedsTarget(k) {
 function currentSkillMpCost(k) {
   const v = G.skills?.[k];
   if (!v) return Infinity;
-  if (k==='cheapshot' && hasMythicMod('mirror_edge')) return v.mpCost + Math.round(G.maxMp * 0.10);
-  return v.mpCost || 0;
+  let cost = Math.max(0, v.mpCost || 0);
+  if (k==='cheapshot' && hasMythicMod('mirror_edge')) cost += Math.round(G.maxMp * 0.10);
+  return Math.max(0, Math.ceil(cost * skillEconomyFactor(k)));
 }
 function requestManualSkillCast(k) {
   const v = G.skills?.[k];
@@ -11113,7 +11771,7 @@ function renderSkills() {
         <div class="skill-name">${v.name} — <span id="skill-cd-${k}">${cdLabel}</span></div>
         <div class="skill-desc">${v.desc}</div>
         <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;align-items:center;">
-          <span class="skill-meta">${v.mpCost} MP</span>
+          <span class="skill-meta">${currentSkillMpCost(k)} MP</span>
           <span class="skill-meta" id="skill-effcd-${k}">${effCd===0?'<span style="color:#cc44ff">NO CD</span>':(effCd/1000).toFixed(1)+'s CD'}</span>
           <span class="skill-meta" style="color:#667744;" id="skill-preview-${k}">${preview}</span>
           <span class="skill-meta" id="skill-pts-${k}">Pts: ${sp}/${ACTIVE_SKILL_POINT_CAP}</span>
@@ -11127,6 +11785,7 @@ function renderSkills() {
     if (canUpgrade) wireSkillHoldControl(div.querySelector('[data-upgrade]'), () => upgradeSkill(k));
     aList.appendChild(div);
   }
+  renderClassAdvancementChoices(aList);
   G._skillRenderSig = skillPanelSignature();
 }
 
@@ -11444,7 +12103,7 @@ function saveConfig() {
 
 // CLASS SELECT
 function selectClass(cls) {
-  G.playerClass=cls; G.started=true;
+  G.playerClass=cls; G.classAdvancement=null; G.started=true;
   const screen = document.getElementById('class-select-screen');
   screen.style.cssText = 'display:none';
   const names={warrior:'⚔ WARRIOR',rogue:'🗡 ROGUE',wizard:'🔮 WIZARD'};
@@ -11506,6 +12165,7 @@ function selectClass(cls) {
 function initClassSetup(cls) {
   // Mirror selectClass but without starting the game loop
   G.playerClass = cls;
+  G.classAdvancement = null;
   if (cls==='warrior') {
     G.passives = { berserker:{name:'Berserker Rage',desc:'Basic attack damage increases as HP drops. Scales with level.',enabled:true}, battlehard:{name:'Battle Hardened',desc:'Stack 5% incoming damage reduction on consecutive kills without taking damage.',enabled:true} };
     G.skills = { shieldbash:{name:'Shield Bash',desc:'Hit + stun — base 20→60 dmg',mpCost:8,cooldown:10000,enabled:false,skillPts:0}, whirlwind:{name:'Whirlwind',desc:'AOE — base 12→42 dmg, 40% falloff per extra target',mpCost:14,cooldown:18000,enabled:false,skillPts:0}, warcry:{name:'War Cry',desc:'Boost dmg 10s',mpCost:18,cooldown:28000,enabled:false,skillPts:0}, fortify:{name:'Fortify',desc:'Reduce dmg 35→60% + VIT scaling',mpCost:24,cooldown:35000,enabled:false,skillPts:0}, execute:{name:'Execute',desc:'Massive hit only at enemy HP ≤30%',mpCost:30,cooldown:40000,enabled:false,skillPts:0} };
@@ -12413,6 +13073,7 @@ function saveStash() {
 function serializeClassState() {
   return {
     playerClass: G.playerClass,
+    classAdvancement: G.classAdvancement || null,
     level: G.level, exp: G.exp,
     hp: G.hp, mp: G.mp,
     stats: G.stats, statsPoints: G.statsPoints,
@@ -12601,6 +13262,7 @@ function importSaveData() {
 
 function applyClassData(data) {
   G.playerClass = data.playerClass;
+  G.classAdvancement = data.classAdvancement || null;
   G.tutorialDone = data.tutorialDone === undefined ? true : !!data.tutorialDone;
   G.level = Math.min(data.level||1, MAX_PLAYER_LEVEL); G.exp = data.exp||0; if (G.level >= MAX_PLAYER_LEVEL) G.exp = 0;
   G.stats = data.stats||{str:0,agi:0,int:0,vit:0};
@@ -12762,7 +13424,7 @@ function renderClassSlotScreen() {
       card.innerHTML = `
         <div class="csc-icon">${CLASS_ICONS[slot.playerClass]||'?'}</div>
         <div class="csc-info">
-          <div class="csc-class">${slot.playerClass?.toUpperCase()||'UNKNOWN'} — Slot ${i+1}</div>
+          <div class="csc-class">${slot.playerClass?.toUpperCase()||'UNKNOWN'}${slot.classAdvancement ? ' / '+String(slot.classAdvancement).toUpperCase() : ''} — Slot ${i+1}</div>
           <div class="csc-level">Lv${slot.level||1} · ${slot.kills||0} kills · ${(slot.gold||0).toLocaleString()}g · Saved ${ts}</div>
         </div>
         <div class="csc-actions">
@@ -12872,7 +13534,7 @@ function deleteClassSlot(slotIdx, e) {
 }
 
 function resetGameState() {
-  G.started = false; G.playerClass = null; G.tutorialDone = false;
+  G.started = false; G.playerClass = null; G.classAdvancement = null; G.tutorialDone = false;
   G.level=1; G.exp=0; G.hp=10; G.maxHp=10; G.mp=10; G.maxMp=10;
   G.hpRegen=1; G.mpRegen=1;
   G.stats={str:0,agi:0,int:0,vit:0};
@@ -12883,7 +13545,7 @@ function resetGameState() {
   G.inventory=[]; G.invMax=50; G.invUpgradeCount=0; G.keyItems={}; G.keyItemsDiscovered={};
   G.equipped={helmet:null,armor:null,legging:null,weapon:null,offhand:null};
   G.potions={healing:0}; G.potionDiscovered={healing:true}; G.selectedPotion='healing'; G.potionCooldown=0; G.potionBuffs={arcanicUntil:0,fervorUntil:0,vitalityUntil:0,vitalityStartedAt:0,swiftnessUntil:0,swiftnessStartedAt:0};
-  G.skills={}; G.passives={}; G.skillCooldowns={};
+  G.skills={}; G.passives={}; G.skillCooldowns={}; G.classAdvancement=null;
   G.abyssKills=0; G.hoarspire={iceKitsuneKills:0,pendingShuuna:false}; G.chaoticChasm={guzmakKills:0,vaalixKills:0}; G.swamp={cursedHollowKills:0,pendingDarkYoung:false}; G.abyssBosses=0; G.abyssDifficulty=1;
   G.farmRoutes={routes:[],equippedId:null,botStep:0,shopStock:[]};
   G.monsters=[]; G.nextSpawnAt=0; G.lastAttack=0; G.lastSpawnCountdown=-1;
