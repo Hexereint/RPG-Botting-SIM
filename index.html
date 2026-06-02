@@ -1518,7 +1518,7 @@ body.chaos-active #map-panel .subzone-row,
 
       <!-- Stash sub-panel -->
       <div id="inv-sub-stash" style="display:none;">
-        <div class="inv-title" style="margin-bottom:8px;">STASH — 5 Shared Slots (persists across all classes)</div>
+        <div class="inv-title" style="margin-bottom:8px;">STASH — 20 Shared Slots (persists across all classes)</div>
         <div id="stash-grid" style="display:flex;flex-direction:column;gap:6px;"></div>
       </div>
 
@@ -2230,7 +2230,7 @@ body.chaos-active #map-panel .subzone-row,
 <div id="stash-slot-picker" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;">
   <div style="background:#0a0a0a;border:1px solid var(--border);padding:16px;min-width:260px;max-width:320px;">
     <div style="font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;">SELECT STASH SLOT</div>
-    <div id="stash-picker-slots" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="stash-picker-slots" style="display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto;padding-right:4px;"></div>
     <button onclick="closeStashPicker()" style="margin-top:12px;width:100%;background:#000;border:1px solid #383838;color:#888;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;">CANCEL</button>
   </div>
 </div>
@@ -2337,7 +2337,7 @@ const G = {
   potionBuffs: { arcanicUntil:0, fervorUntil:0, vitalityUntil:0, vitalityStartedAt:0, swiftnessUntil:0, swiftnessStartedAt:0 },
   dead: false,
   deathStartedAt: 0,
-  stash: [null,null,null,null,null],
+  stash: Array(20).fill(null),
   activeSlot: 0,
   respawnReady: false,
   deathPenaltyGold: 0,
@@ -14029,12 +14029,20 @@ function showTutorialStep() {
 // SAVE / LOAD
 const SAVE_KEY_V2 = 'rpg_botting_sim_v2';
 
-// STASH — 5 shared slots, persists across all classes
+// STASH — 20 shared slots, persists across all classes
+const STASH_SIZE = 20;
+function makeEmptyStash() { return Array(STASH_SIZE).fill(null); }
+function normalizeStash(stash) {
+  const arr = Array.isArray(stash) ? stash.slice(0, STASH_SIZE) : [];
+  while (arr.length < STASH_SIZE) arr.push(null);
+  return arr;
+}
 function loadStash() {
-  try { return JSON.parse(localStorage.getItem('rpg_stash') || 'null') || [null,null,null,null,null]; }
-  catch(e) { return [null,null,null,null,null]; }
+  try { return normalizeStash(JSON.parse(localStorage.getItem('rpg_stash') || 'null')); }
+  catch(e) { return makeEmptyStash(); }
 }
 function saveStash() {
+  G.stash = normalizeStash(G.stash);
   localStorage.setItem('rpg_stash', JSON.stringify(G.stash));
 }
 
@@ -14121,7 +14129,7 @@ function buildSaveExportPayload() {
 
   let stashObj = null;
   try { stashObj = JSON.parse(localStorage.getItem('rpg_stash') || 'null'); } catch(_) { stashObj = null; }
-  if (!Array.isArray(stashObj)) stashObj = Array.isArray(G.stash) ? G.stash : [null,null,null,null,null];
+  stashObj = normalizeStash(Array.isArray(stashObj) ? stashObj : G.stash);
 
   return {
     type: 'rpg-botting-sim-save-export',
@@ -14564,7 +14572,8 @@ function openStashPicker(itemId) {
   pendingStashItemId = itemId;
   const slots = document.getElementById('stash-picker-slots');
   slots.innerHTML = '';
-  for (let i=0;i<5;i++) {
+  G.stash = normalizeStash(G.stash);
+  for (let i=0;i<G.stash.length;i++) {
     const s = G.stash[i];
     const btn = document.createElement('button');
     btn.style.cssText = 'width:100%;background:#0a0a0a;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:9px;padding:8px;cursor:pointer;text-align:left;';
@@ -14617,7 +14626,8 @@ function renderStash() {
   const grid = document.getElementById('stash-grid');
   if (!grid) return;
   grid.innerHTML = '';
-  for (let i=0;i<5;i++) {
+  G.stash = normalizeStash(G.stash);
+  for (let i=0;i<G.stash.length;i++) {
     const item = G.stash[i];
     const row = document.createElement('div');
     row.style.cssText = 'background:var(--bg2);border:1px solid var(--border2);padding:8px;display:flex;align-items:center;gap:8px;min-height:48px;';
