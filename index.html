@@ -1341,7 +1341,7 @@ body.chaos-active #map-panel .subzone-row,
 
 <!-- HEADER -->
 <div id="header">
-  <h1>RPG BOTTING SIM <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">v1.0</span></h1>
+  <h1>RPG BOTTING SIM <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">v1.1</span></h1>
   <div class="header-bars">
     <div class="header-level header-level-inline" title="Level">
       <span>LV <span id="overlevel-display-top" class="overlevel-top" style="display:none;"></span></span>
@@ -1587,6 +1587,11 @@ body.chaos-active #map-panel .subzone-row,
               <span class="thb-label" style="color:#cc7733;">Upgrade</span>
               <span class="thb-sub">Ascend legendary gear</span>
             </button>
+            <button class="town-hub-btn" onclick="openTownScreen('transfer')" style="border-color:#5a4a88;">
+              <span class="thb-icon">⇄</span>
+              <span class="thb-label" style="color:#d8c7ff;">Overgear Transfer</span>
+              <span class="thb-sub">Move stars to new gear</span>
+            </button>
           </div>
         </div>
 
@@ -1738,6 +1743,22 @@ body.chaos-active #map-panel .subzone-row,
               <div id="overgear-item-list" class="town-gear-list"></div>
               <div id="overgear-empty" style="font-size:9px;color:#444;display:none;padding:4px 0;">No Ascended or Mythic items available to Overgear.</div>
             </div>
+          </div>
+        </div>
+
+
+        <!-- ── OVERGEAR TRANSFER sub-screen ── -->
+        <div id="town-screen-transfer" class="town-sub">
+          <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
+          <div class="town-section" style="border-color:#5a4a88;">
+            <div class="town-section-title" style="color:#d8c7ff;">⇄ OVERGEAR TRANSFER</div>
+            <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Move Overgear levels from Box A to Box B. Box A is destroyed. Box B receives 80% of Box A's Overgear levels, rounded down.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div><div style="font-size:9px;color:#d8c7ff;margin-bottom:4px;">BOX A — OLD OVERGEARED ITEM</div><div id="overgear-transfer-a-list" class="town-gear-list" style="max-height:260px;"></div></div>
+              <div><div style="font-size:9px;color:#d8c7ff;margin-bottom:4px;">BOX B — NEW DESTINATION ITEM</div><div id="overgear-transfer-b-list" class="town-gear-list" style="max-height:260px;"></div></div>
+            </div>
+            <div id="overgear-transfer-summary" style="font-size:9px;color:#aaa;margin-bottom:8px;min-height:18px;"></div>
+            <button class="bs-reroll-btn" id="overgear-transfer-btn" onclick="doOvergearTransfer()" disabled>TRANSFER OVERGEAR</button>
           </div>
         </div>
 
@@ -2637,6 +2658,7 @@ function calcDamage() {
   let d = calcBaseDamage();
   d = Math.round(d * ascendDamageMultiplier());
   if (isWarCryActive()) d = Math.round(d * (1 + (G.combat.warCryPct || 0) / 100));
+  if (hasAdvancement('berserker') && (G.combat?.bloodFrenzyUntil || 0) > performance.now()) d = Math.round(d * (hasMythicMod('berserkers_gauntlet') ? 1.50 : 1.25));
   return Math.max(1, Math.round(d));
 }
 function calcBattleHardenedReductionPct() {
@@ -2658,7 +2680,9 @@ function targetDamageMultiplier(target, now=performance.now()) {
   return mult;
 }
 function applyTargetDamageMods(target, dmg, now=performance.now()) {
-  return Math.max(1, Math.round(dmg * targetDamageMultiplier(target, now)));
+  let mult = targetDamageMultiplier(target, now) * mythicOutgoingDamageMultiplier(now);
+  if (target && (target.weightlessUntil || 0) > now) mult *= 1 - Math.max(0, target.weightlessPct || 0);
+  return Math.max(1, Math.round(dmg * mult));
 }
 function getArcaneShield(monster) {
   return Math.max(0, Math.round(monster?.arcaneShield || 0));
@@ -2681,7 +2705,7 @@ function bossHealMultiplier(monster=null) {
   return hasMythicMod('vaalix_tiara') && monster && monster.isBoss ? 0.5 : 1;
 }
 function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
-  const scaledBaseDmg = applySkillPointPower(baseDmg, G.combat?.currentSkillKey || null);
+  const scaledBaseDmg = applySkillPointPower(baseDmg * (G.combat?.currentSkillDamageMult || 1), G.combat?.currentSkillKey || null);
   const ascendedSkillDmg = Math.max(0, Math.round(applyAscendSkillDamage(scaledBaseDmg) * chaoticSkillDamageMultiplier(monster, now)));
   if (monster && monster.isGuzmak && (monster.guzmakGluttonyUntil || 0) > now) {
     const attemptedGluttony = Math.max(0, Math.round(ascendedSkillDmg || 0));
@@ -2709,7 +2733,18 @@ function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
     remaining -= shieldAbsorbed;
   }
   const dealt = Math.max(0, remaining);
-  if (dealt > 0) { monster.hp -= dealt; onMonsterTakesPlayerHit(monster, 'skill', dealt, now); }
+  if (dealt > 0) {
+    monster.hp -= dealt;
+    onMonsterTakesPlayerHit(monster, 'skill', dealt, now);
+    if (hasMythicMod('echoing_relic') && G.combat?.currentSkillKey && !G.combat.echoingRelicUsed && !G.combat.echoingRelicRepeating) {
+      G.combat.echoingRelicUsed = true;
+      G.combat.echoingRelicRepeating = true;
+      const echoDmg = Math.max(1, Math.round(dealt * 0.30));
+      const echo = dealSkillDamageToMonster(monster, echoDmg, now);
+      G.combat.echoingRelicRepeating = false;
+      if (echo.dealt > 0) log(`[Echoing Relic] repeats for ${fmtNum(echo.dealt)} damage`, 'spelldmg');
+    }
+  }
   return { attempted, dealt, shieldAbsorbed, arcaneBlocked:false, remainingShield:getShield(monster), remainingArcane:getArcaneShield(monster) };
 }
 function isFortifyActive(now=performance.now()) {
@@ -2723,7 +2758,9 @@ function juggernautHpScalingValue(ts=performance.now()) {
   return Math.max(1, hp);
 }
 function ironWallReflectDamage() {
-  return Math.max(0, Math.round((calcDamage() + juggernautHpScalingValue() * 0.70) * skillPowerFactor('fortify')));
+  let val = Math.max(0, Math.round((calcDamage() + juggernautHpScalingValue() * 0.70) * skillPowerFactor('fortify')));
+  if (hasMythicMod('iron_maiden')) val = Math.round(val * 3.5);
+  return val;
 }
 function queueChronosphereDamage(monster, dmg, releaseAt) {
   if (!G.combat.chronoDamageQueue) G.combat.chronoDamageQueue = [];
@@ -2760,6 +2797,7 @@ function calcAtkInterval() {
     base -= missingTens * 0.03;
     floor = 0.3;
   }
+  if (hasAdvancement('berserker') && (G.combat?.bloodFrenzyUntil || 0) > performance.now()) base -= hasMythicMod('berserkers_gauntlet') ? 0.50 : 0.25;
   if (hasAdvancement('nightshade')) floor = Math.max(floor, 0.8);
   if (hasAdvancement('arcanist') && (G.combat?.arcaneInfusionUntil || 0) > performance.now()) floor = Math.min(floor, 0.6), base = Math.min(base, 0.6);
   if (hasAdvancement('swordmaster') && G.passives?.innerfocus?.enabled) {
@@ -2790,6 +2828,7 @@ function calcCritDamage() {
   // Rogue mastery: crit chance above 100% spills into crit damage. Nightshade redirects overflow into poison instead.
   if (G.playerClass === 'rogue' && !hasAdvancement('nightshade')) cd += calcCritOverflow() * 3;
   if (hasAdvancement('swordmaster') && G.passives?.innerfocus?.enabled) cd *= Math.max(1, calcAtkInterval());
+  if (shouldGuaranteeCritByMythic()) cd = Math.max(cd, 1000000);
   return +cd.toFixed(0);
 }
 function calcCDR() {
@@ -2816,13 +2855,16 @@ function effectiveCooldown(baseCd, skillKey) {
   // Advancement skill document values are Lv20 values. Lower skill points have longer cooldowns.
   let cd = (baseCd || 0) * skillEconomyFactor(skillKey) - calcCDR()*1000;
   const baseSkill = skillBaseKey(skillKey);
-  // Freezing Orb: Frost Nova cooldown -40%
-  if (baseSkill==='frostnova' && hasMythicMod('ethereal')) cd *= 0.6;
-  // Hiddenblade of Sin: Assassinate cooldown -50%
-  if (baseSkill==='assassinate' && hasMythicMod('hiddenblade_sin')) cd *= 0.5;
-  // Berserker's Boots: War Cry cooldown -50%
+  const adv = currentAdvancementId();
+  if (baseSkill==='assassinate' && hasMythicMod('hiddenblade_sin')) cd *= 0.75;
   if (baseSkill==='warcry' && hasMythicMod('berserker_boots')) cd *= 0.5;
-  // Potion of Swiftness: skill cooldowns recover 40% faster for 5s.
+  if (adv==='swordmaster' && baseSkill==='whirlwind' && hasMythicMod('lunars_closure')) cd *= 0.8;
+  if (adv==='juggernaut' && baseSkill==='fortify' && hasMythicMod('the_wall')) cd *= 0.5;
+  if (adv==='berserker' && baseSkill==='execute' && hasMythicMod('executioners_robe') && mythicHpPct() < 25) cd *= 0.7;
+  if (adv==='juggernaut' && baseSkill==='execute' && hasMythicMod('worldbreaker')) cd *= 1.5;
+  if (adv==='juggernaut' && baseSkill==='execute' && hasMythicMod('titans_totem')) cd *= 0.5;
+  if (adv==='frostmage' && baseSkill==='chronosphere' && hasMythicMod('frozen_anchor')) cd *= 0.6;
+  if (adv==='flamemage' && baseSkill==='chainlightning' && hasMythicMod('incinerating_staff')) cd = 0;
   if (isSwiftnessPotionActive()) cd *= 0.6;
   return Math.max(500, cd);
 }
@@ -3341,16 +3383,27 @@ function dealRawAdvancementDamage(monster, dmg, ts, label='Effect') {
   return res.dealt || 0;
 }
 function burnDamagePerStack() { return Math.max(1, Math.round(calcDamage()*0.06 + effStat('int')*0.5)); }
+function ignitionThreshold() { return hasMythicMod('cinder_crown') ? 8 : 10; }
 function addBurnStacks(monster, stacks=1, ts=performance.now(), source='Burn') {
   if (!monster || monster.hp <= 0) return;
+  const extra = (hasAdvancement('flamemage') && (G.combat?.overheatUntil || 0) > ts) ? 1 : 0;
+  stacks += extra;
   monster.burnStacks = Math.max(0, (monster.burnStacks || 0) + stacks);
   monster.burnUntil = ts + 5000;
-  log(`${source} applies ${stacks} Burn stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.burnStacks}/10)`, 'spelldmg');
-  while ((monster.burnStacks || 0) >= 10) {
-    monster.burnStacks -= 10;
-    const explosion = burnDamagePerStack() * 10 * 2;
+  const threshold = ignitionThreshold();
+  log(`${source} applies ${stacks} Burn stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.burnStacks}/${threshold})`, 'spelldmg');
+  while ((monster.burnStacks || 0) >= threshold) {
+    monster.burnStacks -= threshold;
+    let explosion = burnDamagePerStack() * threshold * 2;
+    if (hasMythicMod('pyroclastic_lens')) explosion *= 0.5;
     log(`<span style="color:#ff8844">Ignition explodes from ${safeMonsterName(monster)} for ${fmtNum(explosion)} fire damage to all enemies!</span>`, 'spelldmg');
-    for (const t of [...G.monsters]) dealRawAdvancementDamage(t, explosion, ts, 'Ignition');
+    const pulses = hasMythicMod('ignited_heart') ? [1,0.5,0.25] : [1];
+    for (const p of pulses) {
+      for (const t of [...G.monsters]) {
+        const dealt = dealRawAdvancementDamage(t, explosion*p, ts, p===1?'Ignition':'Ignition Echo');
+        if (dealt > 0 && hasMythicMod('reactor_rod')) addBurnStacks(t, 2, ts, 'Reactor Rod');
+      }
+    }
   }
 }
 function poisonDamagePerStack() {
@@ -3384,13 +3437,19 @@ function addFrostbite(monster, stacks=1, ts=performance.now(), source='Frostbite
 }
 function tickAdvancementDots(ts=performance.now()) {
   if (!G.combat) return;
-  const burnTick = Math.floor(ts / 1000);
-  if (G.combat.lastBurnTick !== burnTick) {
-    G.combat.lastBurnTick = burnTick;
+  const tick = Math.floor(ts / 1000);
+  if (G.combat.lastBurnTick !== tick) {
+    G.combat.lastBurnTick = tick;
+    if ((G.combat.poisonMistLingerUntil || 0) > ts && hasMythicMod('plague_censer')) {
+      for (const m of [...G.monsters]) addPoisonStacks(m, 2, ts, 'Plague Censer');
+    }
     for (const m of [...G.monsters]) {
       if (!m || m.hp <= 0) continue;
       if ((m.burnStacks || 0) > 0 && (m.burnUntil || 0) > ts) dealRawAdvancementDamage(m, burnDamagePerStack() * (m.burnStacks || 0), ts, 'Burn');
-      if ((m.poisonStacks || 0) > 0 && (m.poisonUntil || 0) > ts) dealRawAdvancementDamage(m, poisonDamagePerStack() * (m.poisonStacks || 0), ts, 'Poison');
+      if ((m.poisonStacks || 0) > 0 && (m.poisonUntil || 0) > ts) {
+        const bonus = (m.poisonVulnUntil || 0) > ts ? (m.poisonVulnPct || 0) : 0;
+        dealRawAdvancementDamage(m, poisonDamagePerStack() * (m.poisonStacks || 0) * (1 + bonus), ts, 'Poison');
+      }
       if ((m.burnUntil || 0) <= ts) m.burnStacks = 0;
       if ((m.poisonUntil || 0) <= ts) m.poisonStacks = 0;
       if ((m.frostbiteUntil || 0) <= ts) m.frostbiteStacks = 0;
@@ -3403,16 +3462,22 @@ function isAdvancementChanneling(ts=performance.now()) {
 }
 function isAdvancementCastLocked(ts=performance.now()) {
   const act = G.combat?.advDelayed;
-  return !!(act && act.type === 'assassinate' && (act.releaseAt || 0) > ts);
+  return !!(act && ['assassinate','blacklotus','gravityball'].includes(act.type) && (act.releaseAt || 0) > ts);
 }
 function tickAdvancementChannel(ts=performance.now()) {
   const ch = G.combat?.advChannel;
   if (!ch) return false;
   if ((ch.until || 0) <= ts) { G.combat.advChannel = null; return false; }
   if (ts < (ch.nextTick || 0)) return true;
+  const elapsed = Math.max(0.001, (ch.tickMs || 500) / 1000);
+  if (ch.mpDrainPerSec) {
+    const need = ch.mpDrainPerSec * elapsed;
+    if (G.mp < need) { G.combat.advChannel = null; log(`[${ch.label||'Channel'}] ends — not enough MP.`, 'spellcast'); return false; }
+    G.mp = Math.max(0, G.mp - need);
+  }
   ch.nextTick = ts + ch.tickMs;
   if (ch.type === 'incineration') {
-    const dmg = Math.round(calcDamage()*0.25 + effStat('int')*0.8);
+    let dmg = Math.round(calcDamage()*0.25 + effStat('int')*0.8);
     for (const t of [...G.monsters]) {
       const res = dealSkillDamageToMonster(t, dmg, ts);
       if (res.dealt > 0) { addBurnStacks(t, 1, ts, 'Incineration Ray'); if (t.hp<=0) killMonster(t, ts); }
@@ -3421,9 +3486,10 @@ function tickAdvancementChannel(ts=performance.now()) {
   } else if (ch.type === 'frostbeam') {
     const target = G.monsters[0];
     if (!target) return true;
-    const dmg = Math.round(calcDamage()*0.35 + effStat('int')*1.0);
+    let dmg = Math.round(calcDamage()*0.35 + effStat('int')*1.0);
+    if (hasMythicMod('aislongs_frostbeam')) dmg = Math.round(dmg * 0.6);
     const res = dealSkillDamageToMonster(target, dmg, ts);
-    if (res.dealt > 0) addFrostbite(target, 1, ts, 'Frostbeam');
+    if (res.dealt > 0) addFrostbite(target, hasMythicMod('frosted_lens') ? 2 : 1, ts, 'Frostbeam');
     if (target.hp<=0) killMonster(target, ts);
   }
   return true;
@@ -3439,19 +3505,37 @@ function releaseAdvancementDelayedActions(ts=performance.now()) {
     dealRawAdvancementDamage(target, act.damage, ts, 'Iai Counter');
   } else if (act.type === 'assassinate') {
     const oldKey = G.combat.currentSkillKey; G.combat.currentSkillKey = 'assassinate';
+    const beforeAlive = target.hp > 0;
     const res = dealSkillDamageToMonster(target, act.damage, ts);
     G.combat.currentSkillKey = oldKey;
     if (res.dealt > 0) {
       if (act.contract && target.contractKill) { setSkillCooldownForBase('assassinate', 0); target.contractKill = false; log('Contract Kill refreshes Assassinate!', 'spellcast'); }
+      if (target.vitalWoundUntil) { target.vitalWoundUntil = 0; target.vitalWoundBonus = 0; }
       log(`[Assassinate] hits <span class="log-monster">${safeMonsterName(target)}</span> for ${fmtNum(res.dealt)} dmg`, 'spelldmg');
-      if (target.hp<=0) killMonster(target, ts);
+      if (target.hp<=0) {
+        if (hasMythicMod('altairs_shiv') && ts >= (G.combat.altairsShivNextAt || 0)) { setSkillCooldownForBase('assassinate', 0); G.combat.altairsShivNextAt = ts + 4000; log("Altair's Shiv resets Assassinate cooldown.", 'spellcast'); }
+        killMonster(target, ts);
+      }
     }
   } else if (act.type === 'blacklotus') {
     const stacks = Math.max(0, target.poisonStacks || 0);
-    const dmg = stacks * poisonDamagePerStack();
+    let dmg = stacks * poisonDamagePerStack();
+    if (hasMythicMod('black_death')) dmg *= 1 + Math.floor(stacks / 10) * 0.02;
     target.poisonStacks = 0;
     target.poisonUntil = 0;
     dealRawAdvancementDamage(target, dmg, ts, 'Black Lotus');
+  } else if (act.type === 'seismic_echo') {
+    dealRawAdvancementDamage(target, act.damage, ts, 'Echoing Drum');
+  } else if (act.type === 'gravityball') {
+    for (const t of [...G.monsters]) {
+      let dmg = act.damage;
+      const c = maybeCritArcanistSpell(dmg,'Gravity Ball');
+      const res = dealSkillDamageToMonster(t,c.dmg,ts);
+      const delayMs = hasMythicMod('lunar_boots') ? 8000 : 5000;
+      t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,2000); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+delayMs);
+      if (hasMythicMod('weightless_mantle')) { t.weightlessUntil=ts+5000; t.weightlessPct=0.20; }
+      if(res.dealt>0){ log(`[Gravity Ball] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts); }
+    }
   }
   return true;
 }
@@ -3459,7 +3543,17 @@ function restoreMpAdv(amount, label='MP') {
   const before = G.mp;
   G.mp = Math.min(G.maxMp, G.mp + Math.max(0, Math.round(amount || 0)));
   const gained = Math.max(0, Math.round(G.mp - before));
-  if (gained > 0) log(`+${fmtNum(gained)} MP [${label}] (${fmtNum(G.mp)}/${fmtNum(G.maxMp)})`, 'mpgain');
+  if (gained > 0) {
+    log(`+${fmtNum(gained)} MP [${label}] (${fmtNum(G.mp)}/${fmtNum(G.maxMp)})`, 'mpgain');
+    if ((G.combat?.staticFieldUntil || 0) > performance.now()) {
+      G.combat.staticFieldRestored = (G.combat.staticFieldRestored || 0) + gained;
+      if (hasMythicMod('grounding_boots') && !G.combat.groundingBootsTriggered && G.combat.staticFieldRestored >= G.maxMp * 0.30) {
+        G.combat.groundingBootsTriggered = true;
+        adjustSkillCooldownForBase('chronosphere', -effectiveCooldown(G.skills?.[skillKeyForBase('chronosphere')]?.cooldown || 0, skillKeyForBase('chronosphere')) * 0.30);
+        log('Grounding Boots reduce Static Field cooldown.', 'spellcast');
+      }
+    }
+  }
   return gained;
 }
 function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now()) {
@@ -3475,10 +3569,20 @@ function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now())
     const pct = Math.min(0.35, interval * 0.08);
     const old = dmg; dmg = Math.ceil(dmg * (1-pct));
     if (old > dmg) log(`Measured Guard reduces damage by ${Math.round(pct*100)}%`, 'dmgtaken');
-    const chance = Math.min(50, interval * 10);
+    let chance = Math.min(50, interval * 10);
+    if ((G.combat.iaiCounterUntil || 0) > ts) chance += hasMythicMod('fleet_shufflers') ? 20 : 0;
     if (Math.random()*100 < chance && monster && monster.hp > 0) {
+      let reduceAll = false;
+      if ((G.combat.iaiCounterUntil || 0) > ts) {
+        if (hasMythicMod('sheathing_sandogasa')) setSkillCooldownForBase('shieldbash', 0);
+        if (hasMythicMod('moments_edge') && G.combat.advDelayed?.type === 'iai') { G.combat.advDelayed.damage *= 2; G.combat.advDelayed.releaseAt = ts; }
+        if (hasMythicMod('pacifists_sheathe')) reduceAll = true;
+      }
+      if ((G.combat.warCryUntil || 0) > ts && hasMythicMod('ronins_robe')) { dealRawAdvancementDamage(monster, calcDamage()*2, ts, "Ronin's Robe"); G.combat.warCryUntil = 0; }
+      if (hasMythicMod('moonlight_shadow')) triggerCrescentSlashFromMythic(ts, 'Moonlight Shadow');
       const counter = Math.round(calcDamage() * 0.5);
       dealRawAdvancementDamage(monster, counter, ts, 'Measured Guard Counter');
+      if (reduceAll) dmg = 0;
     }
   }
   if (adv === 'nightshade' && G.passives?.toxicveil?.enabled && monster) {
@@ -3489,7 +3593,6 @@ function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now())
       if (old > dmg) log(`Toxic Veil reduces damage by ${Math.round(pct*100)}%`, 'dmgtaken');
     }
   }
-  // Wizard advancement Mana Shield equivalents.
   const passiveMap = {
     flamemage:['explosivemana', 0.75, Math.min(0.45, (35 + effStat('int')/30)/100)],
     frostmage:['icearmor', 0.85, Math.min(0.45, (35 + effStat('int')/30)/100)],
@@ -3508,10 +3611,12 @@ function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now())
     log(`${G.passives[key].name} absorbs ${fmtNum(absorbed)} damage (${fmtNum(G.mp)}/${fmtNum(G.maxMp)} MP)`, 'dmgtaken');
     if (adv === 'flamemage' && absorbed > 0 && ts >= (G.combat.explosiveManaNextAt || 0)) {
       G.combat.explosiveManaNextAt = ts + 1000;
-      const ex = Math.round(absorbed * 0.75);
+      let ex = Math.round(absorbed * 0.75);
+      if (hasMythicMod('pyroclastic_core')) ex *= 2;
       for (const t of [...G.monsters]) dealRawAdvancementDamage(t, ex, ts, 'Explosive Mana');
     }
   }
+  if (hasAdvancement('frostmage') && hasMythicMod('rime_channel_robe') && G.combat?.advChannel?.type === 'frostbeam') dmg = Math.ceil(dmg * 0.7);
   return dmg;
 }
 function applyAdvancementDamageDealt(monster, kind, amount, ts=performance.now()) {
@@ -3524,24 +3629,20 @@ function applyAdvancementDamageDealt(monster, kind, amount, ts=performance.now()
     else if (hpPct <= 80) ls = ((80 - hpPct) / 70) * 0.80;
     if ((G.combat.bloodFrenzyUntil || 0) > ts) ls *= 1.25;
     const heal = amount * ls;
-    if (heal > 0) {
-      const before = G.hp; G.hp = Math.min(G.maxHp, G.hp + heal);
-      if (G.hp > before) log(`Blood Survival lifesteals ${fmtNum(G.hp-before)} HP`, 'basicattack');
-    }
+    if (heal > 0) { const before = G.hp; G.hp = Math.min(G.maxHp, G.hp + heal); if (G.hp > before) log(`Blood Survival lifesteals ${fmtNum(G.hp-before)} HP`, 'basicattack'); }
   }
   if (adv === 'arcanist' && G.passives?.manaweave?.enabled) {
     if (kind === 'basic') restoreMpAdv(G.maxMp*0.01 + effStat('int')*0.15, 'Mana Weave');
     if (kind === 'skill' && G.combat.lastArcanistSpellCrit) restoreMpAdv(G.maxMp*0.03 + effStat('int')*0.35, 'Mana Weave Crit');
   }
-  if (adv === 'nightshade' && (G.combat.virulentBloodUntil || 0) > ts) {
-    addPoisonStacks(monster, 1, ts, 'Virulent Blood');
-  }
+  if (adv === 'nightshade' && (G.combat.virulentBloodUntil || 0) > ts) addPoisonStacks(monster, 1, ts, 'Virulent Blood');
 }
 function maybeCritArcanistSpell(dmg, label='Spell') {
   if (!hasAdvancement('arcanist') || !G.passives?.arcaneimbuement?.enabled) { G.combat.lastArcanistSpellCrit = false; return {dmg, crit:false}; }
-  const crit = Math.random()*100 < calcCritChance();
+  const crit = shouldGuaranteeCritByMythic() || Math.random()*100 < calcCritChance();
   if (!crit) { G.combat.lastArcanistSpellCrit = false; return {dmg, crit:false}; }
-  const cd = Math.max(100, calcCritDamage() * 0.60);
+  let cd = Math.max(100, calcCritDamage() * 0.60);
+  if (label === 'Arcane Blades' && hasMythicMod('spellblades_cap')) cd += 75;
   G.combat.lastArcanistSpellCrit = true;
   return { dmg: Math.round(dmg * cd / 100), crit:true };
 }
@@ -3552,7 +3653,6 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
   const slot = skillBaseKey(k);
   const str=effStat('str'), agi=effStat('agi'), int_=effStat('int'), base=calcDamage();
   let handled = true;
-  let dealt = 0;
   const hitTarget = (dmg, label, canCrit=false, extraFn=null) => {
     if (!target) return 0;
     let final = advSkillDamage(dmg);
@@ -3563,63 +3663,65 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     return res.dealt || 0;
   };
   if (adv === 'swordmaster') {
-    if (slot==='shieldbash') { G.combat.advDelayed = {type:'iai', label:'Iai Counter', startedAt:ts, releaseAt:ts+2000, targetId:target?.id, damage:base*(1.5+calcAtkInterval()*0.5)+str*3}; G.combat.iaiCounterStartedAt = ts; G.combat.iaiCounterUntil = ts+2000; G.combat.iiaGuardUntil = ts+2000; log('[Iai Counter] stance begins — strike releases in 2s.', 'spellcast'); }
-    else if (slot==='whirlwind') { let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+str*2, ts, 'Crescent Slash'); log(`[Crescent Slash] total ${fmtNum(total)} damage`, 'spelldmg'); }
+    if (slot==='shieldbash') { const prep=2000+(hasMythicMod('pacifists_sheathe')?1000:0); G.combat.advDelayed = {type:'iai', label:'Iai Counter', startedAt:ts, releaseAt:ts+prep, targetId:target?.id, damage:base*(1.5+calcAtkInterval()*0.5)+str*3}; G.combat.iaiCounterStartedAt = ts; G.combat.iaiCounterUntil = ts+prep; G.combat.iiaGuardUntil = ts+prep; log(`[Iai Counter] stance begins — strike releases in ${(prep/1000).toFixed(1)}s.`, 'spellcast'); }
+    else if (slot==='whirlwind') { const total=triggerCrescentSlashFromMythic(ts, 'Crescent Slash'); log(`[Crescent Slash] total ${fmtNum(total)} damage`, 'spelldmg'); }
     else if (slot==='warcry') { const pct=Math.min(40,15+str*0.05); G.combat.warCryPct=pct; G.combat.warCryUntil=ts+8000; log(`[Quick Sheath] +${pct.toFixed(0)}% damage for 8s`, 'spellcast'); }
     else if (slot==='fortify') { G.combat.fortifyPct=Math.min(35,25+effStat('vit')*0.03); G.combat.fortifyUntil=ts+6000; G.combat.stillbladeUntil=ts+6000; log(`[Stillblade Stance] ${G.combat.fortifyPct.toFixed(0)}% damage reduction for 6s`, 'spellcast'); }
-    else if (slot==='execute') { const dmg=(base*0.7+str*2)*(calcCritDamage()/100); hitTarget(dmg, 'Mortal Strike'); }
+    else if (slot==='execute') { hitTarget((base*0.7+str*2)*(calcCritDamage()/100), 'Mortal Strike'); }
     else handled=false;
   } else if (adv === 'berserker') {
-    if (slot==='shieldbash') { dealt=hitTarget(base*1.8+str*2, 'Skullbreaker'); if (target) { target.crackedArmorPct = (G.hp/G.maxHp)<=0.5?15:10; target.crackedArmorUntil=ts+6000; log(`Cracked Armor: target takes +${target.crackedArmorPct}% damage for 6s`, 'spelldmg'); } }
+    if (slot==='shieldbash') { let dmg=base*1.8+str*2; if (target && (target.crackedArmorUntil||0)>ts && hasMythicMod('skull_cracking_mace')) dmg*=2.5; hitTarget(dmg, 'Skullbreaker'); if (target) { let pct=(G.hp/G.maxHp)<=0.5?15:10; let dur=6000; if (hasMythicMod('helmsplitter')) { pct*=2; dur*=0.5; } target.crackedArmorPct = pct; target.crackedArmorUntil=ts+dur; log(`Cracked Armor: target takes +${pct}% damage for ${(dur/1000).toFixed(1)}s`, 'spelldmg'); } }
     else if (slot==='whirlwind') { const hits=(G.hp/G.maxHp)<=0.4?5:4; let total=0; for (let i=0;i<hits;i++) for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*0.45+str*0.75, ts, 'Blood Cyclone'); log(`[Blood Cyclone] ${hits} hits, ${fmtNum(total)} total damage`, 'spelldmg'); }
-    else if (slot==='fortify') { G.combat.bloodFrenzyUntil=ts+8000; G.combat.bloodFrenzyStartedAt=ts; log('[Blood Frenzy] +attack speed/damage for 8s, draining 5% Max HP per second.', 'spellcast'); }
-    else if (slot==='execute') { const enemyMissing = target ? 1-target.hp/Math.max(1,target.maxHp) : 0; const selfMissing = 1-G.hp/Math.max(1,G.maxHp); hitTarget((base*2.2+str*3)*(1+enemyMissing)*(1+selfMissing/2), 'Guillotine'); }
+    else if (slot==='warcry') { const missingTens=Math.floor((100-mythicHpPct())/10); const dur=8000+(hasMythicMod('dying_roar')?missingTens*1000:0); G.combat.warCryPct=Math.min(45,20+str*0.04); G.combat.warCryUntil=ts+dur; log(`[Enrage] +${G.combat.warCryPct.toFixed(0)}% damage for ${(dur/1000).toFixed(1)}s`, 'spellcast'); }
+    else if (slot==='fortify') { G.combat.bloodFrenzyUntil=ts+8000; G.combat.bloodFrenzyStartedAt=ts; log(`[Blood Frenzy] +attack speed/damage for 8s, draining ${hasMythicMod('berserkers_gauntlet')?'10':'5'}% Max HP per second.`, 'spellcast'); }
+    else if (slot==='execute') { const enemyMissing = target ? 1-target.hp/Math.max(1,target.maxHp) : 0; const selfMissing = 1-G.hp/Math.max(1,G.maxHp); let dmg=(base*2.2+str*3)*(1+enemyMissing)*(1+selfMissing/2); if (target && target.hp/Math.max(1,target.maxHp)<=0.40 && hasMythicMod('executioner')) dmg*=1.4; const before=target?.hp||0; hitTarget(dmg, 'Guillotine'); if (target && before>0 && target.hp<=0 && hasMythicMod('beheader')) { const heal=G.maxHp*0.20; const old=G.hp; G.hp=Math.min(G.maxHp,G.hp+heal); log(`Beheader restores ${fmtNum(G.hp-old)} HP`, 'spelldmg'); } }
     else handled=false;
   } else if (adv === 'juggernaut') {
-    if (slot==='shieldbash') { const hpScale=juggernautHpScalingValue(ts); dealt=hitTarget(base*1.2+hpScale*0.06+effStat('vit')*2, 'Aegis Bash'); if (target) target.lastAttack=ts; }
+    if (slot==='shieldbash') { const hpScale=juggernautHpScalingValue(ts); let dmg=base*1.2+hpScale*0.06+effStat('vit')*2; if (hasMythicMod('aegis_slash') && mythicHpPct()>85) dmg*=1.5; hitTarget(dmg, 'Aegis Bash'); if (target) target.lastAttack=ts; }
     else if (slot==='whirlwind') { const hpScale=juggernautHpScalingValue(ts); let total=0; for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*1.0+hpScale*0.04+effStat('vit')*1.5, ts, 'Shield Burst'); log(`[Shield Burst] total ${fmtNum(total)} damage`, 'spelldmg'); }
-    else if (slot==='warcry') { G.combat.titansChallengeUntil=ts+8000; G.combat.titansChallengeMaxHpBonus=Math.min(35,20+effStat('vit')*0.02); G.combat.titansChallengeDR=Math.min(20,10+effStat('vit')*0.01); log(`[Titan's Challenge] +${G.combat.titansChallengeMaxHpBonus.toFixed(0)}% Max HP scaling and ${G.combat.titansChallengeDR.toFixed(0)}% DR for 8s`, 'spellcast'); }
-    else if (slot==='fortify') { const dur=(5+effStat('vit')*0.05+sp*0.15); const fortifyPct=Math.min(75,35+sp*1.25+Math.min(10,effStat('vit')*0.05)); G.combat.fortifyPct=fortifyPct; G.combat.fortifyStartedAt=ts; G.combat.fortifyUntil=ts+dur*1000; log(`[Iron Wall] ${fortifyPct.toFixed(0)}% damage reduction for ${dur.toFixed(1)}s. Thorns reflect ${fmtNum(ironWallReflectDamage())} damage to attackers.`, 'spellcast'); }
-    else if (slot==='execute') { const hpScale=juggernautHpScalingValue(ts); const recoil=Math.round(G.maxHp*0.30); G.hp=Math.max(1,G.hp-recoil); hitTarget(base*1.0+hpScale+effStat('vit')*3, 'Seismic Slam'); log(`[Seismic Slam] recoil deals ${fmtNum(recoil)} HP to you (${fmtNum(G.hp)}/${fmtNum(G.maxHp)} HP).`, 'dmgtaken'); }
+    else if (slot==='warcry') { G.combat.titansChallengeUntil=ts+8000; G.combat.titansChallengeMaxHpBonus=Math.min(35,20+effStat('vit')*0.02)+(hasMythicMod('colossus_crown')?20:0); G.combat.titansChallengeDR=Math.min(20,10+effStat('vit')*0.01); log(`[Titan's Challenge] +${G.combat.titansChallengeMaxHpBonus.toFixed(0)}% Max HP scaling and ${G.combat.titansChallengeDR.toFixed(0)}% DR for 8s`, 'spellcast'); }
+    else if (slot==='fortify') { const dur=(5+effStat('vit')*0.05+sp*0.15); const fortifyPct=Math.min(75,35+sp*1.25+Math.min(10,effStat('vit')*0.05)); G.combat.fortifyPct=fortifyPct; G.combat.fortifyStartedAt=ts; G.combat.fortifyUntil=ts+dur*1000; G.combat.ironWallThornsUntil=ts+dur*1000+(hasMythicMod('spiked_helm')?10000:0); log(`[Iron Wall] ${fortifyPct.toFixed(0)}% damage reduction for ${dur.toFixed(1)}s. Thorns reflect ${fmtNum(ironWallReflectDamage())} damage to attackers.`, 'spellcast'); }
+    else if (slot==='execute') { const hpScale=juggernautHpScalingValue(ts); let dmg=base*1.0+hpScale+effStat('vit')*3; let recoil=Math.round(G.maxHp*0.30); if (hasMythicMod('worldbreaker')) { dmg*=4; recoil=Math.round(recoil*1.5); } if (hasMythicMod('titans_totem')) dmg*=0.75; G.hp=Math.max(1,G.hp-recoil); const dealt=hitTarget(dmg, 'Seismic Slam'); if (hasMythicMod('echoing_drum') && dealt>0 && target) G.combat.advDelayed={type:'seismic_echo',label:'Echoing Drum',releaseAt:ts+2000,targetId:target.id,damage:dealt*0.25}; log(`[Seismic Slam] recoil deals ${fmtNum(recoil)} HP to you (${fmtNum(G.hp)}/${fmtNum(G.maxHp)} HP).`, 'dmgtaken'); }
     else handled=false;
   } else if (adv === 'assassin') {
-    if (slot==='cheapshot') { dealt=hitTarget(base*1.6+agi*2, 'Vital Strike'); if (target) { target.vitalWoundUntil=ts+6000; target.vitalWoundBonus=Math.min(40,25+agi*0.03); log(`Vital Wound: next Assassinate +${target.vitalWoundBonus.toFixed(0)}% damage`, 'spelldmg'); } }
+    if (slot==='cheapshot') { hitTarget(base*1.6+agi*2, 'Vital Strike'); if (target) { target.vitalWoundUntil=hasMythicMod('tricksters_dagger')?Number.MAX_SAFE_INTEGER:ts+6000; target.vitalWoundBonus=Math.min(40,25+agi*0.03); log(`Vital Wound: next Assassinate +${target.vitalWoundBonus.toFixed(0)}% damage`, 'spelldmg'); } }
     else if (slot==='smokebomb') { G.combat.cloakDaggerUntil=ts+3000; G.combat.cloakDaggerCritBonus=Math.min(80,40+agi*0.10); G.combat.vanishDodgeUntil=ts+3000; log(`[Cloak and Dagger] dodge window and next damaging skill +${G.combat.cloakDaggerCritBonus.toFixed(0)}% Crit Damage`, 'spellcast'); }
-    else if (slot==='flurry') { let crits=0,total=0; for(let i=0;i<4;i++){ let dmg=base*0.60+agi*0.5; const isCrit=Math.random()*100<calcCritChance(); if(isCrit){crits++; dmg*=calcCritDamage()/100;} total += hitTarget(dmg, 'Phantom Rush'); } if(crits>0){ const red=Math.min(2.5,1.5+agi*0.002)*1000*crits; adjustSkillCooldownForBase('assassinate', -red); log(`Phantom Rush reduces Assassinate cooldown by ${(red/1000).toFixed(1)}s`, 'spellcast'); } }
+    else if (slot==='flurry') { const hits=hasMythicMod('phantom_dagger')?12:4; let crits=0,total=0; for(let i=0;i<hits;i++){ let dmg=base*0.60+agi*0.5; const isCrit=shouldGuaranteeCritByMythic()||Math.random()*100<calcCritChance(); if(isCrit){crits++; dmg*=calcCritDamage()/100;} total += hitTarget(dmg, 'Phantom Rush'); } if(crits>0 && !hasMythicMod('phantom_dagger')){ const red=Math.min(2.5,1.5+agi*0.002)*1000*crits; adjustSkillCooldownForBase('assassinate', -red); log(`Phantom Rush reduces Assassinate cooldown by ${(red/1000).toFixed(1)}s`, 'spellcast'); } }
     else if (slot==='marktarget') { if (target){ target.contractKill=true; target.contractKillUntil=ts+Math.min(12000,8000+agi*5); log(`Contract Kill marks ${safeMonsterName(target)}. First Assassinate refreshes its cooldown.`, 'spellcast'); } }
-    else if (slot==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; G.combat.advDelayed={type:'assassinate', label:'Assassinate', startedAt:ts, releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+3000; log('[Assassinate] 1.5s cast begins. Basic attacks and other skills are locked until it lands.', 'spellcast'); }
+    else if (slot==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; if (G.combat.cloakDaggerMythicAssassinate) { dmg*=1.25; G.combat.cloakDaggerMythicAssassinate=false; } G.combat.advDelayed={type:'assassinate', label:'Assassinate', startedAt:ts, releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+3000; log('[Assassinate] 1.5s cast begins. Basic attacks and other skills are locked until it lands.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'nightshade') {
-    if (slot==='cheapshot') { hitTarget(base*0.8+agi*1.2, 'Toxin Dart', false, t=>addPoisonStacks(t,3,ts,'Toxin Dart')); }
-    else if (slot==='smokebomb') { G.combat.smokeBombCharges=5; for(const t of [...G.monsters]) addPoisonStacks(t,5,ts,'Poison Mist'); log('[Poison Mist] delays attacks and applies poison.', 'spellcast'); }
-    else if (slot==='flurry') { let total=0; const extra=(G.combat.virulentBloodUntil||0)>ts?1:0; for(let i=0;i<5;i++){ const t=G.monsters[0]; if(!t) break; total+=hitTarget(base*0.25+agi*0.25, 'Venom Flurry', false, x=>addPoisonStacks(x,1+extra,ts,'Venom Flurry')); } log(`[Venom Flurry] ${fmtNum(total)} total damage`, 'spelldmg'); }
+    if (slot==='cheapshot') { const hits=hasMythicMod('butterflys_sting')?3:1; const poison=(hasMythicMod('wasps_grace')?6:3) * ((G.combat.miasmaFangUntil||0)>ts?2:1); for(let i=0;i<hits;i++) hitTarget(base*0.8+agi*1.2, 'Toxin Dart', false, t=>addPoisonStacks(t,poison,ts,'Toxin Dart')); if ((G.combat.miasmaFangUntil||0)>ts) G.combat.miasmaFangUntil=0; }
+    else if (slot==='smokebomb') { G.combat.smokeBombCharges=5; const stacks=5+(hasMythicMod('chemtech_coat')?15:0); if (hasMythicMod('poison_walker')) G.combat.poisonWalkerUntil=ts+5000; if (hasMythicMod('miasma_fang')) G.combat.miasmaFangUntil=ts+5000; if (hasMythicMod('plague_censer')) G.combat.poisonMistLingerUntil=ts+4000; for(const t of [...G.monsters]) { addPoisonStacks(t,stacks,ts,'Poison Mist'); if (hasMythicMod('baneful_mask')) { t.poisonVulnUntil=ts+6000; t.poisonVulnPct=0.20; } } log('[Poison Mist] delays attacks and applies poison.', 'spellcast'); }
+    else if (slot==='flurry') { let total=0; const extra=(G.combat.virulentBloodUntil||0)>ts?1:0; const mult=((G.combat.miasmaFangUntil||0)>ts?2:1); for(let i=0;i<5;i++){ const t=G.monsters[0]; if(!t) break; total+=hitTarget(base*0.25+agi*0.25, 'Venom Flurry', false, x=>addPoisonStacks(x,(1+extra)*mult,ts,'Venom Flurry')); } if ((G.combat.miasmaFangUntil||0)>ts) G.combat.miasmaFangUntil=0; log(`[Venom Flurry] ${fmtNum(total)} total damage`, 'spelldmg'); }
     else if (slot==='marktarget') { G.combat.virulentBloodUntil=ts+8000; log('[Virulent Blood] basic attacks and skills apply +1 poison stack for 8s.', 'spellcast'); }
     else if (slot==='assassinate') { G.combat.advDelayed={type:'blacklotus',label:'Black Lotus',releaseAt:ts+3000,targetId:target?.id}; log('[Black Lotus] 3s cast begins; will consume all poison stacks.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'flamemage') {
-    if (slot==='fireball') { hitTarget(base*2.0+int_*3, 'Inferno Blast', false, t=>addBurnStacks(t,1,ts,'Inferno Blast')); }
-    else if (slot==='chainlightning') { G.combat.advChannel={type:'incineration',until:ts+5000,nextTick:ts,tickMs:500}; log('[Incineration Ray] channeling for 5s.', 'spellcast'); }
+    if (slot==='fireball') { let dmg=base*2.0+int_*3; if (hasMythicMod('furnace_seal')) dmg*=2.5; if (target && hasMythicMod('hellfire_torch')) dmg += target.maxHp*0.08; hitTarget(dmg, 'Inferno Blast', false, t=>addBurnStacks(t,hasMythicMod('blazing_diadem')?5:1,ts,'Inferno Blast')); }
+    else if (slot==='chainlightning') { const tickMs=hasMythicMod('pyroclastic_lens')?350:500; const until=hasMythicMod('incinerating_staff')?Number.MAX_SAFE_INTEGER:ts+5000; G.combat.advChannel={type:'incineration',label:'Incineration Ray',until,nextTick:ts,tickMs,mpDrainPerSec:hasMythicMod('incinerating_staff')?100:0}; log(`[Incineration Ray] channeling${hasMythicMod('incinerating_staff')?' until MP runs out':' for 5s'}.`, 'spellcast'); }
     else if (slot==='frostnova') { G.combat.firewallUntil=ts+6000; G.combat.firewallDR=Math.min(0.30,(20+int_*0.01)/100); log(`[Firewall] ${Math.round(G.combat.firewallDR*100)}% damage reduction for 6s. Attackers receive Burn.`, 'spellcast'); }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Sparkstarter'); G.combat.sparkstarterUntil=ts+5000; log('[Sparkstarter] MP regen increased for 5s.', 'spellcast'); }
     else if (slot==='chronosphere') { G.combat.overheatUntil=ts+8000; log('[Overheat] fire skills apply +1 Burn stack and deal more damage for 8s.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'frostmage') {
-    if (slot==='fireball') { let dmg=base*1.8+int_*3; if ((target?.frozenUntil||0)>ts) dmg*=1.25; hitTarget(dmg,'Glacial Spike',false,t=>addFrostbite(t,1,ts,'Glacial Spike')); }
-    else if (slot==='chainlightning') { G.combat.advChannel={type:'frostbeam',until:ts+5000,nextTick:ts,tickMs:1000}; log('[Frostbeam] channeling for 5s.', 'spellcast'); }
+    if (slot==='fireball') { let dmg=base*1.8+int_*3; const frozen=(target?.frozenUntil||0)>ts; if (frozen) dmg*=hasMythicMod('shatterspike')?2.5:1.25; if (hasMythicMod('icepiercer_circlet') && (target?.frostbiteStacks||0)>=4) dmg*=1.5; const dealt=hitTarget(dmg,'Glacial Spike',false,t=>addFrostbite(t,hasMythicMod('hoarfang_staff')?2:1,ts,'Glacial Spike')); if (frozen && dealt>0 && hasMythicMod('frozen_needle')) adjustSkillCooldownForBase('fireball', -effectiveCooldown(v.cooldown,k)*0.40); }
+    else if (slot==='chainlightning') { const tickMs=hasMythicMod('aislongs_frostbeam')?500:1000; const dur=5000+(hasMythicMod('cryo_conduit')?2000:0); G.combat.advChannel={type:'frostbeam',until:ts+dur,nextTick:ts,tickMs}; log(`[Frostbeam] channeling for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
+    else if (slot==='frostnova') { const stacks=2; for (const t of [...G.monsters]) addFrostbite(t, stacks, ts, 'Frost Nova'); log('[Frost Nova] chills all enemies.', 'spellcast'); }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Mana Coolant'); for(const m of G.monsters){m.frostNovaSlowAdd=Math.max(m.frostNovaSlowAdd||0,2000);m.frostNovaSlowUntil=Math.max(m.frostNovaSlowUntil||0,ts+5000);} log('[Mana Coolant] all enemy attack intervals +2.0s for 5s.', 'spellcast'); }
-    else if (slot==='chronosphere') { G.combat.iceBarrierUntil=ts+6000; G.combat.iceBarrierShield=Math.max(G.combat.iceBarrierShield||0,G.maxMp*0.35); log(`[Ice Barrier] 35% DR and ${fmtNum(G.combat.iceBarrierShield)} shield for 6s`, 'spellcast'); }
+    else if (slot==='chronosphere') { const dur=6000+(hasMythicMod('icebound_halo')?3000:0); let shield=G.maxMp*0.35; if (hasMythicMod('absolute_zero_robe')) shield*=2; if (hasMythicMod('frozen_anchor')) shield*=0.75; G.combat.iceBarrierUntil=ts+dur; G.combat.iceBarrierShield=Math.max(G.combat.iceBarrierShield||0,shield); log(`[Ice Barrier] 35% DR and ${fmtNum(G.combat.iceBarrierShield)} shield for ${(dur/1000).toFixed(1)}s`, 'spellcast'); }
     else handled=false;
   } else if (adv === 'lightningmage') {
-    if (slot==='fireball') { hitTarget(base*1.6+int_*2.8,'Lightning Spear'); }
-    else if (slot==='chainlightning') { const dmg=base*0.75+int_*1.4; let total=0; let previous=null; for(let i=1;i<=14;i++){ const bounceToPlayer = i>1 && Math.random()<0.22; if (bounceToPlayer){ restoreMpAdv(G.maxMp*0.02+int_*0.15,'Greater Chain Lightning'); previous=null; continue; } const live=G.monsters.filter(m=>m&&m.hp>0); if(!live.length) break; const t=(live.length>1&&previous)?(live.find(m=>m!==previous)||live[0]):live[0]; total+=dealRawAdvancementDamage(t,dmg,ts,'Greater Chain Lightning'); previous=t; } log(`[Greater Chain Lightning] finishes after up to 14 bounces (${fmtNum(total)} total damage)`, 'spelldmg'); }
+    if (slot==='fireball') { const hits=hasMythicMod('stormpiercer')?2:1; let total=0; for(let i=0;i<hits;i++) total+=hitTarget((base*1.6+int_*2.8)*(i?0.5:1),'Lightning Spear'); if (hasMythicMod('stormhead_circlet')) G.combat.overloadCasts = Math.min(2,(G.combat.overloadCasts||0)+1); if (hasMythicMod('rainougas_raiment') && (G.combat.staticFieldUntil||0)>ts) { G.combat.staticFieldUntil=ts+8000; log("Rainouga's Raiment refreshes Static Field.", 'spellcast'); } }
+    else if (slot==='chainlightning') { let maxHits=14*(hasMythicMod('lightning_staff')?2:1); const dmgBase=base*0.75+int_*1.4; let total=0; let previous=null; let bouncedPlayer=false; for(let i=1;i<=maxHits;i++){ const playerChance=hasMythicMod('thunder_crown')?0.37:0.22; const bounceToPlayer = i>1 && Math.random()<playerChance; if (bounceToPlayer){ bouncedPlayer=true; restoreMpAdv(G.maxMp*0.02+int_*0.15,'Greater Chain Lightning'); previous=null; continue; } const live=G.monsters.filter(m=>m&&m.hp>0); if(!live.length) break; const t=(live.length>1&&previous)?(live.find(m=>m!==previous)||live[0]):live[0]; const dmg=dmgBase*(hasMythicMod('stormweaver_rod')?(1+(i-1)*0.10):1); total+=dealRawAdvancementDamage(t,dmg,ts,'Greater Chain Lightning'); previous=t; } if (bouncedPlayer && hasMythicMod('conductive_robe')) { G.combat.conductiveRobeUntil=ts+4000; log('[Conductive Robe] 20% damage reduction for 4s.', 'spellcast'); } log(`[Greater Chain Lightning] finishes after up to ${maxHits} bounces (${fmtNum(total)} total damage)`, 'spelldmg'); }
     else if (slot==='frostnova') { let total=0; for(const t of [...G.monsters]){ total+=dealRawAdvancementDamage(t,base*0.9+int_*1.8,ts,'Thunderclap'); t.lastAttack=ts; t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,500); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+3000);} log(`[Thunderclap] interrupts ${G.monsters.length} enemies`, 'spellcast'); }
-    else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.22+int_*2.0+100,'Mana Conduit'); G.combat.manaConduitUntil=ts+5000; log('[Mana Conduit] skill cooldowns reduced by 2s for 5s.', 'spellcast'); }
-    else if (slot==='chronosphere') { G.combat.staticFieldUntil=ts+8000; log('[Static Field] enemy damage restores MP for 8s.', 'spellcast'); }
+    else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.22+int_*2.0+100,'Mana Conduit'); const dur=5000+(hasMythicMod('conduit_crown')?3000:0); G.combat.manaConduitUntil=ts+dur; log(`[Mana Conduit] skill cooldowns reduced by ${hasMythicMod('currentwalkers')?3:2}s for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
+    else if (slot==='chronosphere') { G.combat.staticFieldUntil=ts+8000; G.combat.staticFieldRestored=0; G.combat.groundingBootsTriggered=false; log('[Static Field] enemy damage restores MP for 8s.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'arcanist') {
-    if (slot==='fireball') { hitTarget(base*1.4+int_*2.5,'Arcane Blades',true); }
+    if (slot==='fireball') { let hits=hasMythicMod('spellrazor')?2:1; for (let i=0;i<hits;i++) { const dmg=(base*1.4+int_*2.5)*(i?0.5:1); const beforeCrit=G.combat.lastArcanistSpellCrit; hitTarget(dmg,'Arcane Blades',true); if (G.combat.lastArcanistSpellCrit && hasMythicMod('prism_focus')) restoreMpAdv(G.maxMp*0.05,'Prism Focus'); } if (hasMythicMod('runic_dueling_coat')) { G.combat.runicDuelingCharges=3; log('[Runic Dueling Coat] next 3 basic attacks deal bonus Arcane damage.', 'spellcast'); } }
     else if (slot==='chainlightning') { for(const t of [...G.monsters]){ let basePart=base*0.50+int_*2.0; const c=maybeCritArcanistSpell(basePart,'Spatial Rend'); let dmg=c.dmg + t.hp*0.05; const res=dealSkillDamageToMonster(t,dmg,ts); if(res.dealt>0){log(`[Spatial Rend] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } }
-    else if (slot==='frostnova') { for(const t of [...G.monsters]){ let dmg=base*1.4+int_*3.0; const c=maybeCritArcanistSpell(dmg,'Gravity Ball'); const res=dealSkillDamageToMonster(t,c.dmg,ts); t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,2000); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+5000); if(res.dealt>0){log(`[Gravity Ball] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } }
+    else if (slot==='frostnova') { let dmg=base*1.4+int_*3.0; if (hasMythicMod('graviton_core')) { G.combat.advDelayed={type:'gravityball',label:'Gravity Ball',releaseAt:ts+3000,targetId:target?.id,damage:dmg*2.5}; log('[Gravity Ball] 3s cast begins.', 'spellcast'); } else { const hits=hasMythicMod('grav_breaker')?3:1; for (let h=0; h<hits; h++) for(const t of [...G.monsters]){ let c=maybeCritArcanistSpell(dmg,'Gravity Ball'); const res=dealSkillDamageToMonster(t,c.dmg,ts); if(!hasMythicMod('grav_breaker')) { const delayMs=hasMythicMod('lunar_boots')?8000:5000; t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,2000); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+delayMs); } if (hasMythicMod('weightless_mantle')) { t.weightlessUntil=ts+5000; t.weightlessPct=0.20; } if(res.dealt>0){log(`[Gravity Ball] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } } }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Arcane Infusion'); G.combat.arcaneInfusionUntil=ts+8000; log('[Arcane Infusion] basic attack interval becomes 0.6s for 8s.', 'spellcast'); }
     else if (slot==='chronosphere') { G.combat.chronoSingularityUntil=ts+6000; for(const m of G.monsters){m.chronosphereDelayNext=true;m.chronosphereDamageDelay=3000;} log('[Chrono Singularity] incoming damage is delayed for 6s.', 'spellcast'); }
     else handled=false;
@@ -3675,9 +3777,9 @@ function dealFireballDamage(fbDmg, ts=performance.now(), label='Fireball', overl
   let hitCount = 0;
   let shieldedCount = 0;
   let total = 0;
-  const hellfireActive = hasMythicMod('hellfire_torch');
+  const hellfireActive = false;
   for (const t of targets) {
-    const hellfireBonus = hellfireActive ? Math.round(Math.max(0, t.hp || 0) * 0.10) : 0;
+    const hellfireBonus = 0;
     const perTargetDmg = fbDmg + hellfireBonus;
     const res = dealSkillDamageToMonster(t, perTargetDmg, ts);
     if (res.arcaneBlocked) {
@@ -5904,6 +6006,7 @@ function spawnMonsters() {
   markFarmEncounterStart(performance.now());
 
   G.monsters = [];
+  if (G.combat) { G.combat.echoingRelicUsed = false; G.combat.oathbreakerUsed = false; G.combat.oathbreakerUntil = 0; }
   if ((G.potionShield || 0) > 0) {
     G.potionShield = 0;
     G.potionShieldMax = 0;
@@ -6906,66 +7009,150 @@ function rollConstrainedMaxHp(rarity, currentVal) {
   return candidates[randi(0, candidates.length - 1)];
 }
 
-// MYTHIC ITEMS — tweak values here
+// MYTHIC ITEMS — updated advancement overhaul
 const MYTHIC_ITEMS = {
   general: {
-    helmet: { name:"Hakam's Helm", mod:'temple_titan_crown', desc:'Special Hakam mythic: +20 STR, AGI, INT, and VIT; rolls 4 random substats', val:null },
-    armor: { name:'Pale Furisode', mod:'pale_furisode', desc:'Cold Aura: enemies attack 0.7s slower', val:null },
+    helmet: { name:"Hakam's Helm", mod:"temple_titan_crown", desc:"+20 STR, AGI, INT, and VIT; rolls 4 random substats.", val:null },
+    armor: { name:"Pale Furisode", mod:"pale_furisode", desc:"Enemies attack 0.7s slower.", val:null },
   },
   warrior: {
-    armor: [
-      { name:"Warlord's Pauldron",  mod:'warlord',        desc:'Battle Hardened damage reduction stacks only reset on death',                 val:null },
-      { name:'Heart of Kitarasque', mod:'kitarasque_heart', desc:'Restores 10% max HP upon taking damage',                        val:10   },
+    helmet: [
+      { name:"Sheathing Sandogasa", mod:"sheathing_sandogasa", desc:"Iai Counter cooldown resets if parry procs during the preparation time.", val:null },
+      { name:"Moonlight Kasa", mod:"moonlight_kasa", desc:"Crescent Slash reduces its cooldown by 1s per enemy hit.", val:null },
+      { name:"Dying Roar", mod:"dying_roar", desc:"Enrage gains +1s duration for every 10% missing HP when cast.", val:null },
+      { name:"Helmsplitter", mod:"helmsplitter", desc:"Skullbreaker's Cracked Armor effect is doubled, but its duration is reduced by 50%.", val:null },
+      { name:"Spiked Helm", mod:"spiked_helm", desc:"Iron Wall thorns effect persists for 10s after Iron Wall ends.", val:null },
+      { name:"Colossus Crown", mod:"colossus_crown", desc:"Titan's Challenge increases Max HP by an additional 20%.", val:null }
     ],
-    legging:[
-      { name:"Titan's Girdle",      mod:'titan_girdle',   desc:'Fortify costs 0 MP',                                         val:0    },
-      { name:"Berserker's Boots",   mod:'berserker_boots', desc:"War Cry / Enrage cooldown reduced by 50%",                 val:50   },
+    armor: [
+      { name:"Ronin's Robe", mod:"ronins_robe", desc:"Quick Sheathe ends when parry procs. Parrying during Quick Sheathe deals 200% damage.", val:null },
+      { name:"Moonlight Shadow", mod:"moonlight_shadow", desc:"When you parry, trigger Crescent Slash.", val:null },
+      { name:"Executioner's Robe", mod:"executioners_robe", desc:"Guillotine's cooldown is reduced by 30% if used while below 25% HP.", val:null },
+      { name:"Iron Maiden", mod:"iron_maiden", desc:"Iron Wall thorns damage increased by 250%.", val:null }
+    ],
+    legging: [
+      { name:"Moonwalkers", mod:"moonwalkers", desc:"Crescent Slash deals +150% damage.", val:null },
+      { name:"Fleet Shufflers", mod:"fleet_shufflers", desc:"During Iai Counter, parry chance is increased by 20%.", val:null },
+      { name:"Berserker's Boots", mod:"berserker_boots", desc:"Enrage cooldown reduced by 50%.", val:null }
     ],
     weapon: [
-      { name:"Executioner's Edge",  mod:'executioner',    desc:'Execute threshold raised to %val%%%',                        val:50   },
-      { name:'The Wall',             mod:'the_wall',      desc:'Shield Bash deals +30% current HP damage; costs 25% current HP', val:null },
-      { name:'Spin Cleaver',         mod:'spin_cleaver',  desc:'Whirlwind lasts for 5s',                                      val:5    },
+      { name:"Moment's Edge", mod:"moments_edge", desc:"Iai Counter ends when parry procs. Parrying during Iai Counter causes the final strike to deal 100% more damage.", val:null },
+      { name:"Severing Moon", mod:"severing_moon", desc:"Crescent Slash hits 3 times.", val:null },
+      { name:"Executioner's Edge", mod:"executioner", desc:"Guillotine's execute damage threshold is increased to 40% enemy HP.", val:null },
+      { name:"Bloodied Gauntlet", mod:"bloodied_gauntlet", desc:"Basic attacks gain +2% damage per successful hit, up to +50%. Consuming a potion removes all stacks.", val:null },
+      { name:"Skull Cracking Mace", mod:"skull_cracking_mace", desc:"Skullbreaker deals +150% damage if the target already has Cracked Armor.", val:null },
+      { name:"The Wall", mod:"the_wall", desc:"Iron Wall cooldown is reduced by 50%.", val:null },
+      { name:"Worldbreaker", mod:"worldbreaker", desc:"Seismic Slam deals +300% damage, but its recoil damage and cooldown are increased by 50%.", val:null },
+      { name:"Aegis Slash", mod:"aegis_slash", desc:"Aegis Bash deals +50% damage while you are above 85% HP.", val:null },
+      { name:"Titan's Totem", mod:"titans_totem", desc:"Seismic Slam cooldown is reduced by 50%, but its damage is reduced by 25%.", val:null }
     ],
-    offhand:[
-      { name:'Bloodsoaked Brandish', mod:'bloodsoaked',    desc:'Attacks restore HP equal to %val%% of damage dealt',         val:10   },
-      { name:"Berserker's Gauntlet", mod:'ironwall',       desc:'Berserker Rage bonus is doubled',                            val:2    },
+    offhand: [
+      { name:"Pacifist's Sheathe", mod:"pacifists_sheathe", desc:"Iai Counter preparation time increases by 1s. Parrying during the preparation time reduces damage by 100%.", val:null },
+      { name:"Lunar's Closure", mod:"lunars_closure", desc:"Crescent Slash cooldown reduced by 20%.", val:null },
+      { name:"Berserker's Gauntlet", mod:"berserkers_gauntlet", desc:"Blood Frenzy bonuses are doubled, but its HP drain is also doubled.", val:null },
+      { name:"Beheader", mod:"beheader", desc:"If Guillotine kills the target, restore 20% Max HP.", val:null },
+      { name:"Siphoning Spiked Shield", mod:"siphoning_spiked_shield", desc:"Iron Wall thorns damage heals you for 15% of the damage dealt.", val:null },
+      { name:"Echoing Drum", mod:"echoing_drum", desc:"After casting Seismic Slam, deal 25% of its damage again after 2s.", val:null },
+      { name:"Bloodsoaked Brandish", mod:"bloodsoaked", desc:"Attacks restore HP equal to 10% of damage dealt.", val:null }
     ],
   },
   rogue: {
-    helmet: { name:'Hood of Shadows',     mod:'hood_of_shadows', desc:'Rogue passive dodge chance increased by %val%%',             val:10   },
-    legging:{ name:'Dustwalker Boots',     mod:'dustwalker',    desc:'Smoke Bomb delays all monster attacks for entire fight',     val:null },
-    weapon: [
-      { name:"Altair's Shiv",       mod:'altairs_shiv',  desc:'Assassinate deals 2x the player crit damage multiplier',     val:2    },
-      { name:"Butterfly's Sting",   mod:'phantom_wraps', desc:'Flurry hit count increased to %val%',                        val:8    },
-      { name:"Trickster's Dagger",   mod:'mirror_edge',   desc:'Cheap Shot has no cooldown, costs base MP + %val%% max MP per cast', val:10   },
+    helmet: [
+      { name:"Hood of Shadows", mod:"hood_of_shadows", desc:"Cloak and Dagger grants an additional +10% dodge chance during its dodge window. If you dodge during Cloak and Dagger, your next Assassinate gains +25% Crit Damage.", val:null },
+      { name:"Baneful Mask", mod:"baneful_mask", desc:"Poison Mist causes poisoned enemies to take +20% poison damage for 6s.", val:null }
     ],
-    offhand:[
-      { name:'Phantom Dagger',       mod:'phantom_dagger', desc:'When Shadowstep procs, it triggers once more',              val:null },
-      { name:'Hiddenblade of Sin',   mod:'hiddenblade_sin', desc:'Assassinate cooldown reduced by 50%',                    val:50   },
+    weapon: [
+      { name:"Altair's Shiv", mod:"altairs_shiv", desc:"Assassinate cooldown resets when Assassinate kills the target. This effect cannot trigger more than once every 4s.", val:null },
+      { name:"Trickster's Dagger", mod:"tricksters_dagger", desc:"Vital Wound no longer expires naturally, but is removed after empowering one Assassinate.", val:null },
+      { name:"Butterfly's Sting", mod:"butterflys_sting", desc:"Toxin Dart hits three times.", val:null },
+      { name:"Black Death", mod:"black_death", desc:"Black Lotus damage is increased by 2% per 10 poison stacks consumed.", val:null },
+      { name:"Miasma Fang", mod:"miasma_fang", desc:"Poison Mist causes your next Toxin Dart or Venom Flurry within 5s to apply double poison stacks.", val:null }
+    ],
+    offhand: [
+      { name:"Phantom Dagger", mod:"phantom_dagger", desc:"Phantom Rush no longer reduces Assassinate cooldown, but hits 12 times.", val:null },
+      { name:"Hiddenblade of Sin", mod:"hiddenblade_sin", desc:"Assassinate cooldown reduced by 25%.", val:null },
+      { name:"Wasp's Grace", mod:"wasps_grace", desc:"Toxin Dart poison applies twice.", val:null },
+      { name:"Plague Censer", mod:"plague_censer", desc:"Poison Mist lingers for 4s. While it lingers, enemies gain 2 poison stacks each second.", val:null }
+    ],
+    armor: [
+      { name:"Chemtech Coat", mod:"chemtech_coat", desc:"Poison Mist applies +15 more poison stacks.", val:null }
+    ],
+    legging: [
+      { name:"Poison Walker", mod:"poison_walker", desc:"Poison Mist also grants +15% dodge chance for 5s. Dodging during this window applies 2 poison stacks to the attacker.", val:null }
     ],
   },
   wizard: {
-    helmet: { name:"Arcanist's Crown",     mod:'arcanist_crown',desc:'Overload triggers after %val% skill casts',                 val:3    },
+    helmet: [
+      { name:"Cinder Crown", mod:"cinder_crown", desc:"Ignition explosions trigger at 8 Burn stacks instead of 10.", val:null },
+      { name:"Blazing Diadem", mod:"blazing_diadem", desc:"Inferno Blast applies 5 Burn stacks.", val:null },
+      { name:"Icepiercer Circlet", mod:"icepiercer_circlet", desc:"Glacial Spike has +50% Crit Damage against enemies with 4 Frostbite stacks.", val:null },
+      { name:"Icebound Halo", mod:"icebound_halo", desc:"Ice Barrier lasts 3s longer.", val:null },
+      { name:"Stormhead Circlet", mod:"stormhead_circlet", desc:"Lightning Spear advances Energy Overload by 1 additional count.", val:null },
+      { name:"Conduit Crown", mod:"conduit_crown", desc:"Mana Conduit's cooldown recovery bonus lasts 3s longer.", val:null },
+      { name:"Thunder Crown", mod:"thunder_crown", desc:"Greater Chain Lightning has +15% chance per bounce to bounce to the player and restore MP.", val:null },
+      { name:"Spellblade's Cap", mod:"spellblades_cap", desc:"Arcane Blades gains +75% Crit Damage.", val:null }
+    ],
     armor: [
-      { name:'Void Mantle',          mod:'void_mantle',   desc:'Mana Shield absorbs all damage, MP drain x%val%',           val:3    },
-      { name:"Rainouga's Raiment",   mod:'rainougas_raiment', desc:'Chain Lightning restores MP equal to 30% of its damage dealt', val:30 },
+      { name:"Ignited Heart", mod:"ignited_heart", desc:"Ignition explosions trigger twice more, dealing 50% and 25% damage.", val:null },
+      { name:"Rime Channel Robe", mod:"rime_channel_robe", desc:"While channeling Frostbeam, take 30% reduced damage.", val:null },
+      { name:"Absolute Zero Robe", mod:"absolute_zero_robe", desc:"Ice Barrier shield amount is doubled.", val:null },
+      { name:"Conductive Robe", mod:"conductive_robe", desc:"After casting Greater Chain Lightning, gain 20% damage reduction for 4s if it bounced to the player.", val:null },
+      { name:"Rainouga's Raiment", mod:"rainougas_raiment", desc:"Lightning Spear refreshes Static Field duration.", val:null },
+      { name:"Runic Dueling Coat", mod:"runic_dueling_coat", desc:"After casting Arcane Blades, your next 3 basic attacks deal +50% Arcane damage.", val:null },
+      { name:"Weightless Mantle", mod:"weightless_mantle", desc:"Enemies hit by Gravity Ball deal 20% less damage for 5s.", val:null }
     ],
     weapon: [
-      { name:'Lightning Staff',      mod:'lightning_staff',desc:'Chain Lightning bounces unlimited times', val:null },
-      { name:'Hellfire Torch',       mod:'hellfire_torch', desc:'Fireball also deals 10% of each enemy current HP',             val:10   },
-      { name:'Freezing Orb',         mod:'ethereal',       desc:'Frost Nova cooldown reduced by %val%%',                      val:40   },
+      { name:"Incinerating Staff", mod:"incinerating_staff", desc:"Incineration Ray has no cooldown and no fixed duration, but costs 100 MP per second while channeling.", val:null },
+      { name:"Reactor Rod", mod:"reactor_rod", desc:"Ignition explosions apply 2 Burn stacks to all enemies hit.", val:null },
+      { name:"Hellfire Torch", mod:"hellfire_torch", desc:"Inferno Blast deals bonus damage equal to 8% of the target's Max HP.", val:null },
+      { name:"Shatterspike", mod:"shatterspike", desc:"Glacial Spike deals +150% damage to Frozen enemies.", val:null },
+      { name:"Hoarfang Staff", mod:"hoarfang_staff", desc:"Glacial Spike applies 2 Frostbite stacks instead of 1.", val:null },
+      { name:"Aislong's Frostbeam", mod:"aislongs_frostbeam", desc:"Frostbeam tick interval is reduced from 1s to 0.5s, but its damage is reduced by 40%.", val:null },
+      { name:"Cryo Conduit", mod:"cryo_conduit", desc:"Frostbeam lasts 2s longer.", val:null },
+      { name:"Stormpiercer", mod:"stormpiercer", desc:"Lightning Spear hits twice. The second hit deals 50% damage.", val:null },
+      { name:"Lightning Staff", mod:"lightning_staff", desc:"Greater Chain Lightning bounce limit is doubled.", val:null },
+      { name:"Stormweaver Rod", mod:"stormweaver_rod", desc:"Greater Chain Lightning deals +10% damage per previous enemy bounce during the cast.", val:null },
+      { name:"Spellrazor", mod:"spellrazor", desc:"Arcane Blades hits twice. The second hit deals 50% damage.", val:null },
+      { name:"Grav Breaker", mod:"grav_breaker", desc:"Gravity Ball no longer increases enemy attack interval, but hits 3 times.", val:null }
     ],
-    offhand:[
-      { name:'Frosted Codex',        mod:'frosted_codex', desc:'Frost Nova delay duration x%val%',                          val:2    },
-      { name:'Flamestealer',         mod:'flamestealer',  desc:'Channels Fireball for 4s, then unleashes it at 2x damage', val:2 },
+    offhand: [
+      { name:"Pyroclastic Lens", mod:"pyroclastic_lens", desc:"Incineration Ray tick interval is reduced from 0.5s to 0.35s, but Ignition explosion damage is reduced by 50%.", val:null },
+      { name:"Pyroclastic Core", mod:"pyroclastic_core", desc:"Explosive Mana explosions deal +100% damage.", val:null },
+      { name:"Furnace Seal", mod:"furnace_seal", desc:"Inferno Blast deals +150% damage, but its MP cost is doubled.", val:null },
+      { name:"Frozen Needle", mod:"frozen_needle", desc:"If Glacial Spike hits a Frozen enemy, reduce its cooldown by 40%.", val:null },
+      { name:"Frosted Lens", mod:"frosted_lens", desc:"Frostbeam applies +1 additional Frostbite stack every second.", val:null },
+      { name:"Mirror Ice", mod:"mirror_ice", desc:"While Ice Barrier is active, attackers receive 1 Frostbite stack.", val:null },
+      { name:"Prism Focus", mod:"prism_focus", desc:"If Arcane Blades crits, restore 5% Max MP.", val:null },
+      { name:"Graviton Core", mod:"graviton_core", desc:"Gravity Ball now has a 3s cast time, but deals +150% damage.", val:null }
     ],
-  }
+    legging: [
+      { name:"Frozen Anchor", mod:"frozen_anchor", desc:"Ice Barrier cooldown is reduced by 40%, but its shield amount is reduced by 25%.", val:null },
+      { name:"Grounding Boots", mod:"grounding_boots", desc:"Static Field cooldown is reduced by 30% if you restore at least 30% Max MP during its duration.", val:null },
+      { name:"Currentwalkers", mod:"currentwalkers", desc:"During Mana Conduit, skill cooldowns reduce by 3s instead of 2s.", val:null },
+      { name:"Lunar Boots", mod:"lunar_boots", desc:"Gravity Ball's attack interval increase lasts 3s longer.", val:null }
+    ],
+  },
 };
 
 // Normal general mythics can roll for any class when their slot is selected.
 const GENERAL_MYTHIC_POOL = {
-  armor:  { name:'Two Tonne Tunic', mod:'two_tonne_tunic', desc:'Incoming damage reduced by 10%', val:10 },
-  weapon: { name:'Infinity Blade',  mod:'infinity_blade',  desc:'Basic attacks gain damage equal to 50% of your class main stat', val:50 },
+  helmet: [
+      { name:"Hakam's Helm", mod:"temple_titan_crown", desc:"+20 STR, AGI, INT, and VIT; rolls 4 random substats.", val:null },
+      { name:"Crown of the 5th King", mod:"crown_5th_king", desc:"Every 5th skill cast deals +50% damage.", val:null }
+  ],
+  armor: [
+      { name:"Pale Furisode", mod:"pale_furisode", desc:"Enemies attack 0.7s slower.", val:null },
+      { name:"Two Tonne Tunic", mod:"two_tonne_tunic", desc:"Incoming damage reduced by 10%.", val:null },
+      { name:"Heart of Kitarasque", mod:"kitarasque_heart", desc:"Restores 10% Max HP upon taking damage.", val:null },
+      { name:"Shizumiya's Haori", mod:"shizumiyas_haori", desc:"While your HP is at or below 35% of your Max HP, your attacks are guaranteed to crit.", val:null }
+  ],
+  weapon: [
+      { name:"Infinity Blade", mod:"infinity_blade", desc:"Basic attacks gain damage equal to 50% of class main stat.", val:null }
+  ],
+  offhand: [
+      { name:"Oathbreaker Band", mod:"oathbreaker_band", desc:"When you fall below 30% HP, gain +30% damage for 6s. This can occur once per fight.", val:null },
+      { name:"Echoing Relic", mod:"echoing_relic", desc:"Your first damaging skill in combat repeats once for 30% damage.", val:null }
+  ],
 };
 
 function getGeneralMythicDefs(slot) {
@@ -7009,6 +7196,98 @@ function hasMythicMod(mod) {
     if (item.mythicMod === mod && (item.mythicClass === G.playerClass || item.mythicClass === 'general' || item.mythicClass === 'all')) return true;
   }
   return false;
+}
+
+
+const REMOVED_MYTHIC_MODS = new Set(['warlord','titan_girdle','spin_cleaver','dustwalker','arcanist_crown','void_mantle','ethereal','frosted_codex','flamestealer']);
+const MYTHIC_MOD_MIGRATIONS = {
+  ironwall:'berserkers_gauntlet',
+  phantom_wraps:'butterflys_sting',
+  mirror_edge:'tricksters_dagger',
+  rainougas_furcoat:'rainougas_raiment'
+};
+function mythicEquippedItem(mod) {
+  for (const item of Object.values(G.equipped || {})) {
+    if (!item || item.rarity !== 'mythic') continue;
+    if (item.mythicMod === mod && (item.mythicClass === G.playerClass || item.mythicClass === 'general' || item.mythicClass === 'all')) return item;
+  }
+  return null;
+}
+function mythicHpPct() { return G.maxHp > 0 ? (G.hp / G.maxHp * 100) : 0; }
+function shouldGuaranteeCritByMythic() { return hasMythicMod('shizumiyas_haori') && mythicHpPct() <= 35; }
+function maybeTriggerOathbreaker(now=performance.now()) {
+  if (!hasMythicMod('oathbreaker_band') || mythicHpPct() > 30) return;
+  if (G.combat?.oathbreakerUsed) return;
+  G.combat.oathbreakerUsed = true;
+  G.combat.oathbreakerUntil = now + 6000;
+  log('<span style="color:#d8c7ff">Oathbreaker Band awakens: +30% damage for 6s.</span>', 'system');
+}
+function mythicOutgoingDamageMultiplier(now=performance.now()) {
+  maybeTriggerOathbreaker(now);
+  return (G.combat?.oathbreakerUntil || 0) > now ? 1.30 : 1;
+}
+function beginMythicSkillCast(k, ts=performance.now()) {
+  G.combat.currentSkillKey = k;
+  G.combat.currentSkillDamageMult = 1;
+  if (hasMythicMod('crown_5th_king')) {
+    G.combat.crown5thCasts = (G.combat.crown5thCasts || 0) + 1;
+    if (G.combat.crown5thCasts % 5 === 0) {
+      G.combat.currentSkillDamageMult *= 1.5;
+      log('<span style="color:#d8c7ff">Crown of the 5th King empowers this skill.</span>', 'spellcast');
+    }
+  }
+}
+function endMythicSkillCast() {
+  G.combat.currentSkillKey = null;
+  G.combat.currentSkillDamageMult = 1;
+}
+function sanitizeDummyMythicItem(item) {
+  if (!item || item.rarity !== 'mythic') return item;
+  if (MYTHIC_MOD_MIGRATIONS[item.mythicMod]) item.mythicMod = MYTHIC_MOD_MIGRATIONS[item.mythicMod];
+  if (!REMOVED_MYTHIC_MODS.has(item.mythicMod)) return item;
+  const stars = getOvergearLevel(item);
+  item.name = 'Dummy Item';
+  item.mythicMod = 'dummy_myth';
+  item.mythicClass = 'general';
+  item.mythicModDesc = 'Removed Mythic: no stats or effects.';
+  item.mainStats = {};
+  item.subStats = {};
+  item.ascendStat = null;
+  item.overgearLevel = stars;
+  item.overgeared = stars > 0;
+  item.overgearBaseStats = { mainStats:{}, subStats:{}, ascendStat:null };
+  item.goldVal = 0;
+  buildItemDesc(item);
+  return item;
+}
+function normalizeMythicItemForOverhaul(item) {
+  if (!item || item.rarity !== 'mythic') return item;
+  if (MYTHIC_MOD_MIGRATIONS[item.mythicMod]) item.mythicMod = MYTHIC_MOD_MIGRATIONS[item.mythicMod];
+  if (item.mythicMod === 'rainougas_raiment') item.name = "Rainouga's Raiment";
+  if (item.mythicMod === 'kitarasque_heart') item.mythicClass = 'general';
+  if (REMOVED_MYTHIC_MODS.has(item.mythicMod)) return sanitizeDummyMythicItem(item);
+  const def = getMythicDefByMod(item.mythicMod, item.mythicClass === 'general' ? G.playerClass : (item.mythicClass || G.playerClass), item.slot);
+  if (def) { item.name = def.name; item.mythicModDesc = def.desc; }
+  return item;
+}
+function mythicCrescentSlashDamage(ts=performance.now()) {
+  let dmg = calcDamage() * 1.0 + effStat('str') * 2;
+  if (hasMythicMod('moonwalkers')) dmg *= 2.5;
+  return dmg;
+}
+function triggerCrescentSlashFromMythic(ts=performance.now(), label='Crescent Slash') {
+  if (!hasAdvancement('swordmaster') || !G.monsters?.length) return 0;
+  const hits = hasMythicMod('severing_moon') ? 3 : 1;
+  let total = 0, enemies = 0;
+  for (let h=0; h<hits; h++) {
+    for (const t of [...G.monsters]) {
+      if (!t || t.hp <= 0) continue;
+      enemies++;
+      total += dealRawAdvancementDamage(t, mythicCrescentSlashDamage(ts), ts, label);
+    }
+  }
+  if (hasMythicMod('moonlight_kasa') && enemies > 0) adjustSkillCooldownForBase('whirlwind', -1000 * enemies);
+  return total;
 }
 
 function rollRarity(maxRarity) {
@@ -7142,7 +7421,8 @@ function generateMythicItem(slot) {
 
   const name = def.name;
   const mainStats = {};
-  mainStats[classStat] = randi(20,35);
+  if (def?.mod === 'temple_titan_crown') { mainStats.str = 20; mainStats.agi = 20; mainStats.int = 20; mainStats.vit = 20; }
+  else if (def?.mod !== 'dummy_myth') mainStats[classStat] = randi(20,35);
 
   // 4 sub stats with boosted crit ranges
   const subStats = {};
@@ -7201,7 +7481,8 @@ function generatePaleFurisode() {
   const def = MYTHIC_ITEMS.general.armor;
   const classStat = G.playerClass==='warrior'?'str':G.playerClass==='rogue'?'agi':'int';
   const mainStats = {};
-  mainStats[classStat] = randi(20,35);
+  if (def?.mod === 'temple_titan_crown') { mainStats.str = 20; mainStats.agi = 20; mainStats.int = 20; mainStats.vit = 20; }
+  else if (def?.mod !== 'dummy_myth') mainStats[classStat] = randi(20,35);
   const subStats = {};
   const keys = shuffle([...SUB_STATS]).slice(0,4);
   for (const s of keys) subStats[s] = rollSubStatValue(s, 'mythic', slot);
@@ -7542,6 +7823,7 @@ function usePotion() {
   const type = POTION_TYPES[G.selectedPotion] ? G.selectedPotion : 'healing';
   const count = potionCount(type);
   if(G.potionCooldown>0||count<=0)return;
+  if (G.combat) G.combat.bloodiedGauntletStacks = 0;
   if (isSwampConcoctionActive()) {
     log('<span style="color:#77dd77">⚗ Swamp Concoction suppresses potion healing during this encounter!</span>', 'dmgtaken');
     return;
@@ -8170,6 +8452,14 @@ function gameTick(ts) {
         const missingTens = Math.floor((100 - (G.hp / Math.max(1, G.maxHp)) * 100) / 10);
         dmg = Math.round(dmg * (1 + missingTens * 0.04));
       }
+      if (hasMythicMod('bloodied_gauntlet')) {
+        const bgPct = Math.min(0.50, (G.combat.bloodiedGauntletStacks || 0) * 0.02);
+        dmg = Math.round(dmg * (1 + bgPct));
+      }
+      if ((G.combat.runicDuelingCharges || 0) > 0) {
+        dmg += Math.round(calcDamage() * 0.50);
+        G.combat.runicDuelingCharges = Math.max(0, G.combat.runicDuelingCharges - 1);
+      }
 
       // Berserker Rage (Warrior) — bonus damage based on missing HP
       if (G.playerClass==='warrior' && G.passives?.berserker?.enabled) {
@@ -8182,7 +8472,7 @@ function gameTick(ts) {
 
       const critChance=calcCritChance();
       const critDmg=calcCritDamage();
-      const isCrit = Math.random()*100 < critChance;
+      const isCrit = shouldGuaranteeCritByMythic() || Math.random()*100 < critChance;
       if (isCrit) dmg = Math.round(dmg * critDmg/100);
       dmg = applyTargetDamageMods(target, dmg, ts);
 
@@ -8204,6 +8494,7 @@ function gameTick(ts) {
         onMonsterTakesPlayerHit(target, 'basic', dmg, ts);
         awardLootGoblinHitGold(target, dmg);
         log(`${fmtNum(dmg)}${isCrit?' [CRIT]':''} dmg to <span class="log-monster">${target.baseName||target.name}</span> (${fmtNum(Math.max(0,target.hp))}/${target.maxHp})`, 'basicattack');
+        if (hasMythicMod('bloodied_gauntlet')) G.combat.bloodiedGauntletStacks = Math.min(25, (G.combat.bloodiedGauntletStacks || 0) + 1);
         // Reflect: 15% dmg back on every 3rd basic attack taken from the player
         if (target.tags && target.tags.includes('REFLECT')) {
           target.reflectBasicHits = (target.reflectBasicHits || 0) + 1;
@@ -8313,7 +8604,7 @@ function gameTick(ts) {
         G.combat.lastGlobalSkillCastAt = ts;
         if (!overloadActive) G.mp = Math.max(0, G.mp - effectiveMpCost);
         G.skillCooldowns[k] = effectiveCooldown(v.cooldown, k);
-        if ((G.combat.manaConduitUntil || 0) > ts) G.skillCooldowns[k] = Math.max(500, G.skillCooldowns[k] - 2000);
+        if ((G.combat.manaConduitUntil || 0) > ts) G.skillCooldowns[k] = Math.max(500, G.skillCooldowns[k] - (hasMythicMod('currentwalkers') ? 3000 : 2000));
         // Log MP cost
         const mpSpent = overloadActive ? 0 : effectiveMpCost;
         if (mpSpent > 0) log(`-${fmtNum(mpSpent)} MP [${v.name}] (${fmtNum(G.mp)}/${G.maxMp})`, 'mpcost');
@@ -8334,31 +8625,16 @@ function gameTick(ts) {
         let skillNote = '';
         let skillLogHandled = false;
 
-        G.combat.currentSkillKey = k;
+        beginMythicSkillCast(k, ts);
         if (handleAdvancementSkill(k, target, ts, overloadActive, v, sp)) {
-          G.combat.currentSkillKey = null;
+          endMythicSkillCast();
           break;
         }
 
         const slot = skillBaseKey(k);
-        // Titan's Girdle: Fortify costs 0 MP
-        if (slot==='fortify' && hasMythicMod('titan_girdle')) {
-          G.mp = Math.min(G.maxMp, G.mp + v.mpCost); // refund the MP cost
-        }
-
         if(slot==='shieldbash'){
           skillDmg = Math.round(skillBaseDamage('shieldbash', sp) + calcDamage()*(1+str/180));
-          if (hasMythicMod('the_wall')) {
-            const wallHpBefore = Math.max(0, G.hp);
-            const wallBonus = Math.round(wallHpBefore * 0.30);
-            const wallCost = Math.max(1, Math.round(wallHpBefore * 0.25));
-            skillDmg += wallBonus;
-            G.hp = Math.max(1, G.hp - wallCost);
-            log(`-${fmtNum(wallCost)} HP [The Wall] (${fmtNum(G.hp)}/${G.maxHp})`, 'dmgtaken');
-            skillNote = `${skillDmg} dmg + stun <span style="color:#aa4466">[The Wall +${fmtNum(wallBonus)}]</span>`;
-          } else {
-            skillNote = `${skillDmg} dmg + stun`;
-          }
+          skillNote = `${skillDmg} dmg + stun`;
           if (target) {
             target.lastAttack = ts;
             target.stunResetAt = ts;
@@ -8367,13 +8643,6 @@ function gameTick(ts) {
           const hit = performWhirlwindHit(ts, str, sp);
           skillDmg = 0; // handled above
           skillNote = `${fmtNum(hit.total)} dmg to ${hit.targetCount} target${hit.targetCount>1?'s':''}`;
-          if (hasMythicMod('spin_cleaver')) {
-            G.combat.spinCleaverWhirlwindUntil = ts + 5000;
-            G.combat.spinCleaverWhirlwindNextAt = ts + 1000;
-            G.combat.spinCleaverWhirlwindStr = str;
-            G.combat.spinCleaverWhirlwindSp = sp;
-            skillNote += ` <span style="color:#aa4466">[Spin Cleaver 5s]</span>`;
-          }
         } else if(slot==='warcry'){
           const pct = Math.min(80, (10 + str * 0.3 + sp * 0.75));
           const dur = 8 + sp * 0.10;
@@ -8394,25 +8663,13 @@ function gameTick(ts) {
         } else if(slot==='cheapshot'){
           skillDmg = Math.round(skillBaseDamage('cheapshot', sp) + calcDamage()*(calcCritDamage()/100+agi*0.005));
           skillNote = `${skillDmg} dmg [CRIT]`;
-          // Trickster's Dagger: no cooldown, costs base MP + 10% max MP
-          if (hasMythicMod('mirror_edge')) {
-            G.skillCooldowns[k] = 0;
-            const tricksterExtraCost = Math.round(G.maxMp * 0.10);
-            G.mp = Math.max(0, G.mp - tricksterExtraCost);
-            if (tricksterExtraCost > 0) log(`-${fmtNum(tricksterExtraCost)} MP [Trickster's Dagger] (${fmtNum(G.mp)}/${G.maxMp})`, 'mpcost');
-          }
         } else if(slot==='smokebomb'){
-          if (hasMythicMod('dustwalker')) {
-            for (const m of G.monsters) m.smokeBombLocked = true;
-            skillNote = `All ${G.monsters.length} monsters smoke-locked for this fight`;
-          } else {
-            const charges = Math.min(4, 2 + Math.floor(sp/10));
-            G.combat.smokeBombCharges = Math.max(G.combat.smokeBombCharges || 0, charges);
-            G.combat.smokeBombDelayCount = charges;
-            skillNote = `next ${charges} enemy attacks delayed`;
-          }
+          const charges = Math.min(4, 2 + Math.floor(sp/10));
+          G.combat.smokeBombCharges = Math.max(G.combat.smokeBombCharges || 0, charges);
+          G.combat.smokeBombDelayCount = charges;
+          skillNote = `next ${charges} enemy attacks delayed`;
         } else if(slot==='flurry'){
-          const flurryHits = hasMythicMod('phantom_wraps') ? 8 : 5;
+          const flurryHits = 5;
           let hitBase = Math.max(1, Math.round(skillBaseDamage('flurry', sp) + calcDamage()*(0.35+agi*0.003)));
           let overloadText = '';
           if (overloadActive) {
@@ -8457,13 +8714,7 @@ function gameTick(ts) {
         } else if(slot==='assassinate'){
           let assassinateMult = 2+Math.max(0,agi-str)*0.05;
           skillDmg = Math.round(skillBaseDamage('assassinate', sp) + calcDamage()*assassinateMult);
-          if (hasMythicMod('altairs_shiv')) {
-            const critMult = (calcCritDamage() * 2) / 100;
-            skillDmg = Math.round(skillDmg * critMult);
-            skillNote = `${skillDmg} dmg <span style="color:#aa4466">[Altair's Shiv: 2x Crit DMG]</span>`;
-          } else {
-            skillNote = `${skillDmg} dmg`;
-          }
+          skillNote = `${skillDmg} dmg`;
         } else if(slot==='fireball'){
           let fbDmg = applyIntSkillPotionBuff(Math.round(skillBaseDamage('fireball', sp) + int_*6), ts);
           let overloadText = '';
@@ -8473,18 +8724,7 @@ function gameTick(ts) {
             overloadText = ` <span style="color:#aa44ff">[OVERLOAD +${Math.floor(G.level/2)}%]</span>`;
           }
           skillDmg = 0;
-          if (hasMythicMod('flamestealer')) {
-            G.combat.flamestealerFireball = {
-              startedAt: ts,
-              finishAt: ts + 4000,
-              fbDmg: Math.round(fbDmg * 2),
-              overloadText: `${overloadText} <span style="color:#ff8844">[Flamestealer x2 after 4s cast]</span>`
-            };
-            G.lastAttack = ts;
-            log('<span style="color:#ff8844">[Flamestealer] Fireball channel begins — releasing in 4s.</span>', 'spellcast');
-          } else {
-            dealFireballDamage(fbDmg, ts, 'Fireball', overloadText);
-          }
+          dealFireballDamage(fbDmg, ts, 'Fireball', overloadText);
           skillLogHandled = true;
         } else if(slot==='chainlightning'){
           let boltDmg = applyIntSkillPotionBuff(Math.round(skillBaseDamage('chainlightning', sp) + int_*3.5), ts);
@@ -8496,8 +8736,8 @@ function gameTick(ts) {
           // Chain Lightning: 1 target = single hit. 2+ targets = sequential bounces.
           // Lightning Staff removes the bounce cap; keep a high safety guard so one cast cannot lock the browser.
           const startingTargets = [...G.monsters];
-          const unlimitedBounces = hasMythicMod('lightning_staff');
-          const maxHits = unlimitedBounces ? 250 : (startingTargets.length >= 2 ? Math.min(10, 7 + Math.floor(sp/7)) : 1);
+          const unlimitedBounces = false;
+          const maxHits = startingTargets.length >= 2 ? Math.min(10, 7 + Math.floor(sp/7)) : 1;
           let previousTarget = null;
           let total = 0;
           const hitTotals = {};
@@ -8538,13 +8778,6 @@ function gameTick(ts) {
           const summary = Object.entries(hitTotals).map(([key, dmg]) => `<span class="log-monster">${hitNames[key]}</span>: ${fmtNum(dmg)}`).join(' · ');
           if (summary) log(`[Chain Lightning] total ${fmtNum(total)} dmg — ${summary}`, 'spelldmg');
 
-          if (hasMythicMod('rainougas_raiment') && total > 0) {
-            const restore = Math.round(total * 0.30);
-            const beforeMp = G.mp;
-            G.mp = Math.min(G.maxMp, G.mp + restore);
-            const gained = Math.max(0, G.mp - beforeMp);
-            if (gained > 0) log(`+${fmtNum(gained)} MP [Rainouga's Raiment] (${fmtNum(G.mp)}/${fmtNum(G.maxMp)})`, 'mpgain');
-          }
 
           skillDmg = 0;
           skillLogHandled = true;
@@ -8552,7 +8785,7 @@ function gameTick(ts) {
           const frostSp = Math.min(ACTIVE_SKILL_POINT_CAP, Math.max(0, sp || 0));
           const novaSlowMs = Math.round((2 + frostSp * 0.10) * 1000);
           const novaDurationMsBase = Math.round((4 + frostSp * 0.20) * 1000)
-          const novaDurationMs = hasMythicMod('frosted_codex') ? novaDurationMsBase * 2 : novaDurationMsBase;
+          const novaDurationMs = novaDurationMsBase;
           let fnDmg = applyIntSkillPotionBuff(Math.round(skillBaseDamage('frostnova', sp) + int_*2.5), ts);
           let overloadText = '';
           if (overloadActive) {
@@ -8619,7 +8852,7 @@ function gameTick(ts) {
         } else if (!skillLogHandled && skillNote) {
           log(`[${v.name}] ${skillNote}`, 'spellcast');
         }
-        G.combat.currentSkillKey = null;
+        endMythicSkillCast();
         break; // one skill per attack tick
       }
     }
@@ -8704,15 +8937,17 @@ function gameTick(ts) {
         }
         // Evasion (Rogue) — chance to dodge entirely
         if (G.playerClass==='rogue' && G.passives?.evasion?.enabled) {
-          const evadeChance = 3 + Math.floor(G.level/8) + (hasMythicMod('hood_of_shadows') ? 10 : 0);
+          const evadeChance = 3 + Math.floor(G.level/8);
           if (Math.random()*100 < evadeChance) {
             log(`Evaded attack from <span class="log-monster">${m.baseName||m.name}</span>!`, 'dmgtaken');
             m.lastAttack = ts; continue;
           }
         }
-        const advDodge = (hasAdvancement('assassin') && G.passives?.vanishstep?.enabled ? 5 : 0) + (hasAdvancement('nightshade') && G.passives?.toxicveil?.enabled ? 5 : 0) + (((G.combat.vanishDodgeUntil || 0) > ts) ? 30 : 0);
+        const advDodge = (hasAdvancement('assassin') && G.passives?.vanishstep?.enabled ? 5 : 0) + (hasAdvancement('nightshade') && G.passives?.toxicveil?.enabled ? 5 : 0) + (((G.combat.vanishDodgeUntil || 0) > ts) ? 30 : 0) + ((hasAdvancement('assassin') && hasMythicMod('hood_of_shadows') && (G.combat.cloakDaggerUntil || 0) > ts) ? 10 : 0) + ((hasAdvancement('nightshade') && hasMythicMod('poison_walker') && (G.combat.poisonWalkerUntil || 0) > ts) ? 15 : 0);
         if (advDodge > 0 && Math.random()*100 < advDodge) {
           log(`Advanced dodge avoids attack from <span class="log-monster">${m.baseName||m.name}</span>!`, 'dmgtaken');
+          if (hasAdvancement('assassin') && hasMythicMod('hood_of_shadows') && (G.combat.cloakDaggerUntil || 0) > ts) G.combat.cloakDaggerMythicAssassinate = true;
+          if (hasAdvancement('nightshade') && hasMythicMod('poison_walker') && (G.combat.poisonWalkerUntil || 0) > ts) addPoisonStacks(m, 2, ts, 'Poison Walker');
           m.lastAttack = ts; continue;
         }
         if (m.smokeBombLocked || (G.combat.smokeBombCharges || 0) > 0) {
@@ -8756,8 +8991,20 @@ function gameTick(ts) {
                 const thornRes = dealSkillDamageToMonster(m, thornDmg, ts);
                 if (thornRes.dealt > 0) {
                   log(`[Iron Wall] thorns hit <span class="log-monster">${m.baseName||m.name}</span> for ${fmtNum(thornRes.dealt)} dmg`, 'spelldmg');
+                  if (hasMythicMod('siphoning_spiked_shield')) { const heal=thornRes.dealt*0.15; const old=G.hp; G.hp=Math.min(G.maxHp,G.hp+heal); if (G.hp>old) log(`Siphoning Spiked Shield heals ${fmtNum(G.hp-old)} HP`, 'dmgtaken'); }
                   if (m.hp <= 0) killMonster(m, ts);
                 }
+              }
+            }
+          }
+          if (!isFortifyActive(ts) && hasAdvancement('juggernaut') && (G.combat.ironWallThornsUntil || 0) > ts && m && m.hp > 0) {
+            const thornDmg = ironWallReflectDamage();
+            if (thornDmg > 0) {
+              const thornRes = dealSkillDamageToMonster(m, thornDmg, ts);
+              if (thornRes.dealt > 0) {
+                log(`[Iron Wall] lingering thorns hit <span class="log-monster">${m.baseName||m.name}</span> for ${fmtNum(thornRes.dealt)} dmg`, 'spelldmg');
+                if (hasMythicMod('siphoning_spiked_shield')) { const heal=thornRes.dealt*0.15; const old=G.hp; G.hp=Math.min(G.maxHp,G.hp+heal); if (G.hp>old) log(`Siphoning Spiked Shield heals ${fmtNum(G.hp-old)} HP`, 'dmgtaken'); }
+                if (m.hp <= 0) killMonster(m, ts);
               }
             }
           }
@@ -8769,6 +9016,7 @@ function gameTick(ts) {
             addBurnStacks(m, 1, ts, 'Firewall');
             log(`Firewall reduces incoming damage (${fmtNum(before)} → ${fmtNum(mdmg)})`, 'dmgtaken');
           }
+          if ((G.combat.conductiveRobeUntil || 0) > ts && mdmg > 0) mdmg = Math.ceil(mdmg * 0.8);
           if ((G.combat.iceBarrierUntil || 0) > ts && mdmg > 0) {
             mdmg = Math.ceil(mdmg * 0.65);
             const shield = Math.max(0, G.combat.iceBarrierShield || 0);
@@ -8777,6 +9025,7 @@ function gameTick(ts) {
               G.combat.iceBarrierShield = Math.max(0, shield - abs);
               mdmg = Math.max(0, mdmg - abs);
               log(`Ice Barrier shield absorbs ${fmtNum(abs)} damage`, 'dmgtaken');
+              if (hasMythicMod('mirror_ice')) addFrostbite(m, 1, ts, 'Mirror Ice');
             }
           }
           if ((G.combat.titansChallengeUntil || 0) > ts && mdmg > 0) {
@@ -8884,7 +9133,7 @@ function gameTick(ts) {
       const sec = Math.floor(ts / 1000);
       if (G.combat.bloodFrenzyLastDrain !== sec) {
         G.combat.bloodFrenzyLastDrain = sec;
-        const drain = Math.max(1, Math.round(G.maxHp * 0.05));
+        const drain = Math.max(1, Math.round(G.maxHp * 0.05 * (hasMythicMod('berserkers_gauntlet') ? 2 : 1)));
         G.hp = Math.max(1, G.hp - drain);
         log(`Blood Frenzy drains ${fmtNum(drain)} HP`, 'dmgtaken');
       }
@@ -9700,7 +9949,7 @@ function unequipSlot(slot) {
 
 // TOWN
 // ── TOWN HUB NAVIGATION ──────────────────────────────────────────────────────
-const TOWN_SCREENS = ['merchant','gamble','reroll','salvage','upgrade'];
+const TOWN_SCREENS = ['merchant','gamble','reroll','salvage','upgrade','transfer'];
 let currentUpgradeTab = 'ascension';
 let currentGambleTab = 'gear';
 let overgearGambleSelectedItemId = null;
@@ -9752,6 +10001,7 @@ function openTownScreen(name) {
     renderUpgradeList();
     renderOvergearList();
   }
+  if (name === 'transfer') { renderOvergearTransfer(); }
 }
 
 // ── GEAR ASCENSION ───────────────────────────────────────────────────────────
@@ -9770,6 +10020,7 @@ function getOvergearLevel(item) {
 }
 function canOvergearItem(item) {
   if (!item || item.locked) return false;
+  if (item.mythicMod === 'dummy_myth') return false;
   return item.rarity === 'mythic' || item.rarity === 'ascended';
 }
 function isOvergeared(item) { return getOvergearLevel(item) > 0; }
@@ -9879,6 +10130,7 @@ function roundOvergearStoredValue(key, value) {
 }
 function recalcOvergearStats(item) {
   if (!item) return;
+  if (item.mythicMod === 'dummy_myth') { item.mainStats = {}; item.subStats = {}; item.ascendStat = null; item.overgearBaseStats = {mainStats:{},subStats:{},ascendStat:null}; buildItemDesc(item); item.goldVal = 0; return; }
   const base = ensureOvergearBaseStats(item);
   const lvl = getOvergearLevel(item);
   item.mainStats = item.mainStats || {};
@@ -9988,6 +10240,59 @@ function doOvergearUpgrade(itemId) {
   log(`✦ Overgear: ${item.name} reached Overgear ${getOvergearLevel(item)}. (-${fmtNum(cost)}g)`, 'system');
   updateDerived(); renderEquipSlots(); renderInventory(); renderStats(); renderOvergearList(); updateGambleUI();
 }
+
+let overgearTransferAId = null;
+let overgearTransferBId = null;
+function overgearTransferCandidateA(item) { return item && !item.locked && !isCurrentlyEquippedItem(item) && getOvergearLevel(item) > 0; }
+function overgearTransferCandidateB(item) { return item && !item.locked && !isCurrentlyEquippedItem(item) && canOvergearItem(item); }
+function renderOvergearTransfer() {
+  const aList = document.getElementById('overgear-transfer-a-list');
+  const bList = document.getElementById('overgear-transfer-b-list');
+  const summary = document.getElementById('overgear-transfer-summary');
+  const btn = document.getElementById('overgear-transfer-btn');
+  if (!aList || !bList) return;
+  aList.innerHTML = ''; bList.innerHTML = '';
+  const inv = G.inventory || [];
+  const aItems = inv.filter(overgearTransferCandidateA);
+  const bItems = inv.filter(i => overgearTransferCandidateB(i) && i.id !== overgearTransferAId);
+  if (!aItems.some(i=>i.id===overgearTransferAId)) overgearTransferAId = null;
+  if (!bItems.some(i=>i.id===overgearTransferBId)) overgearTransferBId = null;
+  const renderRow = (item, selected, onClick) => {
+    const row = document.createElement('div');
+    row.className = 'gear-menu-row overgear-card';
+    row.style.borderColor = selected ? '#d8c7ff' : 'rgba(180,140,255,0.35)';
+    row.onclick = onClick;
+    row.innerHTML = `${overgearStarHtml(item)}<div class="gear-menu-title" style="color:${RC[item.rarity]};">${item.name}${eqBadgeHtml(item)}</div><div class="gear-menu-subline">${item.slot.toUpperCase()} · ${item.rarity.toUpperCase()} · Overgear ${getOvergearLevel(item)}</div><div class="gear-menu-stats">${formatItemStats(item) || '<span style="color:#555;">No stats</span>'}</div>`;
+    return row;
+  };
+  if (!aItems.length) aList.innerHTML = '<div class="keyitem-empty">No unequipped Overgeared items.</div>';
+  for (const item of aItems) aList.appendChild(renderRow(item, item.id===overgearTransferAId, () => { overgearTransferAId=item.id; if (overgearTransferBId===item.id) overgearTransferBId=null; renderOvergearTransfer(); }));
+  if (!bItems.length) bList.innerHTML = '<div class="keyitem-empty">No valid destination equipment.</div>';
+  for (const item of bItems) bList.appendChild(renderRow(item, item.id===overgearTransferBId, () => { overgearTransferBId=item.id; renderOvergearTransfer(); }));
+  const a = inv.find(i=>i.id===overgearTransferAId);
+  const b = inv.find(i=>i.id===overgearTransferBId);
+  const transfer = a ? Math.floor(getOvergearLevel(a) * 0.80) : 0;
+  if (summary) summary.innerHTML = a && b ? `Transfer result: <b>${a.name}</b> Overgear ${getOvergearLevel(a)} → <b>${b.name}</b> gains <span style="color:#d8c7ff">${transfer}</span> Overgear level${transfer!==1?'s':''}. Box A will be destroyed.` : 'Select an old Overgeared item in Box A and a destination item in Box B.';
+  if (btn) btn.disabled = !(a && b && transfer > 0);
+}
+function doOvergearTransfer() {
+  const inv = G.inventory || [];
+  const a = inv.find(i=>i.id===overgearTransferAId);
+  const b = inv.find(i=>i.id===overgearTransferBId);
+  if (!a || !b || a.id===b.id) { log('Select two different items for Overgear Transfer.', 'system'); return; }
+  if (!overgearTransferCandidateA(a) || !overgearTransferCandidateB(b)) { log('Invalid Overgear Transfer items. Items must be unequipped and unlocked.', 'system'); return; }
+  const transfer = Math.floor(getOvergearLevel(a) * 0.80);
+  if (transfer <= 0) { log('Box A does not have enough Overgear levels to transfer after the 80% conversion.', 'system'); return; }
+  const ok = confirm(`Overgear Transfer warning:\n\nBox A: ${a.name} (Overgear ${getOvergearLevel(a)}) will be DESTROYED.\nBox B: ${b.name} will gain ${transfer} Overgear level${transfer!==1?'s':''}.\n\nContinue?`);
+  if (!ok) { log('Overgear Transfer cancelled.', 'system'); return; }
+  applyOvergearStatBoost(b, transfer);
+  const idx = G.inventory.findIndex(i=>i.id===a.id);
+  if (idx >= 0) G.inventory.splice(idx, 1);
+  overgearTransferAId = null; overgearTransferBId = null;
+  log(`⇄ Overgear Transfer complete: ${b.name} gained ${transfer} Overgear level${transfer!==1?'s':''}. ${a.name} was destroyed.`, 'system');
+  updateDerived(); renderEquipSlots(); renderInventory(); renderStats(); renderOvergearList(); renderOvergearTransfer(); updateGambleUI(); saveGame(false);
+}
+
 function renderOvergearGambleList() {
   const list = document.getElementById('overgear-gamble-list');
   const empty = document.getElementById('overgear-gamble-empty');
@@ -11711,7 +12016,7 @@ function positionPopup(popup, e) {
 
 
 function executeDamageThreshold() {
-  return hasMythicMod('executioner') ? 50 : 30;
+  return 30;
 }
 
 function scaledSkillPreviewDamage(raw, k) {
@@ -11804,9 +12109,7 @@ function skillDamagePreview(k) {
 
   if(slot==='shieldbash') {
     const baseDmg=Math.round(skillBaseDamage('shieldbash', sp) + base*(1+str/180));
-    const wallBonus = hasMythicMod('the_wall') ? Math.round(G.hp * 0.30) : 0;
-    const wallText = hasMythicMod('the_wall') ? ` · The Wall: +${fmtNum(wallBonus)} dmg, costs 25% current HP` : '';
-    return `~${fmtNum(baseDmg + wallBonus)} dmg + stun/reset enemy attack timer${condStr} · base ${fmtNum(skillBaseDamage('shieldbash', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts${wallText}`;
+    return `~${fmtNum(baseDmg)} dmg + stun/reset enemy attack timer${condStr} · base ${fmtNum(skillBaseDamage('shieldbash', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts`;
   }
   if(slot==='whirlwind') {
     const dmg=Math.round(skillBaseDamage('whirlwind', sp) + base*(0.25+str*0.003)*3);
@@ -11837,7 +12140,7 @@ function skillDamagePreview(k) {
     return `Delays the next ${charges} enemy attacks · skill pts increase delayed attacks`;
   }
   if(slot==='flurry') {
-    const h=hasMythicMod('phantom_wraps')?8:5;
+    const h=5;
     const perHit=Math.max(1, Math.round(skillBaseDamage('flurry', sp) + base*(0.35+agi*0.003)));
     return `~${fmtNum(perHit)} dmg x ${h} separate hits${condStr} · base ${fmtNum(skillBaseDamage('flurry', sp))}/hit at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts · each hit can crit`;
   }
@@ -11848,30 +12151,23 @@ function skillDamagePreview(k) {
   }
   if(slot==='assassinate') {
     let dmg=Math.round(skillBaseDamage('assassinate', sp) + base*(2+Math.max(0,agi-str)*0.05));
-    let mythicText='';
-    if (hasMythicMod('altairs_shiv')) {
-      dmg=Math.round(dmg * ((calcCritDamage()*2)/100));
-      mythicText=` · Altair's Shiv: 2x Crit DMG (${calcCritDamage()*2}%)`;
-    }
-    return `~${fmtNum(dmg)} dmg${condStr} · base ${fmtNum(skillBaseDamage('assassinate', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts · bonus if AGI > STR${mythicText}`;
+    return `~${fmtNum(dmg)} dmg${condStr} · base ${fmtNum(skillBaseDamage('assassinate', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts · bonus if AGI > STR`;
   }
   if(slot==='fireball') {
     const dmg=Math.round(skillBaseDamage('fireball', sp) + int_*6);
-    const hellfireText = hasMythicMod('hellfire_torch') ? ' · Hellfire Torch: +10% enemy current HP' : '';
-    return `~${fmtNum(dmg)} dmg all targets · base ${fmtNum(skillBaseDamage('fireball', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts + INT scaling${hellfireText}`;
+    return `~${fmtNum(dmg)} dmg all targets · base ${fmtNum(skillBaseDamage('fireball', sp))} at ${sp}/${ACTIVE_SKILL_POINT_CAP} pts + INT scaling`;
   }
   if(slot==='chainlightning') {
     const dmg=Math.round(skillBaseDamage('chainlightning', sp) + int_*3.5);
-    const bounces = hasMythicMod('lightning_staff') ? 'unlimited' : Math.min(10,7+Math.floor(sp/7));
-    const raimentText = hasMythicMod('rainougas_raiment') ? ' · Rainouga: restores 30% of damage as MP' : '';
-    return `~${fmtNum(dmg)}/bounce · ${bounces} bounces · skill pts improve damage and bounce count${raimentText}`;
+    const bounces = Math.min(10,7+Math.floor(sp/7));
+    return `~${fmtNum(dmg)}/bounce · ${bounces} bounces · skill pts improve damage and bounce count`;
   }
   if(slot==='frostnova') {
     const frostSp = Math.min(ACTIVE_SKILL_POINT_CAP, Math.max(0, sp || 0));
     const dmg=Math.round(skillBaseDamage('frostnova', sp) + int_*2.5);
     const slow=(2 + frostSp*0.10);
     const durBase=(4 + frostSp*0.20);
-    const dur=hasMythicMod('frosted_codex') ? durBase*2 : durBase;
+    const dur=durBase;
     return `~${fmtNum(dmg)} dmg AOE + enemy attack interval +${slow.toFixed(1)}s for ${dur.toFixed(1)}s · skill pts improve damage, slow, and duration`;
   }
   if(slot==='manasurge') {
@@ -11892,11 +12188,10 @@ function getLivePassiveDesc(k, v) {
   if (k==='shadowstep') d = `${5+Math.floor(G.level/5)}% chance to hit twice on each attack.`;
   if (k==='evasion') {
     const base = 3 + Math.floor(G.level/8);
-    const bonus = hasMythicMod('hood_of_shadows') ? 10 : 0;
-    d = `${base + bonus}% chance to dodge incoming attacks${bonus ? ` (${base}% base + ${bonus}% Hood of Shadows)` : ''}.`;
+    d = `${base}% chance to dodge incoming attacks.`;
   }
   if (k==='manashield') d = `Absorbs ${10+Math.floor(G.level/4)}% of incoming damage as MP drain instead of HP loss.`;
-  if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=hasMythicMod('arcanist_crown')?3:5; const suffix=(threshold===1?'st':threshold===2?'nd':'th'); d = `Every ${threshold}${suffix} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
+  if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=5; const suffix=(threshold===1?'st':threshold===2?'nd':'th'); d = `Every ${threshold}${suffix} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
 
   const now = performance.now ? performance.now() : 0;
   const atkInterval = calcAtkInterval ? calcAtkInterval() : 2;
@@ -12083,6 +12378,7 @@ function currentSkillMpCost(k) {
   const baseSkill = skillBaseKey(k);
   let cost = Math.max(0, v.mpCost || 0);
   if (baseSkill==='cheapshot' && hasMythicMod('mirror_edge')) cost += Math.round(G.maxMp * 0.10);
+  if (currentAdvancementId()==='flamemage' && baseSkill==='fireball' && hasMythicMod('furnace_seal')) cost *= 2;
   return Math.max(0, Math.ceil(cost * skillEconomyFactor(k)));
 }
 function requestManualSkillCast(k) {
@@ -13953,21 +14249,14 @@ function applyClassData(data) {
   G.keyItemsDiscovered = data.keyItemsDiscovered || {};
   normalizeKeyItems();
   for (const item of G.inventory) { if (item.rarity==='unique') item.rarity='mythic'; }
-  const migrateMythicNames = (item) => {
-    if (!item || item.rarity !== 'mythic') return;
-    if (item.mythicMod === 'ironwall') item.name = "Berserker's Gauntlet";
-    if (item.mythicMod === 'kitarasque_heart') {
-      item.name = 'Heart of Kitarasque';
-      item.mythicModDesc = 'Restores 10% max HP upon taking damage';
-    }
-  };
+  const migrateMythicNames = (item) => { normalizeMythicItemForOverhaul(item); };
   G.inventory.forEach(migrateMythicNames);
   G.invMax = data.invMax||50; G.invUpgradeCount = data.invUpgradeCount||0;
   G.equipped = data.equipped||{helmet:null,armor:null,legging:null,weapon:null,offhand:null};
   Object.values(G.equipped || {}).forEach(migrateMythicNames);
   const equippedIds = new Set(Object.values(G.equipped).filter(Boolean).map(i=>i.id));
-  for (const item of G.inventory) { if (getOvergearLevel(item) > 0) { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
-  for (const item of Object.values(G.equipped || {})) { if (item && getOvergearLevel(item) > 0) { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
+  for (const item of G.inventory) { if (getOvergearLevel(item) > 0 && item.mythicMod !== 'dummy_myth') { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
+  for (const item of Object.values(G.equipped || {})) { if (item && getOvergearLevel(item) > 0 && item.mythicMod !== 'dummy_myth') { ensureOvergearBaseStats(item); recalcOvergearStats(item); } }
   G.potions = data.potions||{healing:0};
   G.potionDiscovered = data.potionDiscovered || {};
   G.potionBuffs = { arcanicUntil:0, fervorUntil:0, vitalityUntil:0, vitalityStartedAt:0, swiftnessUntil:0, swiftnessStartedAt:0 };
@@ -14460,7 +14749,7 @@ function estimateOfflineSurvival(zs, kills, secs, zone, subZone) {
   let dmgPerKill = Math.max(0, (killTime / monsterAtkInterval) * avgDmg * incomingMult * elitePressure * swarmPressure);
 
   if (G.playerClass === 'rogue' && G.passives?.evasion?.enabled) {
-    const evadeChance = Math.min(0.80, (3 + Math.floor(G.level / 8) + (hasMythicMod('hood_of_shadows') ? 10 : 0)) / 100);
+    const evadeChance = Math.min(0.80, (3 + Math.floor(G.level / 8)) / 100);
     dmgPerKill *= (1 - evadeChance);
   }
   if (G.playerClass === 'warrior' && G.passives?.battlehard?.enabled) dmgPerKill *= 0.90;
