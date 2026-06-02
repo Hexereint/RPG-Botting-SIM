@@ -105,6 +105,7 @@ body { background:#000; color:var(--white); font-family:'Inter','Segoe UI','Helv
 .alloc-desc { color:#aaaaaa; font-size:9px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .alloc-equip { color:#5577bb; font-size:9px; }
 .alloc-btn { background:#000; border:1px solid var(--border2); color:#ffffff; font-size:12px; width:22px; height:22px; cursor:pointer; transition:all 0.1s; font-family:inherit; }
+.alloc-btn.alloc-btn-ten { width:34px; font-size:10px; letter-spacing:0; }
 .alloc-btn:hover { background:#ffffff; color:#000; }
 .alloc-btn:disabled { opacity:0.2; cursor:not-allowed; }
 .points-left { font-size:9px; color:var(--yellow); text-align:right; margin-bottom:4px; }
@@ -615,6 +616,8 @@ select.config-input { width:auto; cursor:pointer; }
 }
 .status-icon.debuff { border-color:rgba(255,120,120,0.55); }
 .status-icon.buff { border-color:rgba(150,220,255,0.50); }
+.status-icon.stack-icon .status-icon-label { font-size:8px; transform:none; }
+.combat-card-status-icons { display:flex; gap:3px; flex-wrap:wrap; margin-top:5px; min-height:15px; }
 @media (max-width:700px) {
   .sprite-status-icons { bottom:-11px; gap:1px; }
   .status-icon { width:13px; height:13px; line-height:13px; font-size:6px; }
@@ -1450,25 +1453,25 @@ body.chaos-active #map-panel .subzone-row,
             <div class="tooltip-wrap"><span class="alloc-name">STR</span><div class="tooltip-box" id="tip-str">All classes: every 3 STR gives about +1 basic damage<br>Warrior: every 4 STR gives about +3 more basic damage, and every 3 STR gives +1 Max HP</div></div>
             <span class="alloc-val" id="alloc-str">0</span><span class="alloc-equip" id="alloc-str-eq"></span>
             <span class="alloc-desc">+1 dmg/pt</span>
-            <button class="alloc-btn" id="btn-str" data-alloc-stat="str" disabled>+</button>
+            <button class="alloc-btn" id="btn-str" data-alloc-stat="str" data-alloc-amount="1" disabled>+</button><button class="alloc-btn alloc-btn-ten" id="btn-str-10" data-alloc-stat="str" data-alloc-amount="10" title="Allocate up to 10 STR" disabled>+10</button>
           </div>
           <div class="alloc-row">
             <div class="tooltip-wrap"><span class="alloc-name">AGI</span><div class="tooltip-box" id="tip-agi">Warrior/Wizard: -0.015s attack interval per AGI, minimum 0.5s<br>Rogue: each AGI makes attacks 0.03s faster, every 3 AGI gives about +1 basic damage, and every 3 AGI gives +0.5% Crit Chance</div></div>
             <span class="alloc-val" id="alloc-agi">0</span><span class="alloc-equip" id="alloc-agi-eq"></span>
             <span class="alloc-desc">atk spd/pt</span>
-            <button class="alloc-btn" id="btn-agi" data-alloc-stat="agi" disabled>+</button>
+            <button class="alloc-btn" id="btn-agi" data-alloc-stat="agi" data-alloc-amount="1" disabled>+</button><button class="alloc-btn alloc-btn-ten" id="btn-agi-10" data-alloc-stat="agi" data-alloc-amount="10" title="Allocate up to 10 AGI" disabled>+10</button>
           </div>
           <div class="alloc-row">
             <div class="tooltip-wrap"><span class="alloc-name">INT</span><div class="tooltip-box" id="tip-int">Universal: +0.1 MP regen and +1 Max MP per INT<br>Wizard: every 2 INT gives about +1 basic damage, and every 3 INT gives +5 Max MP</div></div>
             <span class="alloc-val" id="alloc-int">0</span><span class="alloc-equip" id="alloc-int-eq"></span>
             <span class="alloc-desc">+0.3 MP/s, +1 MP</span>
-            <button class="alloc-btn" id="btn-int" data-alloc-stat="int" disabled>+</button>
+            <button class="alloc-btn" id="btn-int" data-alloc-stat="int" data-alloc-amount="1" disabled>+</button><button class="alloc-btn alloc-btn-ten" id="btn-int-10" data-alloc-stat="int" data-alloc-amount="10" title="Allocate up to 10 INT" disabled>+10</button>
           </div>
           <div class="alloc-row">
             <div class="tooltip-wrap"><span class="alloc-name">VIT</span><div class="tooltip-box" id="tip-vit">Universal: +0.3 HP regen per VIT<br>Universal: +10 Max HP per 3 VIT</div></div>
             <span class="alloc-val" id="alloc-vit">0</span><span class="alloc-equip" id="alloc-vit-eq"></span>
             <span class="alloc-desc">+0.3 HP/s, +10HP/3</span>
-            <button class="alloc-btn" id="btn-vit" data-alloc-stat="vit" disabled>+</button>
+            <button class="alloc-btn" id="btn-vit" data-alloc-stat="vit" data-alloc-amount="1" disabled>+</button><button class="alloc-btn alloc-btn-ten" id="btn-vit-10" data-alloc-stat="vit" data-alloc-amount="10" title="Allocate up to 10 VIT" disabled>+10</button>
           </div>
         </div>
         <div class="potion-card potion-inline-card">
@@ -2190,6 +2193,7 @@ body.chaos-active #map-panel .subzone-row,
               <div class="combat-mini-bar"><div id="player-hp-fill" style="width:100%"></div></div>
               <div class="combat-mini-bar"><div id="player-mp-fill" style="width:100%"></div></div>
             </div>
+            <div id="player-card-status-icons" class="combat-card-status-icons"></div>
             <div id="player-duration-channel" class="flamestealer-channel player-duration-channel">
               <div class="flamestealer-channel-label"><span id="player-duration-label">Iai Counter</span><span id="player-duration-time">2.0s</span></div>
               <div class="flamestealer-channel-bar"><div id="player-duration-fill" class="flamestealer-channel-fill player-duration-fill"></div></div>
@@ -2211,7 +2215,7 @@ body.chaos-active #map-panel .subzone-row,
             <div id="cvp-stats"></div>
           </div>
           <div id="cvp-swarm"></div>
-          <div class="sprite-plinth enemy-plinth"><canvas id="monster-canvas" width="64" height="64"></canvas></div>
+          <div class="sprite-plinth enemy-plinth"><canvas id="monster-canvas" width="64" height="64"></canvas><div id="enemy-status-icons" class="sprite-status-icons"></div></div>
         </div>
       </div>
     </div>
@@ -3047,7 +3051,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Assassin', identity:'Crit-damage burst, Assassinate cooldown manipulation, and evasive kill windows.',
       passives:{
         deathblowmastery:{name:'Deathblow Mastery',desc:'Assassinate deals increased damage based on Crit Damage. Every 100% Crit Damage adds 50% Assassinate damage.',enabled:true},
-        vanishstep:{name:'Vanish Step',desc:'+5% dodge chance. After casting Assassinate, gain +30% dodge chance for 3s.',enabled:true}
+        vanishstep:{name:'Vanish Step',desc:'+10% dodge chance. After casting Assassinate, gain +30% dodge chance for 5s.',enabled:true}
       },
       skills:{
         cheapshot:{name:'Vital Strike',desc:'Applies Vital Wound, causing next Assassinate against target to deal increased damage.',mpCost:20,cooldown:12000,enabled:false,skillPts:0},
@@ -3061,7 +3065,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Nightshade', identity:'Unlimited poison stacks, poison damage conversion, and Black Lotus detonation.',
       passives:{
         venomconversion:{name:'Venom Conversion',desc:'Poison stacks have no limit. Crit Damage and overflow Crit Chance increase poison damage. Attack interval cannot go below 0.8s.',enabled:true},
-        toxicveil:{name:'Toxic Veil',desc:'+5% dodge chance. Poisoned enemies deal 1% less damage per poison stack, capped at 25%.',enabled:true}
+        toxicveil:{name:'Toxic Veil',desc:'+10% dodge chance. Poisoned enemies deal 1% less damage per poison stack, capped at 25%.',enabled:true}
       },
       skills:{
         cheapshot:{name:'Toxin Dart',desc:'Light hit that applies 3 poison stacks.',mpCost:15,cooldown:8000,enabled:false,skillPts:0},
@@ -3389,6 +3393,7 @@ function addBurnStacks(monster, stacks=1, ts=performance.now(), source='Burn') {
   const extra = (hasAdvancement('flamemage') && (G.combat?.overheatUntil || 0) > ts) ? 1 : 0;
   stacks += extra;
   monster.burnStacks = Math.max(0, (monster.burnStacks || 0) + stacks);
+  monster.burnStartedAt = ts;
   monster.burnUntil = ts + 5000;
   const threshold = ignitionThreshold();
   log(`${source} applies ${stacks} Burn stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.burnStacks}/${threshold})`, 'spelldmg');
@@ -3416,12 +3421,14 @@ function poisonDamagePerStack() {
 function addPoisonStacks(monster, stacks=1, ts=performance.now(), source='Poison') {
   if (!monster || monster.hp <= 0) return;
   monster.poisonStacks = Math.max(0, (monster.poisonStacks || 0) + stacks);
+  monster.poisonStartedAt = ts;
   monster.poisonUntil = ts + 12000;
   log(`${source} applies ${stacks} poison stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.poisonStacks})`, 'spelldmg');
 }
 function addFrostbite(monster, stacks=1, ts=performance.now(), source='Frostbite') {
   if (!monster || monster.hp <= 0) return;
   monster.frostbiteStacks = Math.max(0, (monster.frostbiteStacks || 0) + stacks);
+  monster.frostbiteStartedAt = ts;
   monster.frostbiteUntil = ts + 8000;
   log(`${source} applies ${stacks} Frostbite stack${stacks!==1?'s':''} to <span class="log-monster">${safeMonsterName(monster)}</span> (${monster.frostbiteStacks}/4)`, 'spelldmg');
   if ((monster.frostbiteStacks || 0) >= 4) {
@@ -3429,6 +3436,7 @@ function addFrostbite(monster, stacks=1, ts=performance.now(), source='Frostbite
     if (isBoss && (monster.frostBossFreezeLockUntil || 0) > ts) return;
     monster.frostbiteStacks = 0;
     const freezeMs = isBoss ? 700 : 1000;
+    monster.frozenStartedAt = ts;
     monster.frozenUntil = Math.max(monster.frozenUntil || 0, ts + freezeMs);
     if (isBoss) monster.frostBossFreezeLockUntil = ts + 4000;
     monster.lastAttack = ts;
@@ -3670,7 +3678,7 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     else if (slot==='execute') { hitTarget((base*0.7+str*2)*(calcCritDamage()/100), 'Mortal Strike'); }
     else handled=false;
   } else if (adv === 'berserker') {
-    if (slot==='shieldbash') { let dmg=base*1.8+str*2; if (target && (target.crackedArmorUntil||0)>ts && hasMythicMod('skull_cracking_mace')) dmg*=2.5; hitTarget(dmg, 'Skullbreaker'); if (target) { let pct=(G.hp/G.maxHp)<=0.5?15:10; let dur=6000; if (hasMythicMod('helmsplitter')) { pct*=2; dur*=0.5; } target.crackedArmorPct = pct; target.crackedArmorUntil=ts+dur; log(`Cracked Armor: target takes +${pct}% damage for ${(dur/1000).toFixed(1)}s`, 'spelldmg'); } }
+    if (slot==='shieldbash') { let dmg=base*1.8+str*2; if (target && (target.crackedArmorUntil||0)>ts && hasMythicMod('skull_cracking_mace')) dmg*=2.5; hitTarget(dmg, 'Skullbreaker'); if (target) { let pct=(G.hp/G.maxHp)<=0.5?15:10; let dur=6000; if (hasMythicMod('helmsplitter')) { pct*=2; dur*=0.5; } target.crackedArmorPct = pct; target.crackedArmorStartedAt = ts; target.crackedArmorUntil=ts+dur; log(`Cracked Armor: target takes +${pct}% damage for ${(dur/1000).toFixed(1)}s`, 'spelldmg'); } }
     else if (slot==='whirlwind') { const hits=(G.hp/G.maxHp)<=0.4?5:4; let total=0; for (let i=0;i<hits;i++) for (const t of [...G.monsters]) total += dealRawAdvancementDamage(t, base*0.45+str*0.75, ts, 'Blood Cyclone'); log(`[Blood Cyclone] ${hits} hits, ${fmtNum(total)} total damage`, 'spelldmg'); }
     else if (slot==='warcry') { const missingTens=Math.floor((100-mythicHpPct())/10); const dur=8000+(hasMythicMod('dying_roar')?missingTens*1000:0); G.combat.warCryPct=Math.min(45,20+str*0.04); G.combat.warCryUntil=ts+dur; log(`[Enrage] +${G.combat.warCryPct.toFixed(0)}% damage for ${(dur/1000).toFixed(1)}s`, 'spellcast'); }
     else if (slot==='fortify') { G.combat.bloodFrenzyUntil=ts+8000; G.combat.bloodFrenzyStartedAt=ts; log(`[Blood Frenzy] +attack speed/damage for 8s, draining ${hasMythicMod('berserkers_gauntlet')?'10':'5'}% Max HP per second.`, 'spellcast'); }
@@ -3685,28 +3693,28 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     else handled=false;
   } else if (adv === 'assassin') {
     if (slot==='cheapshot') { hitTarget(base*1.6+agi*2, 'Vital Strike'); if (target) { target.vitalWoundUntil=hasMythicMod('tricksters_dagger')?Number.MAX_SAFE_INTEGER:ts+6000; target.vitalWoundBonus=Math.min(40,25+agi*0.03); log(`Vital Wound: next Assassinate +${target.vitalWoundBonus.toFixed(0)}% damage`, 'spelldmg'); } }
-    else if (slot==='smokebomb') { G.combat.cloakDaggerUntil=ts+3000; G.combat.cloakDaggerCritBonus=Math.min(80,40+agi*0.10); G.combat.vanishDodgeUntil=ts+3000; log(`[Cloak and Dagger] dodge window and next damaging skill +${G.combat.cloakDaggerCritBonus.toFixed(0)}% Crit Damage`, 'spellcast'); }
+    else if (slot==='smokebomb') { G.combat.cloakDaggerUntil=ts+3000; G.combat.cloakDaggerCritBonus=Math.min(80,40+agi*0.10); G.combat.vanishDodgeUntil=ts+3000; G.combat.vanishDodgeStartedAt=ts; G.combat.vanishDodgeDurationMs=3000; G.combat.vanishDodgeSource='Cloak and Dagger'; log(`[Cloak and Dagger] dodge window and next damaging skill +${G.combat.cloakDaggerCritBonus.toFixed(0)}% Crit Damage`, 'spellcast'); }
     else if (slot==='flurry') { const hits=hasMythicMod('phantom_dagger')?12:4; let crits=0,total=0; for(let i=0;i<hits;i++){ let dmg=base*0.60+agi*0.5; const isCrit=shouldGuaranteeCritByMythic()||Math.random()*100<calcCritChance(); if(isCrit){crits++; dmg*=calcCritDamage()/100;} total += hitTarget(dmg, 'Phantom Rush'); } if(crits>0 && !hasMythicMod('phantom_dagger')){ const red=Math.min(2.5,1.5+agi*0.002)*1000*crits; adjustSkillCooldownForBase('assassinate', -red); log(`Phantom Rush reduces Assassinate cooldown by ${(red/1000).toFixed(1)}s`, 'spellcast'); } }
     else if (slot==='marktarget') { if (target){ target.contractKill=true; target.contractKillUntil=ts+Math.min(12000,8000+agi*5); log(`Contract Kill marks ${safeMonsterName(target)}. First Assassinate refreshes its cooldown.`, 'spellcast'); } }
-    else if (slot==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; if (G.combat.cloakDaggerMythicAssassinate) { dmg*=1.25; G.combat.cloakDaggerMythicAssassinate=false; } G.combat.advDelayed={type:'assassinate', label:'Assassinate', startedAt:ts, releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+3000; log('[Assassinate] 1.5s cast begins. Basic attacks and other skills are locked until it lands.', 'spellcast'); }
+    else if (slot==='assassinate') { let dmg=skillBaseDamage('assassinate',sp)+base*(2+Math.max(0,agi-str)*0.05); dmg*=1+(calcCritDamage()*0.5/100); if(target?.vitalWoundUntil>ts)dmg*=1+(target.vitalWoundBonus||25)/100; if (G.combat.cloakDaggerMythicAssassinate) { dmg*=1.25; G.combat.cloakDaggerMythicAssassinate=false; } G.combat.advDelayed={type:'assassinate', label:'Assassinate', startedAt:ts, releaseAt:ts+1500,targetId:target?.id,damage:dmg,contract:!!target?.contractKill}; G.combat.vanishDodgeUntil=ts+5000; G.combat.vanishDodgeStartedAt=ts; G.combat.vanishDodgeDurationMs=5000; G.combat.vanishDodgeSource='Assassinate'; log('[Assassinate] 1.5s cast begins. Basic attacks and other skills are locked until it lands.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'nightshade') {
     if (slot==='cheapshot') { const hits=hasMythicMod('butterflys_sting')?3:1; const poison=(hasMythicMod('wasps_grace')?6:3) * ((G.combat.miasmaFangUntil||0)>ts?2:1); for(let i=0;i<hits;i++) hitTarget(base*0.8+agi*1.2, 'Toxin Dart', false, t=>addPoisonStacks(t,poison,ts,'Toxin Dart')); if ((G.combat.miasmaFangUntil||0)>ts) G.combat.miasmaFangUntil=0; }
-    else if (slot==='smokebomb') { G.combat.smokeBombCharges=5; const stacks=5+(hasMythicMod('chemtech_coat')?15:0); if (hasMythicMod('poison_walker')) G.combat.poisonWalkerUntil=ts+5000; if (hasMythicMod('miasma_fang')) G.combat.miasmaFangUntil=ts+5000; if (hasMythicMod('plague_censer')) G.combat.poisonMistLingerUntil=ts+4000; for(const t of [...G.monsters]) { addPoisonStacks(t,stacks,ts,'Poison Mist'); if (hasMythicMod('baneful_mask')) { t.poisonVulnUntil=ts+6000; t.poisonVulnPct=0.20; } } log('[Poison Mist] delays attacks and applies poison.', 'spellcast'); }
+    else if (slot==='smokebomb') { G.combat.smokeBombCharges=5; const stacks=5+(hasMythicMod('chemtech_coat')?15:0); if (hasMythicMod('poison_walker')) G.combat.poisonWalkerUntil=ts+5000; if (hasMythicMod('miasma_fang')) G.combat.miasmaFangUntil=ts+5000; if (hasMythicMod('plague_censer')) G.combat.poisonMistLingerUntil=ts+4000; for(const t of [...G.monsters]) { addPoisonStacks(t,stacks,ts,'Poison Mist'); if (hasMythicMod('baneful_mask')) { t.poisonVulnStartedAt=ts; t.poisonVulnUntil=ts+6000; t.poisonVulnPct=0.20; } } log('[Poison Mist] delays attacks and applies poison.', 'spellcast'); }
     else if (slot==='flurry') { let total=0; const extra=(G.combat.virulentBloodUntil||0)>ts?1:0; const mult=((G.combat.miasmaFangUntil||0)>ts?2:1); for(let i=0;i<5;i++){ const t=G.monsters[0]; if(!t) break; total+=hitTarget(base*0.25+agi*0.25, 'Venom Flurry', false, x=>addPoisonStacks(x,(1+extra)*mult,ts,'Venom Flurry')); } if ((G.combat.miasmaFangUntil||0)>ts) G.combat.miasmaFangUntil=0; log(`[Venom Flurry] ${fmtNum(total)} total damage`, 'spelldmg'); }
     else if (slot==='marktarget') { G.combat.virulentBloodUntil=ts+8000; log('[Virulent Blood] basic attacks and skills apply +1 poison stack for 8s.', 'spellcast'); }
     else if (slot==='assassinate') { G.combat.advDelayed={type:'blacklotus',label:'Black Lotus',releaseAt:ts+3000,targetId:target?.id}; log('[Black Lotus] 3s cast begins; will consume all poison stacks.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'flamemage') {
     if (slot==='fireball') { let dmg=base*2.0+int_*3; if (hasMythicMod('furnace_seal')) dmg*=2.5; if (target && hasMythicMod('hellfire_torch')) dmg += target.maxHp*0.08; hitTarget(dmg, 'Inferno Blast', false, t=>addBurnStacks(t,hasMythicMod('blazing_diadem')?5:1,ts,'Inferno Blast')); }
-    else if (slot==='chainlightning') { const tickMs=hasMythicMod('pyroclastic_lens')?350:500; const until=hasMythicMod('incinerating_staff')?Number.MAX_SAFE_INTEGER:ts+5000; G.combat.advChannel={type:'incineration',label:'Incineration Ray',until,nextTick:ts,tickMs,mpDrainPerSec:hasMythicMod('incinerating_staff')?100:0}; log(`[Incineration Ray] channeling${hasMythicMod('incinerating_staff')?' until MP runs out':' for 5s'}.`, 'spellcast'); }
+    else if (slot==='chainlightning') { const tickMs=hasMythicMod('pyroclastic_lens')?350:500; const until=hasMythicMod('incinerating_staff')?Number.MAX_SAFE_INTEGER:ts+5000; G.combat.advChannel={type:'incineration',label:'Incineration Ray',startedAt:ts,until,nextTick:ts,tickMs,mpDrainPerSec:hasMythicMod('incinerating_staff')?100:0}; log(`[Incineration Ray] channeling${hasMythicMod('incinerating_staff')?' until MP runs out':' for 5s'}.`, 'spellcast'); }
     else if (slot==='frostnova') { G.combat.firewallUntil=ts+6000; G.combat.firewallDR=Math.min(0.30,(20+int_*0.01)/100); log(`[Firewall] ${Math.round(G.combat.firewallDR*100)}% damage reduction for 6s. Attackers receive Burn.`, 'spellcast'); }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Sparkstarter'); G.combat.sparkstarterUntil=ts+5000; log('[Sparkstarter] MP regen increased for 5s.', 'spellcast'); }
     else if (slot==='chronosphere') { G.combat.overheatUntil=ts+8000; log('[Overheat] fire skills apply +1 Burn stack and deal more damage for 8s.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'frostmage') {
     if (slot==='fireball') { let dmg=base*1.8+int_*3; const frozen=(target?.frozenUntil||0)>ts; if (frozen) dmg*=hasMythicMod('shatterspike')?2.5:1.25; if (hasMythicMod('icepiercer_circlet') && (target?.frostbiteStacks||0)>=4) dmg*=1.5; const dealt=hitTarget(dmg,'Glacial Spike',false,t=>addFrostbite(t,hasMythicMod('hoarfang_staff')?2:1,ts,'Glacial Spike')); if (frozen && dealt>0 && hasMythicMod('frozen_needle')) adjustSkillCooldownForBase('fireball', -effectiveCooldown(v.cooldown,k)*0.40); }
-    else if (slot==='chainlightning') { const tickMs=hasMythicMod('aislongs_frostbeam')?500:1000; const dur=5000+(hasMythicMod('cryo_conduit')?2000:0); G.combat.advChannel={type:'frostbeam',until:ts+dur,nextTick:ts,tickMs}; log(`[Frostbeam] channeling for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
+    else if (slot==='chainlightning') { const tickMs=hasMythicMod('aislongs_frostbeam')?500:1000; const dur=5000+(hasMythicMod('cryo_conduit')?2000:0); G.combat.advChannel={type:'frostbeam',label:'Frostbeam',startedAt:ts,until:ts+dur,nextTick:ts,tickMs}; log(`[Frostbeam] channeling for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
     else if (slot==='frostnova') { const stacks=2; for (const t of [...G.monsters]) addFrostbite(t, stacks, ts, 'Frost Nova'); log('[Frost Nova] chills all enemies.', 'spellcast'); }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Mana Coolant'); for(const m of G.monsters){m.frostNovaSlowAdd=Math.max(m.frostNovaSlowAdd||0,2000);m.frostNovaSlowUntil=Math.max(m.frostNovaSlowUntil||0,ts+5000);} log('[Mana Coolant] all enemy attack intervals +2.0s for 5s.', 'spellcast'); }
     else if (slot==='chronosphere') { const dur=6000+(hasMythicMod('icebound_halo')?3000:0); let shield=G.maxMp*0.35; if (hasMythicMod('absolute_zero_robe')) shield*=2; if (hasMythicMod('frozen_anchor')) shield*=0.75; G.combat.iceBarrierUntil=ts+dur; G.combat.iceBarrierShield=Math.max(G.combat.iceBarrierShield||0,shield); log(`[Ice Barrier] 35% DR and ${fmtNum(G.combat.iceBarrierShield)} shield for ${(dur/1000).toFixed(1)}s`, 'spellcast'); }
@@ -4729,12 +4737,19 @@ function playerStatusIcon(label, color, pct, title, kind='buff') {
   return `<div class="status-icon ${kind}" title="${safeTitle}" style="--status-color:${color || '#cccccc'}"><div class="status-icon-fill" style="height:${fill.toFixed(1)}%"></div><span class="status-icon-label">${safeLabel}</span></div>`;
 }
 
+function setPlayerStatusIconHtml(html) {
+  const spriteEl = document.getElementById('player-status-icons');
+  const cardEl = document.getElementById('player-card-status-icons');
+  if (spriteEl) spriteEl.innerHTML = html || '';
+  if (cardEl) cardEl.innerHTML = html || '';
+}
+
 function updatePlayerStatusIcons(now=fxNow()) {
-  const el = document.getElementById('player-status-icons');
-  if (!el) return;
-  if (!G.started || G.zone === 'town' || G.monsters.length === 0) { el.innerHTML = ''; return; }
+  if (!document.getElementById('player-status-icons') && !document.getElementById('player-card-status-icons')) return;
+  if (!G.started || G.zone === 'town' || G.monsters.length === 0) { setPlayerStatusIconHtml(''); return; }
   const icons = [];
-  if ((G.combat?.dodgeIframeUntil || 0) > now) icons.push(playerStatusIcon('DG', '#bfefff', playerStatusPctFromUntil(G.combat.dodgeIframeUntil, G.combat.dodgeStartedAt, DODGE_IFRAME_MS, now), 'Dodge: invulnerable', 'buff'));
+  if ((G.combat?.dodgeIframeUntil || 0) > now) icons.push(playerStatusIcon('DG', '#bfefff', playerStatusPctFromUntil(G.combat.dodgeIframeUntil, G.combat.dodgeStartedAt, DODGE_IFRAME_MS, now), 'Dodge: invulnerable; incoming damage is ignored', 'buff'));
+  if ((G.combat?.vanishDodgeUntil || 0) > now) icons.push(playerStatusIcon('VS', '#9bdcff', playerStatusPctFromUntil(G.combat.vanishDodgeUntil, G.combat.vanishDodgeStartedAt, G.combat.vanishDodgeDurationMs || 5000, now), `${G.combat.vanishDodgeSource || 'Vanish Step'}: +30% dodge chance`, 'buff'));
   if ((G.combat?.warCryUntil || 0) > now) icons.push(playerStatusIcon(buffIconCode(activeBuffName('warcry','War Cry'),'WC'), '#ffcc55', playerStatusPctFromUntil(G.combat.warCryUntil, G.combat.warCryStartedAt, 10000, now), `${activeBuffName('warcry','War Cry')} damage buff`, 'buff'));
   if ((G.combat?.fortifyUntil || 0) > now) icons.push(playerStatusIcon(buffIconCode(activeBuffName('fortify','Fortify'),'FT'), '#88cc99', playerStatusPctFromUntil(G.combat.fortifyUntil, G.combat.fortifyStartedAt, 6000, now), `${activeBuffName('fortify','Fortify')} damage reduction`, 'buff'));
   if ((G.potionShield || 0) > 0) {
@@ -4747,13 +4762,45 @@ function updatePlayerStatusIcons(now=fxNow()) {
   if ((G.potionBuffs?.vitalityUntil || 0) > now) icons.push(playerStatusIcon('VIT', '#ff8888', playerStatusPctFromUntil(G.potionBuffs.vitalityUntil, G.potionBuffs.vitalityStartedAt, 6000, now), 'Potion of Vitality: +1000 Max HP and +100 HP/s regen', 'buff'));
   if ((G.potionBuffs?.swiftnessUntil || 0) > now) icons.push(playerStatusIcon('SPD', '#77ddff', playerStatusPctFromUntil(G.potionBuffs.swiftnessUntil, G.potionBuffs.swiftnessStartedAt, 5000, now), 'Potion of Swiftness: faster attacks and 40% CDR', 'buff'));
   if ((G.combat?.smokeBombCharges || 0) > 0) icons.push(playerStatusIcon('SM', '#777777', Math.min(100, (G.combat.smokeBombCharges / 7) * 100), `Smoke Bomb: ${G.combat.smokeBombCharges} charge(s)`, 'buff'));
-  if ((G.debuffs?.plagued || 0) > now) icons.push(playerStatusIcon('PL', '#55cc55', playerStatusPctFromUntil(G.debuffs.plagued, G.debuffs.plaguedStartedAt, 10000, now), 'Plagued', 'debuff'));
-  if ((G.debuffs?.necrorotUntil || 0) > now) icons.push(playerStatusIcon('ROT', '#55aa55', playerStatusPctFromUntil(G.debuffs.necrorotUntil, G.debuffs.necrorotStartedAt, 10000, now), 'Necro Rot', 'debuff'));
-  if ((G.debuffs?.blackPoolUntil || 0) > now) icons.push(playerStatusIcon('BP', '#9977bb', playerStatusPctFromUntil(G.debuffs.blackPoolUntil, G.debuffs.blackPoolStartedAt, 5000, now), 'Black Pool: innate HP regen disabled', 'debuff'));
-  if ((G.debuffs?.witchCurseUntil || 0) > now) icons.push(playerStatusIcon('CUR', '#d96dff', playerStatusPctFromUntil(G.debuffs.witchCurseUntil, G.debuffs.witchCurseStartedAt, 15000, now), "Witch's Curse", 'debuff'));
+  if ((G.debuffs?.plagued || 0) > now) icons.push(playerStatusIcon('PSN', '#55cc55', playerStatusPctFromUntil(G.debuffs.plagued, G.debuffs.plaguedStartedAt, 10000, now), `Plagued poison: lose 3% Max HP per second. Remaining ${((G.debuffs.plagued-now)/1000).toFixed(1)}s`, 'debuff'));
+  if ((G.debuffs?.crimsonRot || 0) > now) icons.push(playerStatusIcon('BLD', '#cc4444', playerStatusPctFromUntil(G.debuffs.crimsonRot, G.debuffs.crimsonRotStartedAt, 10000, now), `Crimson Rot bleed: lose 5% current HP per second. Remaining ${((G.debuffs.crimsonRot-now)/1000).toFixed(1)}s`, 'debuff'));
+  if ((G.debuffs?.necrorotUntil || 0) > now) icons.push(playerStatusIcon('ROT', '#55aa55', playerStatusPctFromUntil(G.debuffs.necrorotUntil, G.debuffs.necrorotStartedAt, 10000, now), `Necro Rot: rotting poison damage over time. Remaining ${((G.debuffs.necrorotUntil-now)/1000).toFixed(1)}s`, 'debuff'));
+  if ((G.debuffs?.blackPoolUntil || 0) > now) icons.push(playerStatusIcon('BP', '#9977bb', playerStatusPctFromUntil(G.debuffs.blackPoolUntil, G.debuffs.blackPoolStartedAt, 5000, now), `Black Pool: innate HP regen disabled. Remaining ${((G.debuffs.blackPoolUntil-now)/1000).toFixed(1)}s`, 'debuff'));
+  if ((G.debuffs?.witchCurseUntil || 0) > now) icons.push(playerStatusIcon('CUR', '#d96dff', playerStatusPctFromUntil(G.debuffs.witchCurseUntil, G.debuffs.witchCurseStartedAt, 15000, now), `Witch's Curse: curse damage over time. Remaining ${((G.debuffs.witchCurseUntil-now)/1000).toFixed(1)}s`, 'debuff'));
+  if ((G.debuffs?.curseOfCoven || 0) > now) icons.push(playerStatusIcon('COV', '#cc88ff', playerStatusPctFromUntil(G.debuffs.curseOfCoven, G.debuffs.curseOfCovenStartedAt, 5000, now), `Curse of the Coven: lose 5% current HP per second. Remaining ${((G.debuffs.curseOfCoven-now)/1000).toFixed(1)}s`, 'debuff'));
   if ((G.combat?.sandwormMissUntil || 0) > now) icons.push(playerStatusIcon('MIS', '#d6b06a', playerStatusPctFromUntil(G.combat.sandwormMissUntil, G.combat.sandwormMissStartedAt, 5000, now), 'Reduced attack accuracy', 'debuff'));
   if ((G.combat?.everlastingWinterAttacks || 0) > 0) icons.push(playerStatusIcon('FR', '#88bbff', Math.max(10, Math.min(100, (G.combat.everlastingWinterAttacks / 4) * 100)), `Everlasting Winter Frost: ${G.combat.everlastingWinterAttacks} slowed attack(s) left`, 'debuff'));
-  if (G.debuffs?.freezing) icons.push(playerStatusIcon('ICE', '#88bbff', 100, 'Freezing aura', 'debuff'));
+  if ((G.combat?.aislongFrozenUntil || 0) > now) icons.push(playerStatusIcon('FRZ', '#bfe8ff', playerStatusPctFromUntil(G.combat.aislongFrozenUntil, G.combat.aislongFrozenStartedAt, 7000, now), `Frozen solid: attacks and skills locked. Remaining ${((G.combat.aislongFrozenUntil-now)/1000).toFixed(1)}s`, 'debuff'));
+  if (G.debuffs?.freezing) icons.push(playerStatusIcon('ICE', '#88bbff', 100, 'Freezing aura: attack interval x2 while freezing monsters are alive', 'debuff'));
+  setPlayerStatusIconHtml(icons.join(''));
+}
+
+function enemyStackStatusIcon(label, color, pct, title) {
+  return playerStatusIcon(label, color, pct, title, 'debuff stack-icon');
+}
+
+function updateEnemyStatusIcons(monster, now=fxNow()) {
+  const el = document.getElementById('enemy-status-icons');
+  if (!el) return;
+  if (!monster || monster.hp <= 0) { el.innerHTML = ''; return; }
+  const icons = [];
+  if ((monster.poisonStacks || 0) > 0 && (monster.poisonUntil || 0) > now) {
+    const stacks = monster.poisonStacks || 0;
+    icons.push(enemyStackStatusIcon(String(stacks), '#55cc55', playerStatusPctFromUntil(monster.poisonUntil, monster.poisonStartedAt, 12000, now), `Poison: ${stacks} stack${stacks!==1?'s':''}. Deals ~${fmtNum(poisonDamagePerStack())} damage per stack each second. Remaining ${((monster.poisonUntil-now)/1000).toFixed(1)}s.`));
+  }
+  if ((monster.burnStacks || 0) > 0 && (monster.burnUntil || 0) > now) {
+    const stacks = monster.burnStacks || 0;
+    icons.push(enemyStackStatusIcon(String(stacks), '#ff8844', playerStatusPctFromUntil(monster.burnUntil, monster.burnStartedAt, 5000, now), `Burn: ${stacks}/${ignitionThreshold()} stack${stacks!==1?'s':''}. Deals ~${fmtNum(burnDamagePerStack())} damage per stack each second. Ignition at ${ignitionThreshold()} stacks. Remaining ${((monster.burnUntil-now)/1000).toFixed(1)}s.`));
+  }
+  if ((monster.frostbiteStacks || 0) > 0 && (monster.frostbiteUntil || 0) > now) {
+    const stacks = monster.frostbiteStacks || 0;
+    icons.push(enemyStackStatusIcon(String(stacks), '#88bbff', playerStatusPctFromUntil(monster.frostbiteUntil, monster.frostbiteStartedAt, 8000, now), `Frostbite: ${stacks}/4 stacks. Each stack adds +0.3s enemy attack interval. At 4 stacks, freezes/interupts. Remaining ${((monster.frostbiteUntil-now)/1000).toFixed(1)}s.`));
+  }
+  if ((monster.frozenUntil || 0) > now) {
+    icons.push(enemyStackStatusIcon('FZ', '#bfe8ff', playerStatusPctFromUntil(monster.frozenUntil, monster.frozenStartedAt, monster.isBoss ? 700 : 1000, now), `Frozen: enemy attacks are paused. Remaining ${((monster.frozenUntil-now)/1000).toFixed(1)}s.`));
+  }
+  if ((monster.crackedArmorUntil || 0) > now) icons.push(enemyStackStatusIcon('CA', '#ccaa55', playerStatusPctFromUntil(monster.crackedArmorUntil, monster.crackedArmorStartedAt, 6000, now), `Cracked Armor: target takes +${monster.crackedArmorPct||0}% damage. Remaining ${((monster.crackedArmorUntil-now)/1000).toFixed(1)}s.`));
+  if ((monster.poisonVulnUntil || 0) > now) icons.push(enemyStackStatusIcon('PV', '#99ff99', playerStatusPctFromUntil(monster.poisonVulnUntil, monster.poisonVulnStartedAt, 6000, now), `Poison Vulnerability: poison damage +${Math.round((monster.poisonVulnPct||0)*100)}%. Remaining ${((monster.poisonVulnUntil-now)/1000).toFixed(1)}s.`));
   el.innerHTML = icons.join('');
 }
 
@@ -4804,28 +4851,35 @@ function updateCombatViewport() {
   const delayedAction = G.combat?.advDelayed || null;
   const assassinateUntil = delayedAction && delayedAction.type === 'assassinate' ? Number(delayedAction.releaseAt || 0) : 0;
   const assassinateStarted = delayedAction && delayedAction.type === 'assassinate' ? Number(delayedAction.startedAt || (assassinateUntil ? assassinateUntil - 1500 : 0)) : 0;
+  const advChannel = G.combat?.advChannel || null;
+  const advChannelActive = !!(advChannel && (advChannel.until || 0) > now);
   const pDurEl = document.getElementById('player-duration-channel');
   const pDurFill = document.getElementById('player-duration-fill');
   const pDurTime = document.getElementById('player-duration-time');
   const pDurLabel = document.getElementById('player-duration-label');
   const heroPlinth = document.querySelector('.hero-plinth');
-  const playerCastUntil = iaiUntil > now ? iaiUntil : (assassinateUntil > now ? assassinateUntil : 0);
-  const playerCastStarted = iaiUntil > now ? iaiStarted : assassinateStarted;
-  const playerCastLabel = iaiUntil > now ? 'Iai Counter' : 'Assassinate';
+  let playerCastUntil = 0, playerCastStarted = 0, playerCastLabel = '', playerCastInfinite = false;
+  if (iaiUntil > now) { playerCastUntil = iaiUntil; playerCastStarted = iaiStarted; playerCastLabel = 'Iai Counter'; }
+  else if (assassinateUntil > now) { playerCastUntil = assassinateUntil; playerCastStarted = assassinateStarted; playerCastLabel = 'Assassinate'; }
+  else if (advChannelActive) { playerCastUntil = Number(advChannel.until || 0); playerCastStarted = Number(advChannel.startedAt || now); playerCastLabel = advChannel.label || (advChannel.type === 'frostbeam' ? 'Frostbeam' : 'Channel'); playerCastInfinite = playerCastUntil > now + 86400000; }
   if (pDurEl && playerCastUntil > now) {
-    const total = Math.max(1, playerCastUntil - playerCastStarted);
     const remaining = Math.max(0, playerCastUntil - now);
-    const pct = Math.max(0, Math.min(100, 100 - (remaining / total * 100)));
+    let pct = 0;
+    if (playerCastInfinite) pct = Math.max(0, Math.min(100, (G.mp / Math.max(1, G.maxMp)) * 100));
+    else {
+      const total = Math.max(1, playerCastUntil - playerCastStarted);
+      pct = Math.max(0, Math.min(100, 100 - (remaining / total * 100)));
+    }
     pDurEl.classList.add('visible');
     if (pDurFill) pDurFill.style.width = `${pct}%`;
-    if (pDurTime) pDurTime.textContent = `${(remaining / 1000).toFixed(1)}s`;
+    if (pDurTime) pDurTime.textContent = playerCastInfinite ? `${fmtNum(Math.round(G.mp))} MP` : `${(remaining / 1000).toFixed(1)}s`;
     if (pDurLabel) pDurLabel.textContent = playerCastLabel;
-    if (heroPlinth) heroPlinth.classList.add('iai-countering');
+    if (heroPlinth) heroPlinth.classList.add(advChannelActive ? 'channeling' : 'iai-countering');
   } else {
     if (pDurEl) pDurEl.classList.remove('visible');
     if (pDurFill) pDurFill.style.width = '0%';
     if (pDurTime) pDurTime.textContent = '0.0s';
-    if (heroPlinth) heroPlinth.classList.remove('iai-countering');
+    if (heroPlinth) { heroPlinth.classList.remove('iai-countering'); heroPlinth.classList.remove('channeling'); }
   }
 
   const channel = G.combat?.flamestealerFireball;
@@ -4845,10 +4899,11 @@ function updateCombatViewport() {
     if (channelEl) channelEl.classList.remove('visible');
     if (channelFill) channelFill.style.width = '0%';
     if (channelTime) channelTime.textContent = '0.0s';
-    if (heroPlinth) heroPlinth.classList.remove('channeling');
+    if (heroPlinth && !advChannelActive) heroPlinth.classList.remove('channeling');
   }
 
   const m = G.monsters[0];
+  updateEnemyStatusIcons(m, now);
   drawMonsterSprite(document.getElementById('monster-canvas'), m, m.isElite, m.isBoss);
 
   document.getElementById('cvp-name').innerHTML = m.name;
@@ -4898,7 +4953,7 @@ function updateCombatViewport() {
       const sc=document.createElement('canvas');
       sc.width=24; sc.height=24;
       const otherLabel = String(other.name || other.baseName || 'Enemy').replace(/<[^>]*>/g, '');
-      sc.title = `${otherLabel} — ${Math.max(0, Math.round(other.hp || 0))}/${Math.max(1, other.maxHp || 1)} HP`;
+      { const statusBits=[]; if ((other.poisonStacks||0)>0) statusBits.push(`Poison ${other.poisonStacks}`); if ((other.burnStacks||0)>0) statusBits.push(`Burn ${other.burnStacks}`); if ((other.frostbiteStacks||0)>0) statusBits.push(`Frostbite ${other.frostbiteStacks}/4`); if ((other.frozenUntil||0)>now) statusBits.push('Frozen'); sc.title = `${otherLabel} — ${Math.max(0, Math.round(other.hp || 0))}/${Math.max(1, other.maxHp || 1)} HP${statusBits.length ? ' | ' + statusBits.join(' · ') : ''}`; }
       if (other.isBoss) sc.classList.add('secondary-boss');
       else if (other.isElite) sc.classList.add('secondary-elite');
       drawMiniSprite(sc, other);
@@ -8886,6 +8941,7 @@ function gameTick(ts) {
           if (m.aislongBlastStage) {
             m.aislongBlastCounter = (m.aislongBlastCounter || 0) + 1;
             if (m.aislongBlastCounter >= 7) {
+              G.combat.aislongFrozenStartedAt = ts;
               G.combat.aislongFrozenUntil = ts + 7000;
               log('<span style="color:#bfe8ff">❄ Aislong casts Frost Dragon Blast — you are frozen solid for 7 seconds!</span>', 'dmgtaken');
               m.aislongBlastStage = null;
@@ -8937,13 +8993,13 @@ function gameTick(ts) {
         }
         // Evasion (Rogue) — chance to dodge entirely
         if (G.playerClass==='rogue' && G.passives?.evasion?.enabled) {
-          const evadeChance = 3 + Math.floor(G.level/8);
+          const evadeChance = Math.min(25, 3 + Math.floor(G.level/8));
           if (Math.random()*100 < evadeChance) {
             log(`Evaded attack from <span class="log-monster">${m.baseName||m.name}</span>!`, 'dmgtaken');
             m.lastAttack = ts; continue;
           }
         }
-        const advDodge = (hasAdvancement('assassin') && G.passives?.vanishstep?.enabled ? 5 : 0) + (hasAdvancement('nightshade') && G.passives?.toxicveil?.enabled ? 5 : 0) + (((G.combat.vanishDodgeUntil || 0) > ts) ? 30 : 0) + ((hasAdvancement('assassin') && hasMythicMod('hood_of_shadows') && (G.combat.cloakDaggerUntil || 0) > ts) ? 10 : 0) + ((hasAdvancement('nightshade') && hasMythicMod('poison_walker') && (G.combat.poisonWalkerUntil || 0) > ts) ? 15 : 0);
+        const advDodge = (hasAdvancement('assassin') && G.passives?.vanishstep?.enabled ? 10 : 0) + (hasAdvancement('nightshade') && G.passives?.toxicveil?.enabled ? 10 : 0) + (((G.combat.vanishDodgeUntil || 0) > ts) ? 30 : 0) + ((hasAdvancement('assassin') && hasMythicMod('hood_of_shadows') && (G.combat.cloakDaggerUntil || 0) > ts) ? 10 : 0) + ((hasAdvancement('nightshade') && hasMythicMod('poison_walker') && (G.combat.poisonWalkerUntil || 0) > ts) ? 15 : 0);
         if (advDodge > 0 && Math.random()*100 < advDodge) {
           log(`Advanced dodge avoids attack from <span class="log-monster">${m.baseName||m.name}</span>!`, 'dmgtaken');
           if (hasAdvancement('assassin') && hasMythicMod('hood_of_shadows') && (G.combat.cloakDaggerUntil || 0) > ts) G.combat.cloakDaggerMythicAssassinate = true;
@@ -9090,6 +9146,7 @@ function gameTick(ts) {
             if (m.covenAttackCount >= 5) {
               m.covenAttackCount = 0;
               if (!G.debuffs.curseOfCoven || G.debuffs.curseOfCoven <= ts) {
+                G.debuffs.curseOfCovenStartedAt = ts;
                 G.debuffs.curseOfCoven = ts + 5000;
                 log(`☽ Curse of the Coven afflicts you for 5s`, 'dmgtaken');
               } else {
@@ -9123,7 +9180,7 @@ function gameTick(ts) {
             }
           }
           if (m.tags && m.tags.includes('PLAGUED')) { G.debuffs.plaguedStartedAt = ts; G.debuffs.plagued = ts + 10000; }
-          if (G.monsters[0] === m && G.subZone==='crimson_rot') G.debuffs.crimsonRot = ts + 10000;
+          if (G.monsters[0] === m && G.subZone==='crimson_rot') { G.debuffs.crimsonRotStartedAt = ts; G.debuffs.crimsonRot = ts + 10000; }
           if (G.hp <= 0) { G.hp=0; die(); return; }
         }
       }
@@ -11681,7 +11738,7 @@ function renderStats() {
   });
   document.getElementById('pts-left').textContent=G.statsPoints;
   const hasPts=G.statsPoints>0;
-  ['str','agi','int','vit'].forEach(s=>document.getElementById(`btn-${s}`).disabled=!hasPts);
+  document.querySelectorAll('[data-alloc-stat]').forEach(btn => { btn.disabled = !hasPts; });
   renderPotions();
 }
 
@@ -12187,8 +12244,8 @@ function getLivePassiveDesc(k, v) {
   if (k==='battlehard') { const mx=5+Math.floor(G.level/10); const red=(G.combat.battleHardenedStacks||0)*5; d = `5% incoming damage reduction per stack. Max ${mx} stacks. Current: ${G.combat.battleHardenedStacks}/${mx} (${red}% DR).`; }
   if (k==='shadowstep') d = `${5+Math.floor(G.level/5)}% chance to hit twice on each attack.`;
   if (k==='evasion') {
-    const base = 3 + Math.floor(G.level/8);
-    d = `${base}% chance to dodge incoming attacks.`;
+    const base = Math.min(25, 3 + Math.floor(G.level/8));
+    d = `${base}% chance to dodge incoming attacks. Cap: 25%.`;
   }
   if (k==='manashield') d = `Absorbs ${10+Math.floor(G.level/4)}% of incoming damage as MP drain instead of HP loss.`;
   if (k==='overload') { const bonus=Math.floor(G.level/2); const casts=G.combat.overloadCasts||0; const threshold=5; const suffix=(threshold===1?'st':threshold===2?'nd':'th'); d = `Every ${threshold}${suffix} skill cast is free (+${bonus}% bonus dmg). Casts until next: ${threshold-casts}.`; }
@@ -12205,9 +12262,9 @@ function getLivePassiveDesc(k, v) {
   if (k==='titanicforce') d = `Basic attacks gain +${fmtNum(Math.round(juggernautHpScalingValue()*0.08 + effStat('vit')*1.5))} damage from 8% of Max HP + 1.5 × VIT (${fmtNum(G.maxHp)} Max HP, ${fmtNum(effStat('vit'))} VIT).`;
   if (k==='unbreakablebody') { const dr=Math.min(0.40, G.maxHp/10000); d = `Current incoming damage reduction: ${Math.round(dr*100)}% from ${fmtNum(G.maxHp)} Max HP. Cap: 40%.`; }
   if (k==='deathblowmastery') d = `Assassinate damage +${(critDmg*0.5).toFixed(0)}% from current ${critDmg}% Crit Damage.`;
-  if (k==='vanishstep') { const active=(G.combat.vanishDodgeUntil||0)>now; d = `Dodge chance +5% passively${active ? ' and +30% during current vanish window' : ''}. Current advancement dodge bonus: ${active?35:5}%.`; }
+  if (k==='vanishstep') { const active=(G.combat.vanishDodgeUntil||0)>now; d = `Dodge chance +10% passively. After casting Assassinate, gain +30% dodge chance for 5s${active ? ' (active now)' : ''}. Current advancement dodge bonus: ${active?40:10}%.`; }
   if (k==='venomconversion') d = `Poison damage is currently ${fmtNum(poisonDamagePerStack())}/stack/s. Crit Damage bonus and Crit Chance overflow (${Math.max(0, calcRawCritChance()-100).toFixed(1)}%) increase poison damage. Attack interval floor: 0.8s.`;
-  if (k==='toxicveil') { const stacks=G.monsters?.[0]?.poisonStacks||0; d = `Dodge chance +5%. Current target poison DR: ${Math.round(Math.min(0.25, stacks*0.01)*100)}% from ${stacks} stack${stacks!==1?'s':''}. Cap: 25%.`; }
+  if (k==='toxicveil') { const stacks=G.monsters?.[0]?.poisonStacks||0; d = `Dodge chance +10%. Current target poison DR: ${Math.round(Math.min(0.25, stacks*0.01)*100)}% from ${stacks} stack${stacks!==1?'s':''}. Cap: 25%.`; }
   if (k==='ignition') d = `Burn deals ${fmtNum(burnDamagePerStack())}/stack/s. At 10 stacks, explosion deals ~${fmtNum(burnDamagePerStack()*20)} fire damage to all enemies.`;
   if (k==='explosivemana') { const pct=Math.min(0.45,(35+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 75% efficiency. Absorbed damage triggers an explosion for 75% of absorbed damage.`; }
   if (k==='frostbite') d = `Frost skills apply Frostbite. At 4 stacks: Freeze/interruption. Boss freeze window: 0.7s with a 4s boss cooldown.`;
@@ -12654,11 +12711,20 @@ function updateZoneUI() {
 }
 
 // STAT ALLOCATION
-function allocate(stat) {
-  if(G.statsPoints<=0)return false;
-  G.stats[stat]++;G.statsPoints--;
-  updateDerived();renderStats();
+function allocate(stat, amount = 1) {
+  if (!stat || !G.stats || !(stat in G.stats)) return false;
+  const requested = Math.max(1, Math.floor(Number(amount) || 1));
+  const spend = Math.min(requested, Math.max(0, G.statsPoints || 0));
+  if (spend <= 0) return false;
+  G.stats[stat] += spend;
+  G.statsPoints -= spend;
+  updateDerived();
+  renderStats();
   return true;
+}
+
+function getAllocButtonAmount(btn) {
+  return Math.max(1, Math.floor(Number(btn?.dataset?.allocAmount) || 1));
 }
 
 function setupStatHoldAllocation() {
@@ -12687,10 +12753,10 @@ function setupStatHoldAllocation() {
       try { btn.setPointerCapture(pointerId); } catch (_) {}
       holdTimer = setTimeout(() => {
         didRepeat = true;
-        allocate(btn.dataset.allocStat);
+        allocate(btn.dataset.allocStat, getAllocButtonAmount(btn));
         repeatTimer = setInterval(() => {
           if (btn.disabled || G.statsPoints <= 0) { clearHold(); return; }
-          allocate(btn.dataset.allocStat);
+          allocate(btn.dataset.allocStat, getAllocButtonAmount(btn));
         }, HOLD_REPEAT_MS);
       }, HOLD_DELAY_MS);
     });
@@ -12706,7 +12772,7 @@ function setupStatHoldAllocation() {
         didRepeat = false;
         return;
       }
-      allocate(btn.dataset.allocStat);
+      allocate(btn.dataset.allocStat, getAllocButtonAmount(btn));
     });
   });
 }
