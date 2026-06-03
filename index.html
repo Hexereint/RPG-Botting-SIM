@@ -6951,9 +6951,23 @@ function tickThunderstormEvent(ts=performance.now()) {
     log('<span style="color:#ffff88">⚡ Thunderstrike crashes into the empty field.</span>', 'system');
   }
 }
+function getAbyssalPortalZoneConfig() {
+  const st = randomEventState();
+  const zoneKey = st.portalZone || G.zone;
+  const subKey = st.portalSubZone || G.subZone;
+  const zd = ZONE_DATA[zoneKey];
+  if (!zd || zoneKey === 'abyss') return null;
+  const zc = (subKey && zd.subZones && zd.subZones[subKey]) ? zd.subZones[subKey] : zd.base;
+  if (!zc || !Array.isArray(zc.monsters) || zc.monsters.length === 0) return null;
+  return { zc, zoneKey, subKey };
+}
 function spawnAbyssalPortalElite(ts=performance.now()) {
-  const zc = getZoneConfig();
-  if (!zc || G.zone === 'abyss') return false;
+  const cfg = getAbyssalPortalZoneConfig();
+  if (!cfg) {
+    log('<span style="color:#aa66ff">Abyssal Portal flickers, but no valid elite spawn table was found.</span>', 'system');
+    return false;
+  }
+  const { zc, zoneKey, subKey } = cfg;
   const baseName = zc.monsters[randi(0, zc.monsters.length - 1)];
   const prefix = rollPrefix(true);
   const tags = rollEliteTags(zc.maxEliteTags || 1, true);
@@ -6968,7 +6982,7 @@ function spawnAbyssalPortalElite(ts=performance.now()) {
   G.monsters = [{
     id:monsterId,
     name:`<span style="color:#aa66ff">[PORTAL]</span> ${formatMonsterName(prefix.name, baseName, true, tags)}`,
-    baseName, zone:G.zone, subZone:G.subZone,
+    baseName, zone:zoneKey, subZone:subKey,
     maxHp:baseHp, hp:baseHp, shield, arcaneShield,
     dmgMin:Math.round(zc.dmg[0] * dmgMult), dmgMax:Math.round(zc.dmg[1] * dmgMult),
     expMin:Math.round(zc.exp[0] * prefix.expMult * 1.35), expMax:Math.round(zc.exp[1] * prefix.expMult * 1.35),
@@ -6985,6 +6999,8 @@ function spawnAbyssalPortalElite(ts=performance.now()) {
 function startAbyssalPortalEvent(scale=1) {
   const st = randomEventState();
   const now = performance.now();
+  st.portalZone = G.zone;
+  st.portalSubZone = G.subZone;
   st.portalUntil = now + 40000;
   st.portalKills = 0;
   st.active = { kind:'combat', type:'abyssalPortal', title:'Abyssal Portal', monsterId:null, pauseCombat:false, startedAt:now, portalUntil:st.portalUntil };
@@ -6992,7 +7008,16 @@ function startAbyssalPortalEvent(scale=1) {
   st.nextAllowedAt = now + randi(90000, 150000);
   showRandomEventPopup({ kind:'combat', type:'abyssalPortal', title:'Abyssal Portal', body:'The portal is open for 40 seconds. Elites spawn instantly after death. Escape to leave the portal.', options:[] });
   log('<span style="color:#aa66ff">◆ Entered Abyssal Portal — 40-second elite rush begins!</span>', 'system');
-  spawnAbyssalPortalElite(now);
+  if (!spawnAbyssalPortalElite(now)) {
+    st.portalUntil = 0;
+    st.active = null;
+    st.pauseCombat = false;
+    hideRandomEventPopup();
+    log('<span style="color:#aa66ff">◆ Abyssal Portal collapses because no elite could be spawned.</span>', 'system');
+    if (G.monsters.length === 0) G.nextSpawnAt = now + 1000;
+    return false;
+  }
+  return true;
 }
 function tickAbyssalPortalEvent(ts=performance.now()) {
   const st = randomEventState();
@@ -7001,7 +7026,11 @@ function tickAbyssalPortalEvent(ts=performance.now()) {
   const left = Math.max(0, Math.ceil(((st.portalUntil || ts) - ts) / 1000));
   const timer = document.getElementById('random-event-timer');
   if (timer) timer.textContent = `Portal closes in ${left}s. Escape to leave.`;
-  if (ts < (st.portalUntil || 0)) return;
+  if (ts < (st.portalUntil || 0)) {
+    const hasPortalElite = (G.monsters || []).some(m => m && m.isAbyssalPortalElite && m.hp > 0);
+    if (!hasPortalElite && (!G.monsters || G.monsters.length === 0)) spawnAbyssalPortalElite(ts);
+    return;
+  }
   // The portal closes after 40s, but the current elite is not deleted.
   // Closing only stops the instant respawn chain, so players keep credit for any elite already spawned.
   st.portalUntil = 0;
