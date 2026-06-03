@@ -2869,7 +2869,9 @@ function effectiveCooldown(baseCd, skillKey) {
   if (adv==='juggernaut' && baseSkill==='execute' && hasMythicMod('titans_totem')) cd *= 0.5;
   if (adv==='frostmage' && baseSkill==='chronosphere' && hasMythicMod('frozen_anchor')) cd *= 0.6;
   if (adv==='flamemage' && baseSkill==='chainlightning' && hasMythicMod('incinerating_staff')) cd = 0;
+  if (adv==='arcanist' && baseSkill==='fireball' && hasMythicMod('refracting_shard')) cd = 0;
   if (isSwiftnessPotionActive()) cd *= 0.6;
+  if (cd <= 0) return 0;
   return Math.max(500, cd);
 }
 
@@ -6921,12 +6923,13 @@ function tickAbyssalPortalEvent(ts=performance.now()) {
   const timer = document.getElementById('random-event-timer');
   if (timer) timer.textContent = `Portal closes in ${left}s. Escape to leave.`;
   if (ts < (st.portalUntil || 0)) return;
-  G.monsters = (G.monsters || []).filter(m => !m.isAbyssalPortalElite);
+  // The portal closes after 40s, but the current elite is not deleted.
+  // Closing only stops the instant respawn chain, so players keep credit for any elite already spawned.
   st.portalUntil = 0;
   st.active = null;
   st.pauseCombat = false;
   hideRandomEventPopup();
-  log(`<span style="color:#aa66ff">◆ Abyssal Portal closes after ${st.portalKills || 0} elite kill${(st.portalKills || 0) === 1 ? '' : 's'}.</span>`, 'system');
+  log(`<span style="color:#aa66ff">◆ Abyssal Portal closes after ${st.portalKills || 0} elite kill${(st.portalKills || 0) === 1 ? '' : 's'}. No more portal elites will spawn.</span>`, 'system');
   if (G.monsters.length === 0) G.nextSpawnAt = ts + spawnDelay(G.zone);
 }
 function maybeContinueAbyssalPortal(ts=performance.now()) {
@@ -7178,6 +7181,7 @@ const MYTHIC_ITEMS = {
       { name:"Frosted Lens", mod:"frosted_lens", desc:"Frostbeam applies +1 additional Frostbite stack every second.", val:null },
       { name:"Mirror Ice", mod:"mirror_ice", desc:"While Ice Barrier is active, attackers receive 1 Frostbite stack.", val:null },
       { name:"Prism Focus", mod:"prism_focus", desc:"If Arcane Blades crits, restore 5% Max MP.", val:null },
+      { name:"Refracting Shard", mod:"refracting_shard", desc:"Arcane Blades has no cooldown, but its MP cost is increased to 60.", val:null },
       { name:"Graviton Core", mod:"graviton_core", desc:"Gravity Ball now has a 3s cast time, but deals +150% damage.", val:null }
     ],
     legging: [
@@ -8596,7 +8600,7 @@ function gameTick(ts) {
 
     // Auto-cast skills (user-configured top-down priority)
     // Global skill throttle: even 0-cooldown skills may only cast once every 0.2s.
-    const globalSkillThrottleMs = 200;
+    const globalSkillThrottleMs = 500;
     const canGlobalSkillCast = ts - (G.combat.lastGlobalSkillCastAt || 0) >= globalSkillThrottleMs;
     const manualSkillKey = G.combat.manualSkillCast;
     const manualTargetlessCast = manualSkillKey && isTargetlessSkill(manualSkillKey);
@@ -12433,6 +12437,7 @@ function currentSkillMpCost(k) {
   if (!v) return Infinity;
   const baseSkill = skillBaseKey(k);
   let cost = Math.max(0, v.mpCost || 0);
+  if (currentAdvancementId()==='arcanist' && baseSkill==='fireball' && hasMythicMod('refracting_shard')) return 60;
   if (currentAdvancementId()==='flamemage' && baseSkill==='fireball' && hasMythicMod('furnace_seal')) cost *= 2;
   return Math.max(0, Math.ceil(cost * skillEconomyFactor(k)));
 }
