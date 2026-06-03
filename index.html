@@ -12286,7 +12286,6 @@ function skillCdLabel(k, v) {
 
 function skillEffCdLabel(k, v) {
   let effCd = effectiveCooldown(v.cooldown, k);
-  if (skillBaseKey(k)==='cheapshot' && hasMythicMod('mirror_edge')) effCd = 0;
   return effCd===0 ? '<span style="color:#cc44ff">NO CD</span>' : (effCd/1000).toFixed(1)+'s CD';
 }
 
@@ -12434,7 +12433,6 @@ function currentSkillMpCost(k) {
   if (!v) return Infinity;
   const baseSkill = skillBaseKey(k);
   let cost = Math.max(0, v.mpCost || 0);
-  if (baseSkill==='cheapshot' && hasMythicMod('mirror_edge')) cost += Math.round(G.maxMp * 0.10);
   if (currentAdvancementId()==='flamemage' && baseSkill==='fireball' && hasMythicMod('furnace_seal')) cost *= 2;
   return Math.max(0, Math.ceil(cost * skillEconomyFactor(k)));
 }
@@ -12489,8 +12487,7 @@ function renderSkills() {
     div.dataset.skill = k;
     const cdRemain = G.skillCooldowns[k]||0;
     let effCd = effectiveCooldown(v.cooldown, k);
-      if (skillBaseKey(k)==='cheapshot' && hasMythicMod('mirror_edge')) effCd = 0;
-    const cdLabel = cdRemain>0
+        const cdLabel = cdRemain>0
       ? `<span style="color:var(--red)">${(cdRemain/1000).toFixed(1)}s</span>`
       : `<span style="color:#446644">READY</span>`;
     const preview = skillDamagePreview(k);
