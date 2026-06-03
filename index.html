@@ -2562,6 +2562,7 @@ function totalEquipStat(stat) {
   let t=0;
   for (const item of Object.values(G.equipped)) {
     if (!item || !item.mainStats) continue;
+    if (getOvergearLevel(item) > 0) recalcOvergearStats(item);
     t += item.mainStats[stat]||0;
   }
   return t;
@@ -2570,6 +2571,7 @@ function totalEquipSubStat(sub) {
   let t=0;
   for (const item of Object.values(G.equipped)) {
     if (!item || !item.subStats) continue;
+    if (getOvergearLevel(item) > 0) recalcOvergearStats(item);
     t += item.subStats[sub]||0;
   }
   return t;
@@ -9991,6 +9993,7 @@ function respawn() {
 
 // EQUIP
 function equipItem(item,silent=false) {
+  if (item && getOvergearLevel(item) > 0) recalcOvergearStats(item);
   const old=G.equipped[item.slot];
   if(old)old.equipped=false;
   G.equipped[item.slot]=item;
@@ -10139,6 +10142,36 @@ function cloneOvergearBaseFromCurrent(stats, level, section='') {
 function overgearValueAlmostEqual(a, b) {
   return Math.abs(Number(a || 0) - Number(b || 0)) < 0.0005;
 }
+function overgearValueLooksAlreadyApplied(key, value, level, section='') {
+  const v = Math.abs(Number(value || 0));
+  const lvl = Math.max(0, Number(level || 0));
+  if (lvl <= 0 || v <= 0) return false;
+  if (isOvergearMainStatSection(section)) {
+    // Main stats get a large flat bonus. A normal Mythic main stat is usually far below this threshold.
+    return v >= Math.max(45, lvl * OVERGEAR_MAIN_STAT_FLAT * 0.65);
+  }
+  if (key === 'critdamage') return v >= Math.max(150, lvl * OVERGEAR_CRIT_DAMAGE_FLAT * 0.50);
+  if (key === 'critchance') return v >= Math.max(12, lvl * OVERGEAR_CRIT_CHANCE_FLAT + 2);
+  return false;
+}
+function overgearBaseSnapshotFromCurrent(item, sectionName) {
+  const lvl = getOvergearLevel(item);
+  const current = item?.[sectionName] || {};
+  const out = {};
+  for (const [k, cur] of Object.entries(current)) {
+    const useReverse = overgearValueLooksAlreadyApplied(k, cur, lvl, sectionName);
+    out[k] = roundOvergearStoredValue(k, useReverse ? overgearBaseValueFromCurrent(k, cur, lvl, sectionName) : cur);
+  }
+  return out;
+}
+function overgearAscendBaseSnapshotFromCurrent(item) {
+  const lvl = getOvergearLevel(item);
+  if (!item?.ascendStat) return null;
+  const k = item.ascendStat.key;
+  const cur = item.ascendStat.val;
+  const useReverse = overgearValueLooksAlreadyApplied(k, cur, lvl, 'ascendStat');
+  return { key:k, val:roundOvergearStoredValue(k, useReverse ? overgearBaseValueFromCurrent(k, cur, lvl, 'ascendStat') : cur) };
+}
 function repairOvergearBaseStatsIfNeeded(item) {
   const lvl = getOvergearLevel(item);
   if (!item || lvl <= 0 || !item.overgearBaseStats) return;
@@ -10149,22 +10182,32 @@ function repairOvergearBaseStatsIfNeeded(item) {
     for (const [k, cur] of Object.entries(section)) {
       const storedBase = base[sectionName][k];
       if (storedBase == null) {
-        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl, sectionName));
+        // Missing base means the current value is the safest un-Overgeared baseline.
+        base[sectionName][k] = roundOvergearStoredValue(k, cur);
         continue;
       }
-      // Older patched saves could accidentally snapshot the already-Overgeared value as the base.
-      // When base and current match at a positive star count, rebuild the true pre-Overgear base.
       if (Number(cur || 0) !== 0 && overgearValueAlmostEqual(storedBase, cur)) {
-        base[sectionName][k] = roundOvergearStoredValue(k, overgearBaseValueFromCurrent(k, cur, lvl, sectionName));
+        // If old/imported data stored current==base, do not always reverse it.
+        // Reverse only when the current number already looks like it includes a large Overgear flat bonus.
+        // Otherwise keep current as the baseline so recalculation actually applies the stars.
+        base[sectionName][k] = roundOvergearStoredValue(k,
+          overgearValueLooksAlreadyApplied(k, cur, lvl, sectionName)
+            ? overgearBaseValueFromCurrent(k, cur, lvl, sectionName)
+            : cur
+        );
       }
     }
   };
   repairSection('mainStats');
   repairSection('subStats');
   if (item.ascendStat) {
-    base.ascendStat = base.ascendStat || { key:item.ascendStat.key, val:roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl)) };
-    if (base.ascendStat.key === item.ascendStat.key && Number(item.ascendStat.val || 0) !== 0 && overgearValueAlmostEqual(base.ascendStat.val, item.ascendStat.val)) {
-      base.ascendStat.val = roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl));
+    base.ascendStat = base.ascendStat || overgearAscendBaseSnapshotFromCurrent(item);
+    if (base.ascendStat && base.ascendStat.key === item.ascendStat.key && Number(item.ascendStat.val || 0) !== 0 && overgearValueAlmostEqual(base.ascendStat.val, item.ascendStat.val)) {
+      base.ascendStat.val = roundOvergearStoredValue(item.ascendStat.key,
+        overgearValueLooksAlreadyApplied(item.ascendStat.key, item.ascendStat.val, lvl, 'ascendStat')
+          ? overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl, 'ascendStat')
+          : item.ascendStat.val
+      );
     }
   }
 }
@@ -10173,12 +10216,11 @@ function ensureOvergearBaseStats(item) {
   const lvl = getOvergearLevel(item);
   if (!item.overgearBaseStats) {
     item.overgearBaseStats = {
-      mainStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.mainStats, lvl, 'mainStats') : cloneOvergearStats(item.mainStats),
-      subStats: lvl > 0 ? cloneOvergearBaseFromCurrent(item.subStats, lvl, 'subStats') : cloneOvergearStats(item.subStats),
-      ascendStat: item.ascendStat ? {
-        key:item.ascendStat.key,
-        val:Number(lvl > 0 ? roundOvergearStoredValue(item.ascendStat.key, overgearBaseValueFromCurrent(item.ascendStat.key, item.ascendStat.val, lvl)) : (item.ascendStat.val || 0))
-      } : null
+      // Important migration behavior: if an item already has Overgear levels but no baseline snapshot,
+      // treat its current stats as the baseline unless the numbers already look Overgear-inflated.
+      mainStats: lvl > 0 ? overgearBaseSnapshotFromCurrent(item, 'mainStats') : cloneOvergearStats(item.mainStats),
+      subStats: lvl > 0 ? overgearBaseSnapshotFromCurrent(item, 'subStats') : cloneOvergearStats(item.subStats),
+      ascendStat: lvl > 0 ? overgearAscendBaseSnapshotFromCurrent(item) : (item.ascendStat ? { key:item.ascendStat.key, val:Number(item.ascendStat.val || 0) } : null)
     };
   }
   repairOvergearBaseStatsIfNeeded(item);
