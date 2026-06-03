@@ -1739,7 +1739,7 @@ body.chaos-active #map-panel .subzone-row,
             </div>
             <div id="upgrade-tab-overgear" style="display:none;">
               <div class="town-section-title" style="color:#d8c7ff;">✦ GEAR UPGRADE — OVERGEAR</div>
-              <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Only Ascended Legendary and Mythic equipment can be Overgeared. Each Overgear star increases normal stats by +0.25%, HP/MP regen by +0.10%, Crit Chance by +0.1%, and Crit Damage by +10%. Mythic skill modifiers are not changed.<br>Cost: <span style="color:var(--yellow);">1,000,000g</span>, +<span style="color:var(--yellow);">100,000g</span> for each existing Overgear on that equipment.</div>
+              <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Only Ascended Legendary and Mythic equipment can be Overgeared. Each Overgear star increases normal stats by +0.25%, Max MP by +0.8, HP/MP regen by +0.10%, Crit Chance by +0.1%, and Crit Damage by +10%. Mythic skill modifiers are not changed.<br>Cost: <span style="color:var(--yellow);">1,000,000g</span>, +<span style="color:var(--yellow);">100,000g</span> for each existing Overgear on that equipment.</div>
               <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
                 <span style="font-size:9px;color:#888;">Gold: <span id="overgear-gold-display" style="color:var(--yellow);font-weight:bold;">0</span></span>
               </div>
@@ -1755,7 +1755,7 @@ body.chaos-active #map-panel .subzone-row,
           <button class="town-back-btn" onclick="closeTownScreen()">← TOWN</button>
           <div class="town-section" style="border-color:#5a4a88;">
             <div class="town-section-title" style="color:#d8c7ff;">⇄ OVERGEAR TRANSFER</div>
-            <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Move Overgear levels from Box A to Box B. Box A is destroyed. Box B receives 80% of Box A's Overgear levels, rounded down.</div>
+            <div style="font-size:9px;color:#888;margin-bottom:8px;line-height:1.5;">Move Overgear levels from Box A to Box B. Box A is destroyed. Box B must have no Overgear levels and receives 80% of Box A's Overgear levels, rounded down.</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
               <div><div style="font-size:9px;color:#d8c7ff;margin-bottom:4px;">BOX A — OLD OVERGEARED ITEM</div><div id="overgear-transfer-a-list" class="town-gear-list" style="max-height:260px;"></div></div>
               <div><div style="font-size:9px;color:#d8c7ff;margin-bottom:4px;">BOX B — NEW DESTINATION ITEM</div><div id="overgear-transfer-b-list" class="town-gear-list" style="max-height:260px;"></div></div>
@@ -10101,6 +10101,7 @@ function overgearStarHtml(item) {
 }
 const OVERGEAR_MAIN_STAT_FLAT = 1.1;      // +1.1 STR/AGI/INT/VIT per star
 const OVERGEAR_NORMAL_RATE = 0.0025;      // +0.25% per star for ordinary non-regen equipment stats
+const OVERGEAR_MAX_MP_FLAT = 0.8;         // +0.8 Max MP per star (+8 MP per 10 stars)
 const OVERGEAR_REGEN_RATE = 0.001;        // +0.10% per star for HP/MP regen
 const OVERGEAR_CRIT_CHANCE_FLAT = 0.1;    // +0.1 percentage point per star
 const OVERGEAR_CRIT_DAMAGE_FLAT = 10;     // +10 percentage points per star
@@ -10120,6 +10121,7 @@ function overgearStatValue(key, baseValue, level, section='') {
   if (isOvergearMainStatSection(section)) return base + lvl * OVERGEAR_MAIN_STAT_FLAT;
   if (key === 'critchance') return base + lvl * OVERGEAR_CRIT_CHANCE_FLAT;
   if (key === 'critdamage') return base + lvl * OVERGEAR_CRIT_DAMAGE_FLAT;
+  if (key === 'maxmp') return base + lvl * OVERGEAR_MAX_MP_FLAT;
   const rate = (key === 'hpregen' || key === 'mpregen') ? OVERGEAR_REGEN_RATE : OVERGEAR_NORMAL_RATE;
   return base * (1 + lvl * rate);
 }
@@ -10130,6 +10132,7 @@ function overgearBaseValueFromCurrent(key, currentValue, level, section='') {
   if (isOvergearMainStatSection(section)) return cur - lvl * OVERGEAR_MAIN_STAT_FLAT;
   if (key === 'critchance') return cur - lvl * OVERGEAR_CRIT_CHANCE_FLAT;
   if (key === 'critdamage') return cur - lvl * OVERGEAR_CRIT_DAMAGE_FLAT;
+  if (key === 'maxmp') return cur - lvl * OVERGEAR_MAX_MP_FLAT;
   const rate = (key === 'hpregen' || key === 'mpregen') ? OVERGEAR_REGEN_RATE : OVERGEAR_NORMAL_RATE;
   const mult = 1 + lvl * rate;
   return mult ? cur / mult : cur;
@@ -10152,6 +10155,7 @@ function overgearValueLooksAlreadyApplied(key, value, level, section='') {
   }
   if (key === 'critdamage') return v >= Math.max(150, lvl * OVERGEAR_CRIT_DAMAGE_FLAT * 0.50);
   if (key === 'critchance') return v >= Math.max(12, lvl * OVERGEAR_CRIT_CHANCE_FLAT + 2);
+  if (key === 'maxmp') return v >= Math.max(40, lvl * OVERGEAR_MAX_MP_FLAT * 0.65);
   return false;
 }
 function overgearBaseSnapshotFromCurrent(item, sectionName) {
@@ -10225,6 +10229,30 @@ function ensureOvergearBaseStats(item) {
   }
   repairOvergearBaseStatsIfNeeded(item);
   return item.overgearBaseStats;
+}
+function resetOvergearBaseStatsToCurrentVisibleStats(item) {
+  if (!item) return null;
+  item.overgearBaseStats = {
+    mainStats: cloneOvergearStats(item.mainStats),
+    subStats: cloneOvergearStats(item.subStats),
+    ascendStat: item.ascendStat ? { key:item.ascendStat.key, val:Number(item.ascendStat.val || 0) } : null
+  };
+  return item.overgearBaseStats;
+}
+function prepareOvergearTransferDestination(item) {
+  if (!item) return;
+  const lvl = getOvergearLevel(item);
+  if (lvl <= 0) {
+    // Box B is usually a fresh destination item. Stale/empty base snapshots from imports
+    // can make transferred stars appear cosmetic, so force the current visible item lines
+    // to become the un-Overgeared baseline before adding transferred levels.
+    item.overgearLevel = 0;
+    item.overgeared = false;
+    resetOvergearBaseStatsToCurrentVisibleStats(item);
+    return;
+  }
+  ensureOvergearBaseStats(item);
+  recalcOvergearStats(item);
 }
 function roundOvergearStoredValue(key, value) {
   if (['critchance','critdamage'].includes(key)) return parseFloat(Number(value || 0).toFixed(1));
@@ -10326,7 +10354,7 @@ function renderOvergearList() {
         <button class="gear-menu-action" style="border-color:#d8c7ff;color:#d8c7ff;" onclick="doOvergearUpgrade(${item.id})" ${G.gold < cost ? 'disabled' : ''}>OVERGEAR</button>
       </div>
       <div class="gear-menu-stats">
-        Next: +0.25% normal stats · +0.10% regen · +0.1% Crit · +10% CritDmg
+        Next: +0.25% normal stats · +0.8 Max MP · +0.10% regen · +0.1% Crit · +10% CritDmg
         <div style="font-size:9px;color:#888;margin-top:3px;">Cost ${fmtNum(cost)}g</div>
       </div>`;
     list.appendChild(row);
@@ -10347,7 +10375,7 @@ function doOvergearUpgrade(itemId) {
 let overgearTransferAId = null;
 let overgearTransferBId = null;
 function overgearTransferCandidateA(item) { return item && !item.locked && !isCurrentlyEquippedItem(item) && getOvergearLevel(item) > 0; }
-function overgearTransferCandidateB(item) { return item && !item.locked && !isCurrentlyEquippedItem(item) && canOvergearItem(item); }
+function overgearTransferCandidateB(item) { return item && !item.locked && !isCurrentlyEquippedItem(item) && canOvergearItem(item) && getOvergearLevel(item) <= 0; }
 function renderOvergearTransfer() {
   const aList = document.getElementById('overgear-transfer-a-list');
   const bList = document.getElementById('overgear-transfer-b-list');
@@ -10370,12 +10398,12 @@ function renderOvergearTransfer() {
   };
   if (!aItems.length) aList.innerHTML = '<div class="keyitem-empty">No unequipped Overgeared items.</div>';
   for (const item of aItems) aList.appendChild(renderRow(item, item.id===overgearTransferAId, () => { overgearTransferAId=item.id; if (overgearTransferBId===item.id) overgearTransferBId=null; renderOvergearTransfer(); }));
-  if (!bItems.length) bList.innerHTML = '<div class="keyitem-empty">No valid destination equipment.</div>';
+  if (!bItems.length) bList.innerHTML = '<div class="keyitem-empty">No un-Overgeared destination equipment.</div>';
   for (const item of bItems) bList.appendChild(renderRow(item, item.id===overgearTransferBId, () => { overgearTransferBId=item.id; renderOvergearTransfer(); }));
   const a = inv.find(i=>i.id===overgearTransferAId);
   const b = inv.find(i=>i.id===overgearTransferBId);
   const transfer = a ? Math.floor(getOvergearLevel(a) * 0.80) : 0;
-  if (summary) summary.innerHTML = a && b ? `Transfer result: <b>${a.name}</b> Overgear ${getOvergearLevel(a)} → <b>${b.name}</b> gains <span style="color:#d8c7ff">${transfer}</span> Overgear level${transfer!==1?'s':''}. Box A will be destroyed.` : 'Select an old Overgeared item in Box A and a destination item in Box B.';
+  if (summary) summary.innerHTML = a && b ? `Transfer result: <b>${a.name}</b> Overgear ${getOvergearLevel(a)} → <b>${b.name}</b> gains <span style="color:#d8c7ff">${transfer}</span> Overgear level${transfer!==1?'s':''}. Box A will be destroyed.` : 'Select an old Overgeared item in Box A and an un-Overgeared destination item in Box B.';
   if (btn) btn.disabled = !(a && b && transfer > 0);
 }
 function doOvergearTransfer() {
@@ -10383,11 +10411,12 @@ function doOvergearTransfer() {
   const a = inv.find(i=>i.id===overgearTransferAId);
   const b = inv.find(i=>i.id===overgearTransferBId);
   if (!a || !b || a.id===b.id) { log('Select two different items for Overgear Transfer.', 'system'); return; }
-  if (!overgearTransferCandidateA(a) || !overgearTransferCandidateB(b)) { log('Invalid Overgear Transfer items. Items must be unequipped and unlocked.', 'system'); return; }
+  if (!overgearTransferCandidateA(a) || !overgearTransferCandidateB(b)) { log('Invalid Overgear Transfer items. Box A must be unlocked, unequipped, and Overgeared. Box B must be unlocked, unequipped, eligible, and un-Overgeared.', 'system'); return; }
   const transfer = Math.floor(getOvergearLevel(a) * 0.80);
   if (transfer <= 0) { log('Box A does not have enough Overgear levels to transfer after the 80% conversion.', 'system'); return; }
-  const ok = confirm(`Overgear Transfer warning:\n\nBox A: ${a.name} (Overgear ${getOvergearLevel(a)}) will be DESTROYED.\nBox B: ${b.name} will gain ${transfer} Overgear level${transfer!==1?'s':''}.\n\nContinue?`);
+  const ok = confirm(`Overgear Transfer warning:\n\nBox A: ${a.name} (Overgear ${getOvergearLevel(a)}) will be DESTROYED.\nBox B: ${b.name} will gain ${transfer} Overgear level${transfer!==1?'s':''}.\nBox B must currently have 0 Overgear levels.\n\nContinue?`);
   if (!ok) { log('Overgear Transfer cancelled.', 'system'); return; }
+  prepareOvergearTransferDestination(b);
   applyOvergearStatBoost(b, transfer);
   const idx = G.inventory.findIndex(i=>i.id===a.id);
   if (idx >= 0) G.inventory.splice(idx, 1);
