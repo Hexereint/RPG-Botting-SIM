@@ -1665,7 +1665,7 @@ body.chaos-active #map-panel .subzone-row,
               <div id="overgear-gamble-actions" style="display:none;margin-top:8px;padding:8px;background:#050505;border:1px solid rgba(180,140,255,0.35);">
                 <div id="overgear-gamble-selected" style="font-size:9px;color:#aaa;margin-bottom:7px;"></div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                  <button onclick="doOvergearGamble(30)" style="flex:1;min-width:140px;background:#000;border:1px solid #aa77ff;color:#d8c7ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">30% GAMBLE<br><span style="font-size:8px;color:#888;">500,000g + 500 GE</span></button>
+                  <button onclick="doOvergearGamble(30)" style="flex:1;min-width:140px;background:#000;border:1px solid #aa77ff;color:#d8c7ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">30% GAMBLE<br><span style="font-size:8px;color:#888;">300,000g + 500 GE</span></button>
                   <button onclick="doOvergearGamble(70)" style="flex:1;min-width:140px;background:#000;border:1px solid #77ddff;color:#d8f8ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">70% GAMBLE<br><span style="font-size:8px;color:#888;">700,000g + 500 GE</span></button>
                 </div>
               </div>
@@ -1885,6 +1885,37 @@ body.chaos-active #map-panel .subzone-row,
               <div class="rarity-tag legendary" onclick="setAutoSellFilter('legendary')">LEGENDARY</div>
               <div class="rarity-tag mythic" onclick="setAutoSellFilter('mythic')">MYTHIC</div>
             </div>
+          </div>
+          <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+            <div class="config-label">Auto-Sell Stat Protection<span class="config-sub">Matching equipment is not sold if its rarity is at or above the minimum rarity below.</span></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;width:100%;">
+              <label style="font-size:9px;color:#888;display:flex;flex-direction:column;gap:3px;">Primary Main Stat
+                <select class="config-input" id="cfg-autosell-protect-primary" onchange="saveConfig();renderAutoSellProtectUI();" style="width:100%;">
+                  <option value="none">None</option><option value="str">STR</option><option value="agi">AGI</option><option value="int">INT</option><option value="vit">VIT</option>
+                </select>
+              </label>
+              <label style="font-size:9px;color:#888;display:flex;flex-direction:column;gap:3px;">Secondary Main Stat
+                <select class="config-input" id="cfg-autosell-protect-secondary" onchange="saveConfig();renderAutoSellProtectUI();" style="width:100%;">
+                  <option value="none">None</option><option value="str">STR</option><option value="agi">AGI</option><option value="int">INT</option><option value="vit">VIT</option>
+                </select>
+              </label>
+              <label style="font-size:9px;color:#888;display:flex;flex-direction:column;gap:3px;">Minimum Protected Rarity
+                <select class="config-input" id="cfg-autosell-protect-min-rarity" onchange="saveConfig();renderAutoSellProtectUI();" style="width:100%;">
+                  <option value="common">Common+</option><option value="rare">Rare+</option><option value="epic">Epic+</option><option value="legendary">Legendary+</option><option value="mythic">Mythic only</option>
+                </select>
+              </label>
+            </div>
+            <div style="font-size:9px;color:#777;">Protected Substats</div>
+            <div class="rarity-filter" id="autosell-substat-protect-filter">
+              <div class="rarity-tag common" data-substat="maxhp" onclick="toggleAutoSellProtectSubstat('maxhp')">MAX HP</div>
+              <div class="rarity-tag rare" data-substat="maxmp" onclick="toggleAutoSellProtectSubstat('maxmp')">MAX MP</div>
+              <div class="rarity-tag epic" data-substat="hpregen" onclick="toggleAutoSellProtectSubstat('hpregen')">HP REGEN</div>
+              <div class="rarity-tag rare" data-substat="mpregen" onclick="toggleAutoSellProtectSubstat('mpregen')">MP REGEN</div>
+              <div class="rarity-tag legendary" data-substat="critchance" onclick="toggleAutoSellProtectSubstat('critchance')">CRIT</div>
+              <div class="rarity-tag mythic" data-substat="critdamage" onclick="toggleAutoSellProtectSubstat('critdamage')">CRIT DMG</div>
+              <div class="rarity-tag epic" data-substat="cdr" onclick="toggleAutoSellProtectSubstat('cdr')">CDR</div>
+            </div>
+            <div id="autosell-protect-summary" style="font-size:9px;color:#555;line-height:1.35;"></div>
           </div>
         </div>
 
@@ -2410,6 +2441,7 @@ const G = {
     ],
     rarityFilter: { common:true, rare:true, epic:true, legendary:true, mythic:true },
     autosellFilter: { common:true, rare:false, epic:false, legendary:false, mythic:false },
+    autosellProtect: { primaryStat:'none', secondaryStat:'none', minRarity:'rare', subStats:{} },
     townRunFilter: { common:true, rare:true, epic:false, legendary:false, mythic:false }
   },
   logFilter: {
@@ -9861,7 +9893,7 @@ function processTownRunFilters(manual=false) {
 
   let soldCount = 0, soldGold = 0;
   if (G.config.autosell) {
-    const toSell = G.inventory.filter(i => i && i.rarity && i.slot && !i.equipped && !i.locked && G.config.autosellFilter[i.rarity]);
+    const toSell = G.inventory.filter(i => i && i.rarity && i.slot && !i.equipped && !i.locked && G.config.autosellFilter[i.rarity] && !isAutoSellProtectedItem(i));
     for (const item of toSell) {
       const idx = G.inventory.indexOf(item);
       if (idx === -1) continue;
@@ -10077,7 +10109,7 @@ const OVERGEAR_COLOR = '#d8c7ff';
 const OVERGEAR_BASE_COST = 1000000;
 const OVERGEAR_COST_STEP = 100000;
 const OVERGEAR_GAMBLE_GE_COST = 500;
-const OVERGEAR_GAMBLE_COSTS = { 30:500000, 70:700000 };
+const OVERGEAR_GAMBLE_COSTS = { 30:300000, 70:700000 };
 
 function getOvergearLevel(item) {
   return Math.max(0, parseInt(item?.overgearLevel || 0, 10) || 0);
@@ -12901,6 +12933,65 @@ function setAutoSellFilter(r) {
     if(el)el.classList.toggle('active',G.config.autosellFilter[rr]);
   });
 }
+
+function normalizeAutoSellProtectConfig(cfg) {
+  const out = Object.assign({ primaryStat:'none', secondaryStat:'none', minRarity:'rare', subStats:{} }, cfg || {});
+  if (!MAIN_STATS.includes(out.primaryStat)) out.primaryStat = 'none';
+  if (!MAIN_STATS.includes(out.secondaryStat)) out.secondaryStat = 'none';
+  if (!RARITIES.includes(out.minRarity)) out.minRarity = 'rare';
+  const srcSubs = out.subStats || {};
+  out.subStats = {};
+  for (const s of SUB_STATS) out.subStats[s] = !!srcSubs[s];
+  return out;
+}
+function getAutoSellProtectConfig() {
+  if (!G.config.autosellProtect) G.config.autosellProtect = normalizeAutoSellProtectConfig({});
+  else G.config.autosellProtect = normalizeAutoSellProtectConfig(G.config.autosellProtect);
+  return G.config.autosellProtect;
+}
+function statLabelForAutoSell(stat) {
+  return ({str:'STR',agi:'AGI',int:'INT',vit:'VIT',maxhp:'Max HP',maxmp:'Max MP',hpregen:'HP Regen',mpregen:'MP Regen',critchance:'Crit Chance',critdamage:'Crit Damage',cdr:'Skill CDR'}[stat] || stat);
+}
+function isAutoSellProtectedItem(item) {
+  if (!item || !item.rarity || !item.slot) return false;
+  const cfg = getAutoSellProtectConfig();
+  if (getRarityRank(item.rarity) < getRarityRank(cfg.minRarity)) return false;
+  if (cfg.primaryStat !== 'none' && (item.mainStats?.[cfg.primaryStat] || 0) > 0) return true;
+  if (cfg.secondaryStat !== 'none' && (item.mainStats?.[cfg.secondaryStat] || 0) > 0) return true;
+  for (const s of SUB_STATS) {
+    if (cfg.subStats?.[s] && (item.subStats?.[s] || 0) > 0) return true;
+  }
+  return false;
+}
+function toggleAutoSellProtectSubstat(stat) {
+  if (!SUB_STATS.includes(stat)) return;
+  const cfg = getAutoSellProtectConfig();
+  cfg.subStats[stat] = !cfg.subStats[stat];
+  renderAutoSellProtectUI();
+  saveGame(false);
+}
+function renderAutoSellProtectUI() {
+  const cfg = getAutoSellProtectConfig();
+  const p = document.getElementById('cfg-autosell-protect-primary');
+  const sec = document.getElementById('cfg-autosell-protect-secondary');
+  const min = document.getElementById('cfg-autosell-protect-min-rarity');
+  if (p) p.value = cfg.primaryStat || 'none';
+  if (sec) sec.value = cfg.secondaryStat || 'none';
+  if (min) min.value = cfg.minRarity || 'rare';
+  for (const s of SUB_STATS) {
+    const el = document.querySelector(`#autosell-substat-protect-filter [data-substat="${s}"]`);
+    if (el) el.classList.toggle('active', !!cfg.subStats?.[s]);
+  }
+  const summary = document.getElementById('autosell-protect-summary');
+  if (summary) {
+    const parts = [];
+    if (cfg.primaryStat !== 'none') parts.push(`Primary ${statLabelForAutoSell(cfg.primaryStat)}`);
+    if (cfg.secondaryStat !== 'none') parts.push(`Secondary ${statLabelForAutoSell(cfg.secondaryStat)}`);
+    const subs = SUB_STATS.filter(s => cfg.subStats?.[s]).map(statLabelForAutoSell);
+    if (subs.length) parts.push(`Substats: ${subs.join(', ')}`);
+    summary.textContent = parts.length ? `Protects ${cfg.minRarity.toUpperCase()}+ gear with ${parts.join(' · ')}.` : `No stat protection selected. Auto-Sell Rarities will sell normally.`;
+  }
+}
 function setTownRunFilter(r) {
   G.config.townRunFilter[r]=!G.config.townRunFilter[r];
   document.querySelector(`#townrun-filter .${r}`).classList.toggle('active',G.config.townRunFilter[r]);
@@ -12918,6 +13009,13 @@ function saveConfig() {
     minSubStat: document.getElementById('cfg-equip-sub-stat')?.value || 'none',
     minSubStatVal: parseFloat(document.getElementById('cfg-equip-min-sub')?.value)||0,
   };
+  const asp = getAutoSellProtectConfig();
+  asp.primaryStat = document.getElementById('cfg-autosell-protect-primary')?.value || asp.primaryStat || 'none';
+  asp.secondaryStat = document.getElementById('cfg-autosell-protect-secondary')?.value || asp.secondaryStat || 'none';
+  asp.minRarity = document.getElementById('cfg-autosell-protect-min-rarity')?.value || asp.minRarity || 'rare';
+  G.config.autosellProtect = normalizeAutoSellProtectConfig(asp);
+  renderAutoSellProtectUI();
+  saveGame(false);
 }
 
 // CLASS SELECT
@@ -12992,7 +13090,7 @@ function initClassSetup(cls) {
     G.passives = { manashield:{name:'Mana Shield',desc:'Absorbs a portion of damage with MP. Scales with level.',enabled:true}, overload:{name:'Overload',desc:'Every 5th skill cast is free and deals bonus damage. Scales with level.',enabled:true} };
     G.skills = { fireball:{name:'Fireball',desc:'AOE burst — base 40→200 dmg + INT scaling, full dmg all targets',mpCost:80,cooldown:30000,enabled:false,skillPts:0}, chainlightning:{name:'Chain Lightning',desc:'Bounce between targets — stronger INT scaling',mpCost:22,cooldown:14000,enabled:false,skillPts:0}, frostnova:{name:'Frost Nova',desc:'Damage all targets and slow monster attacks; stronger INT scaling',mpCost:15,cooldown:18000,enabled:false,skillPts:0}, manasurge:{name:'Mana Surge',desc:'Restore 10→40% max MP + INT scaling',mpCost:0,cooldown:15000,enabled:false,skillPts:0}, chronosphere:{name:'Chronosphere',desc:"Distort time — delay damage received from enemies' next attack + INT scaling",mpCost:60,cooldown:30000,enabled:false,skillPts:0} };
   }
-  const def = { paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'enemy_count_gte',val:1},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
+  const def = { paused:false, manualPause:false, autoheal:false, lootfilter:false, autoequip:false, autosell:false, townRun:false, skipEvents:false, healThreshold:40, potionPref:'healing', fleeThreshold:20, chaosDifficulty:0, equipRules:{priorityStat:'total',secondaryStat:'none',rarityPriority:'none',minMainStat:0,minSecondaryStat:0,minSubStat:'none',minSubStatVal:0}, skillConditions:{shieldbash:{type:'enemy_hp_lte',val:100},whirlwind:{type:'enemy_count_gte',val:1},warcry:{type:'enemy_count_gte',val:1},fortify:{type:'player_hp_lte',val:50},execute:{type:'enemy_hp_lte',val:30},cheapshot:{type:'enemy_hp_gte',val:100},smokebomb:{type:'enemy_count_gte',val:1},flurry:{type:'enemy_hp_lte',val:100},marktarget:{type:'enemy_hp_gte',val:100},assassinate:{type:'enemy_hp_lte',val:50},fireball:{type:'enemy_count_gte',val:1},chainlightning:{type:'enemy_count_gte',val:1},frostnova:{type:'player_hp_lte',val:60},manasurge:{type:'player_mp_lte',val:40},chronosphere:{type:'enemy_count_gte',val:1}}, skillPriority:['shieldbash','whirlwind','warcry','fortify','execute','cheapshot','smokebomb','flurry','marktarget','assassinate','fireball','chainlightning','frostnova','manasurge','chronosphere'], priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}], rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true}, autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false}, autosellProtect:{primaryStat:'none',secondaryStat:'none',minRarity:'rare',subStats:{}}, townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false} };
   G.config = def;
   G.logFilter = {pixelgraphics:true,basicattack:true,dmgdealt:true,dmgtaken:true,golddrop:true,itemdrop:true,goldsell:true,spawncountdown:true,spellcast:true,spelldmg:true,mpcost:true,system:true,reverseTextScroll:false};
   G.logColors = {};
@@ -13527,6 +13625,7 @@ function loadConfigUI() {
   if (sm) sm.value = er.minSecondaryStat || 0;
   if (ss) ss.value = er.minSubStat || 'none';
   if (ms) ms.value = er.minSubStatVal || 0;
+  renderAutoSellProtectUI();
 }
 
 function switchCfgTab(tab) {
@@ -14466,11 +14565,13 @@ function applyClassData(data) {
     priorityQueue:[{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null},{zone:null,subZone:null}],
     rarityFilter:{common:true,rare:true,epic:true,legendary:true,mythic:true},
     autosellFilter:{common:true,rare:false,epic:false,legendary:false,mythic:false},
+    autosellProtect:{primaryStat:'none', secondaryStat:'none', minRarity:'rare', subStats:{}},
     townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false}
   };
   G.config = Object.assign(DEFAULT_CONFIG, data.config||{});
   defaultSkillConditionsOff(G.config.skillConditions);
   if (data.config?.equipRules) G.config.equipRules = Object.assign(DEFAULT_CONFIG.equipRules, data.config.equipRules);
+  G.config.autosellProtect = normalizeAutoSellProtectConfig(Object.assign({}, DEFAULT_CONFIG.autosellProtect, data.config?.autosellProtect || {}));
   if (data.config?.skillConditions) G.config.skillConditions = Object.assign(DEFAULT_CONFIG.skillConditions, data.config.skillConditions);
   // Migrate the old Smoke Bomb default auto-cast condition away from HP <= 40.
   // HP-based behavior should be controlled by the player's general config, not this skill default.
