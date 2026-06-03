@@ -7364,6 +7364,7 @@ const MYTHIC_ITEMS = {
       { name:"Lightning Staff", mod:"lightning_staff", desc:"Greater Chain Lightning bounce limit is doubled.", val:null },
       { name:"Stormweaver Rod", mod:"stormweaver_rod", desc:"Greater Chain Lightning deals +10% damage per previous enemy bounce during the cast.", val:null },
       { name:"Spellrazor", mod:"spellrazor", desc:"Arcane Blades hits twice. The second hit deals 50% damage.", val:null },
+      { name:"Refracting Shard", mod:"refracting_shard", desc:"Arcane Blades has no cooldown, but its MP cost is increased to 60.", val:null },
       { name:"Grav Breaker", mod:"grav_breaker", desc:"Gravity Ball no longer increases enemy attack interval, but hits 3 times.", val:null }
     ],
     offhand: [
@@ -7374,7 +7375,6 @@ const MYTHIC_ITEMS = {
       { name:"Frosted Lens", mod:"frosted_lens", desc:"Frostbeam applies +1 additional Frostbite stack every second.", val:null },
       { name:"Mirror Ice", mod:"mirror_ice", desc:"While Ice Barrier is active, attackers receive 1 Frostbite stack.", val:null },
       { name:"Prism Focus", mod:"prism_focus", desc:"If Arcane Blades crits, restore 5% Max MP.", val:null },
-      { name:"Refracting Shard", mod:"refracting_shard", desc:"Arcane Blades has no cooldown, but its MP cost is increased to 60.", val:null },
       { name:"Graviton Core", mod:"graviton_core", desc:"Gravity Ball now has a 3s cast time, but deals +150% damage.", val:null }
     ],
     legging: [
@@ -7516,6 +7516,7 @@ function normalizeMythicItemForOverhaul(item) {
   if (!item || item.rarity !== 'mythic') return item;
   if (MYTHIC_MOD_MIGRATIONS[item.mythicMod]) item.mythicMod = MYTHIC_MOD_MIGRATIONS[item.mythicMod];
   if (item.mythicMod === 'rainougas_raiment') item.name = "Rainouga's Raiment";
+  if (item.mythicMod === 'refracting_shard') item.slot = 'weapon';
   if (item.mythicMod === 'kitarasque_heart') item.mythicClass = 'general';
   if (REMOVED_MYTHIC_MODS.has(item.mythicMod)) return sanitizeDummyMythicItem(item);
   const def = getMythicDefByMod(item.mythicMod, item.mythicClass === 'general' ? G.playerClass : (item.mythicClass || G.playerClass), item.slot);
