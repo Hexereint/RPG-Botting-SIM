@@ -13680,24 +13680,32 @@ function clampSkillConditionValue(val, meta=getEffectiveSkillConditionMeta('')) 
   return Math.max(min, Math.min(max, n));
 }
 
+function defaultSkillConditionsOff(conditions) {
+  if (!conditions || typeof conditions !== 'object') return conditions;
+  for (const cond of Object.values(conditions)) {
+    if (cond && typeof cond === 'object' && typeof cond.enabled !== 'boolean') cond.enabled = false;
+  }
+  return conditions;
+}
+
 function ensureSkillConditionState(k, meta=getEffectiveSkillConditionMeta(k)) {
   if (!G.config) G.config = {};
   if (!G.config.skillConditions) G.config.skillConditions = {};
   if (!G.config.skillConditions[k]) {
     const oldCond = G.config.skillConditions[skillBaseKey(k)];
-    G.config.skillConditions[k] = oldCond ? JSON.parse(JSON.stringify(oldCond)) : { type:meta.type || 'enemy_count_gte', val:defaultSkillConditionValue(k, meta) };
+    G.config.skillConditions[k] = oldCond ? JSON.parse(JSON.stringify(oldCond)) : { type:meta.type || 'enemy_count_gte', val:defaultSkillConditionValue(k, meta), enabled:false };
   }
   const cond = G.config.skillConditions[k];
   if (!cond.byContext || typeof cond.byContext !== 'object') cond.byContext = {};
   const ctx = skillConditionContextKey();
   if (!cond.byContext[ctx] || typeof cond.byContext[ctx] !== 'object') {
     cond.byContext[ctx] = {
-      enabled: cond.enabled !== false,
+      enabled: cond.enabled === true,
       val: clampSkillConditionValue(defaultSkillConditionValue(k, meta), meta)
     };
   }
   const state = cond.byContext[ctx];
-  if (typeof state.enabled !== 'boolean') state.enabled = cond.enabled !== false;
+  if (typeof state.enabled !== 'boolean') state.enabled = cond.enabled === true;
   if (state.val === undefined || state.val === null || !Number.isFinite(Number(state.val))) state.val = clampSkillConditionValue(defaultSkillConditionValue(k, meta), meta);
   state.val = clampSkillConditionValue(state.val, meta);
   if (!meta.advanced) {
@@ -14461,6 +14469,7 @@ function applyClassData(data) {
     townRunFilter:{common:true,rare:true,epic:false,legendary:false,mythic:false}
   };
   G.config = Object.assign(DEFAULT_CONFIG, data.config||{});
+  defaultSkillConditionsOff(G.config.skillConditions);
   if (data.config?.equipRules) G.config.equipRules = Object.assign(DEFAULT_CONFIG.equipRules, data.config.equipRules);
   if (data.config?.skillConditions) G.config.skillConditions = Object.assign(DEFAULT_CONFIG.skillConditions, data.config.skillConditions);
   // Migrate the old Smoke Bomb default auto-cast condition away from HP <= 40.
