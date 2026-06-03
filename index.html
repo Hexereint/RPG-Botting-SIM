@@ -3742,7 +3742,23 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     else if (slot==='assassinate') { G.combat.advDelayed={type:'blacklotus',label:'Black Lotus',releaseAt:ts+3000,targetId:target?.id}; log('[Black Lotus] 3s cast begins; will consume all poison stacks.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'flamemage') {
-    if (slot==='fireball') { let dmg=base*2.0+int_*3; if (hasMythicMod('furnace_seal')) dmg*=2.5; if (target && hasMythicMod('hellfire_torch')) dmg += target.maxHp*0.08; hitTarget(dmg, 'Inferno Blast', false, t=>addBurnStacks(t,hasMythicMod('blazing_diadem')?5:1,ts,'Inferno Blast')); }
+    if (slot==='fireball') {
+      const targets = [...G.monsters].filter(t => t && t.hp > 0);
+      let total = 0;
+      for (const t of targets) {
+        let dmg = base*2.0 + int_*3;
+        if (hasMythicMod('furnace_seal')) dmg *= 2.5;
+        if (hasMythicMod('hellfire_torch')) dmg += t.maxHp * 0.08;
+        const res = dealSkillDamageToMonster(t, advSkillDamage(dmg), ts);
+        if (res.dealt > 0) {
+          total += res.dealt;
+          log(`[Inferno Blast] scorches <span class="log-monster">${safeMonsterName(t)}</span> for ${fmtNum(res.dealt)} dmg`, 'spelldmg');
+          addBurnStacks(t, hasMythicMod('blazing_diadem') ? 5 : 1, ts, 'Inferno Blast');
+          if (t.hp <= 0) killMonster(t, ts);
+        }
+      }
+      if (targets.length > 1) log(`[Inferno Blast] AoE total ${fmtNum(total)} damage`, 'spelldmg');
+    }
     else if (slot==='chainlightning') { const tickMs=hasMythicMod('pyroclastic_lens')?350:500; const until=hasMythicMod('incinerating_staff')?Number.MAX_SAFE_INTEGER:ts+5000; G.combat.advChannel={type:'incineration',label:'Incineration Ray',startedAt:ts,until,nextTick:ts,tickMs,mpDrainPerSec:hasMythicMod('incinerating_staff')?100:0}; log(`[Incineration Ray] channeling${hasMythicMod('incinerating_staff')?' until MP runs out':' for 5s'}.`, 'spellcast'); }
     else if (slot==='frostnova') { G.combat.firewallUntil=ts+6000; G.combat.firewallDR=Math.min(0.30,(20+int_*0.01)/100); log(`[Firewall] ${Math.round(G.combat.firewallDR*100)}% damage reduction for 6s. Attackers receive Burn.`, 'spellcast'); }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Sparkstarter'); G.combat.sparkstarterUntil=ts+5000; log('[Sparkstarter] MP regen increased for 5s.', 'spellcast'); }
@@ -3763,7 +3779,30 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     else if (slot==='chronosphere') { G.combat.staticFieldUntil=ts+8000; G.combat.staticFieldRestored=0; G.combat.groundingBootsTriggered=false; log('[Static Field] enemy damage restores MP for 8s.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'arcanist') {
-    if (slot==='fireball') { let hits=hasMythicMod('spellrazor')?2:1; for (let i=0;i<hits;i++) { const dmg=(base*1.4+int_*2.5)*(i?0.5:1); const beforeCrit=G.combat.lastArcanistSpellCrit; hitTarget(dmg,'Arcane Blades',true); if (G.combat.lastArcanistSpellCrit && hasMythicMod('prism_focus')) restoreMpAdv(G.maxMp*0.05,'Prism Focus'); } if (hasMythicMod('runic_dueling_coat')) { G.combat.runicDuelingCharges=3; log('[Runic Dueling Coat] next 3 basic attacks deal bonus Arcane damage.', 'spellcast'); } }
+    if (slot==='fireball') {
+      const liveTargets = [...G.monsters].filter(t => t && t.hp > 0);
+      const mainTarget = (target && target.hp > 0) ? target : liveTargets[0];
+      const targets = mainTarget ? [mainTarget, ...liveTargets.filter(t => t !== mainTarget)] : liveTargets;
+      const hits = hasMythicMod('spellrazor') ? 2 : 1;
+      let total = 0;
+      for (let i=0; i<hits; i++) {
+        const hitMult = i ? 0.5 : 1;
+        for (const t of targets) {
+          const falloff = (t === mainTarget) ? 1 : 0.7;
+          const baseDmg = (base*1.4 + int_*2.5) * hitMult * falloff;
+          const c = maybeCritArcanistSpell(advSkillDamage(baseDmg), 'Arcane Blades');
+          const res = dealSkillDamageToMonster(t, c.dmg, ts);
+          if (res.dealt > 0) {
+            total += res.dealt;
+            log(`[Arcane Blades] slices <span class="log-monster">${safeMonsterName(t)}</span> for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`, 'spelldmg');
+            if (c.crit && hasMythicMod('prism_focus')) restoreMpAdv(G.maxMp*0.05, 'Prism Focus');
+            if (t.hp <= 0) killMonster(t, ts);
+          }
+        }
+      }
+      if (targets.length > 1) log(`[Arcane Blades] AoE total ${fmtNum(total)} damage`, 'spelldmg');
+      if (hasMythicMod('runic_dueling_coat')) { G.combat.runicDuelingCharges=3; log('[Runic Dueling Coat] next 3 basic attacks deal bonus Arcane damage.', 'spellcast'); }
+    }
     else if (slot==='chainlightning') { for(const t of [...G.monsters]){ let basePart=base*0.50+int_*2.0; const c=maybeCritArcanistSpell(basePart,'Spatial Rend'); let dmg=c.dmg + t.hp*0.05; const res=dealSkillDamageToMonster(t,dmg,ts); if(res.dealt>0){log(`[Spatial Rend] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } }
     else if (slot==='frostnova') { let dmg=base*1.4+int_*3.0; if (hasMythicMod('graviton_core')) { G.combat.advDelayed={type:'gravityball',label:'Gravity Ball',releaseAt:ts+3000,targetId:target?.id,damage:dmg*2.5}; log('[Gravity Ball] 3s cast begins.', 'spellcast'); } else { const hits=hasMythicMod('grav_breaker')?3:1; for (let h=0; h<hits; h++) for(const t of [...G.monsters]){ let c=maybeCritArcanistSpell(dmg,'Gravity Ball'); const res=dealSkillDamageToMonster(t,c.dmg,ts); if(!hasMythicMod('grav_breaker')) { const delayMs=hasMythicMod('lunar_boots')?8000:5000; t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,2000); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+delayMs); } if (hasMythicMod('weightless_mantle')) { t.weightlessUntil=ts+5000; t.weightlessPct=0.20; } if(res.dealt>0){log(`[Gravity Ball] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } } }
     else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Arcane Infusion'); G.combat.arcaneInfusionUntil=ts+8000; log('[Arcane Infusion] basic attack interval becomes 0.6s for 8s.', 'spellcast'); }
@@ -5517,7 +5556,7 @@ function spawnKitarasqueBoss(zc) {
     dmgMin:Math.round(zc.dmg[0]*eliteMult), dmgMax:Math.round(zc.dmg[1]*eliteMult),
     expMin:820, expMax:1180, atkMin:4000, atkMax:4000,
     isBoss:true, isElite:false, isKitarasque:true, isSwarm:false, tags:[], prefixData:PREFIXES[1], dmgMult:eliteMult,
-    lastAttack:now, uniqueBossKey:'kitarasque_absolute_mass', kitarasqueHitsTaken:0, kitarasqueRegenTick:0, kitarasqueHeartbeats:{80:false,50:false,30:false}
+    lastAttack:now, uniqueBossKey:'kitarasque_absolute_mass', kitarasqueHitsTaken:0, kitarasqueAbsorbHits:0, kitarasqueRegenTick:0, kitarasqueHeartbeatResolved:false
   };
   G.monsters = [m];
   logEncounterFlavor(m, 1, false, true, 'last_breach');
@@ -5546,10 +5585,14 @@ function onMonsterTakesPlayerHit(monster, kind, amount, ts=performance.now()) {
   if (!monster || amount <= 0) return;
   applyAdvancementDamageDealt(monster, kind, amount, ts);
   if (monster.isKitarasque) {
-    const before = monster.hp;
-    const heal = Math.max(1, Math.round(before * 0.05 * bossHealMultiplier(monster)));
-    monster.hp = Math.min(monster.maxHp, monster.hp + heal);
-    if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs the impact and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
+    monster.kitarasqueAbsorbHits = (monster.kitarasqueAbsorbHits || 0) + 1;
+    if (monster.kitarasqueAbsorbHits >= 5) {
+      monster.kitarasqueAbsorbHits = 0;
+      const before = monster.hp;
+      const heal = Math.max(1, Math.round(before * 0.03 * bossHealMultiplier(monster)));
+      monster.hp = Math.min(monster.maxHp, monster.hp + heal);
+      if (monster.hp > before) log(`<span class="log-monster">Kitarasque</span> absorbs accumulated impacts and heals ${fmtNum(monster.hp-before)} HP.`, 'dmgtaken');
+    }
     monster.kitarasqueHitsTaken = (monster.kitarasqueHitsTaken || 0) + 1;
     if (monster.kitarasqueHitsTaken >= 10) {
       monster.kitarasqueHitsTaken = 0;
@@ -5610,14 +5653,16 @@ function updateChaoticChasmBosses(ts=performance.now(), dt=0.25) {
     const tick = Math.floor(ts/1000);
     if (tick !== kit.kitarasqueRegenTick && kit.hp > before) { kit.kitarasqueRegenTick = tick; log(`<span class="log-monster">Kitarasque</span> regenerates ${fmtNum(kit.hp-before)} HP.`, 'dmgtaken'); }
     const hpPct = (kit.hp / Math.max(1, kit.maxHp)) * 100;
-    kit.kitarasqueHeartbeats = kit.kitarasqueHeartbeats || {80:false,50:false,30:false};
-    for (const pct of [80,50,30]) {
-      if (!kit.kitarasqueHeartbeats[pct] && hpPct <= pct) {
-        kit.kitarasqueHeartbeats[pct] = true;
-        const heal = Math.max(1, Math.round(kit.maxHp * 0.10 * bossHealMultiplier(kit)));
-        const hbBefore = kit.hp;
-        kit.hp = Math.min(kit.maxHp, kit.hp + heal);
-        log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'dmgtaken');
+    if (!kit.kitarasqueHeartbeatResolved) {
+      for (const pct of [80,50,30]) {
+        if (hpPct <= pct) {
+          kit.kitarasqueHeartbeatResolved = true;
+          const heal = Math.max(1, Math.round(kit.maxHp * 0.10 * bossHealMultiplier(kit)));
+          const hbBefore = kit.hp;
+          kit.hp = Math.min(kit.maxHp, kit.hp + heal);
+          log(`<span style="color:#cc3355">Kitarasque casts Eternal Heartbeat at ${pct}% HP, healing ${fmtNum(kit.hp-hbBefore)} HP!</span>`, 'dmgtaken');
+          break;
+        }
       }
     }
     if (!kit.kitarasqueDesperateGrowthCast && hpPct <= 10) {
@@ -7623,7 +7668,7 @@ function generateHeartOfKitarasque() {
   const keys = shuffle([...SUB_STATS]).slice(0,4);
   for (const k of keys) subStats[k] = rollSubStatValue(k, 'mythic', slot);
   const goldVal = calcItemGold({rarity:'mythic', mainStats, subStats});
-  return buildItemDesc({ id:Date.now()+Math.random(), name:'Heart of Kitarasque', slot, rarity:'mythic', mainStats, subStats, equipped:false, goldVal, rerollCount:0, mythicMod:'heart_of_kitarasque', mythicClass:'warrior', mythicModDesc:'Warrior-only trophy of Kitarasque, the Absolute Mass' });
+  return buildItemDesc({ id:Date.now()+Math.random(), name:'Heart of Kitarasque', slot, rarity:'mythic', mainStats, subStats, equipped:false, goldVal, rerollCount:0, mythicMod:'kitarasque_heart', mythicClass:'general', mythicModDesc:'Restores 10% Max HP upon taking damage.' });
 }
 
 function buildItemDesc(item) {
@@ -9686,7 +9731,8 @@ function killMonster(m, ts) {
     for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
   } else if (m.isKitarasque) {
     addKeyItem('blood_of_kitarasque', 1);
-    if (G.playerClass === 'warrior') { addItemToInventory(generateHeartOfKitarasque()); log('<span style="color:var(--unique)">Kitarasque drops Heart of Kitarasque!</span>', 'itemdrop'); }
+    addItemToInventory(generateHeartOfKitarasque());
+    log('<span style="color:var(--unique)">Kitarasque drops Heart of Kitarasque!</span>', 'itemdrop');
     addItemToInventory(generateItem('legendary'));
     log('<span style="color:var(--legendary)">Kitarasque drops 1 guaranteed legendary equipment!</span>', 'itemdrop');
     for (let i=0; i<lootCount * chaosDropMult; i++) addItemToInventory(generateItem(null, false, 'rare'));
