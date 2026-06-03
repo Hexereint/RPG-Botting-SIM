@@ -582,7 +582,7 @@ select.config-input { width:auto; cursor:pointer; }
   justify-content:center;
   flex-wrap:wrap;
   gap:2px;
-  pointer-events:none;
+  pointer-events:auto;
 }
 .status-icon {
   width:15px;
@@ -617,6 +617,10 @@ select.config-input { width:auto; cursor:pointer; }
 .status-icon.debuff { border-color:rgba(255,120,120,0.55); }
 .status-icon.buff { border-color:rgba(150,220,255,0.50); }
 .status-icon.stack-icon .status-icon-label { font-size:8px; transform:none; }
+.status-icon { cursor:help; }
+.status-icon.status-tip-pinned { border-color:#ffffff; box-shadow:0 0 8px rgba(255,255,255,0.35), inset 0 0 5px rgba(255,255,255,0.08); }
+#status-tooltip-popup { display:none; position:fixed; z-index:999999; max-width:min(300px, 88vw); background:#050505; border:1px solid var(--yellow); color:#fff; padding:8px 10px; font-size:11px; line-height:1.45; white-space:normal; box-shadow:0 8px 22px rgba(0,0,0,0.86); pointer-events:none; }
+#status-tooltip-popup.visible { display:block; }
 .combat-card-status-icons { display:flex; gap:3px; flex-wrap:wrap; margin-top:5px; min-height:15px; }
 @media (max-width:700px) {
   .sprite-status-icons { bottom:-11px; gap:1px; }
@@ -1386,6 +1390,7 @@ body.chaos-active #map-panel .subzone-row,
   <div class="random-event-timer" id="random-event-timer">Auto-picks in 20s</div>
   <div class="random-event-actions" id="random-event-actions"></div>
 </div>
+<div id="status-tooltip-popup"></div>
 
 
 <!-- NAV -->
@@ -3000,6 +3005,18 @@ function skillPts20(k) {
   const raw = G.skills?.[k]?.skillPts || 0;
   return Math.max(0, Math.min(ACTIVE_SKILL_POINT_CAP, raw));
 }
+function advancedWizardManaFlatRestore(adv=G.playerClass) {
+  const pts = skillPts20('manasurge');
+  // At 20 skill points: standard advanced Wizard MP skills restore +800 flat MP.
+  // Mana Conduit restores +1100 flat MP at 20 skill points.
+  return pts * (adv === 'lightningmage' ? 55 : 40);
+}
+function advancedWizardManaRestoreAmount(adv=G.playerClass) {
+  const int_ = effStat('int');
+  const flat = advancedWizardManaFlatRestore(adv);
+  if (adv === 'lightningmage') return G.maxMp * 0.22 + int_ * 2.0 + flat;
+  return G.maxMp * 0.25 + int_ * 1.5 + flat;
+}
 function clampSkillPointValue(v) {
   return Math.max(0, Math.min(ACTIVE_SKILL_POINT_CAP, Number(v) || 0));
 }
@@ -3123,21 +3140,21 @@ const CLASS_ADVANCEMENTS = {
         fireball:{name:'Inferno Blast',desc:'200% damage + INT fire nuke. Triggers Ignition.',mpCost:60,cooldown:25000,enabled:false,skillPts:0},
         chainlightning:{name:'Incineration Ray',desc:'5s AoE channel. Hits every 0.5s and applies Burn.',mpCost:45,cooldown:25000,enabled:false,skillPts:0},
         frostnova:{name:'Firewall',desc:'6s defensive fire wall. -20% incoming damage and burns attackers. No direct damage.',mpCost:35,cooldown:30000,enabled:false,skillPts:0},
-        manasurge:{name:'Sparkstarter',desc:'Restore MP, then increase MP regen for 5s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        manasurge:{name:'Sparkstarter',desc:'Restore MP (includes flat MP from skill points), then increase MP regen for 5s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
         chronosphere:{name:'Overheat',desc:'8s fire steroid: more fire damage, extra Burn stacks, and higher MP costs.',mpCost:50,cooldown:45000,enabled:false,skillPts:0}
       }
     },
     frostmage: {
       name:'Frostmage', identity:'Frostbite stacks, Freeze interrupts, attack interval control, and MP-efficient survival.',
       passives:{
-        frostbite:{name:'Frostbite',desc:'Frost skills apply Frostbite. At 4 stacks, Freeze and interrupt enemies. Bosses freeze 0.7s every 4s.',enabled:true},
+        frostbite:{name:'Frostbite',desc:'Frost skills apply Frostbite. At 4 stacks, Freeze and interrupt enemies. Bosses freeze 1.0s every 3s.',enabled:true},
         icearmor:{name:'Ice Armor',desc:'Redirect damage to MP. Enemies with Frostbite have attack interval increased by +0.3s per stack.',enabled:true}
       },
       skills:{
         fireball:{name:'Glacial Spike',desc:'Frost burst that applies 1 Frostbite stack. Bonus damage to Frozen target.',mpCost:25,cooldown:15000,enabled:false,skillPts:0},
         chainlightning:{name:'Frostbeam',desc:'5s channel. Deals frost damage and applies Frostbite every second.',mpCost:45,cooldown:25000,enabled:false,skillPts:0},
         frostnova:{name:'Frost Nova',desc:'Existing frost AoE/control skill.',mpCost:15,cooldown:18000,enabled:false,skillPts:0},
-        manasurge:{name:'Mana Coolant',desc:'Restore MP and increase all enemy attack intervals by +2s for 5s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        manasurge:{name:'Mana Coolant',desc:'Restore MP (includes flat MP from skill points) and increase all enemy attack intervals by +2s for 5s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
         chronosphere:{name:'Ice Barrier',desc:'6s defensive barrier: 35% damage reduction and shield equal to 35% Max MP.',mpCost:50,cooldown:45000,enabled:false,skillPts:0}
       }
     },
@@ -3151,7 +3168,7 @@ const CLASS_ADVANCEMENTS = {
         fireball:{name:'Lightning Spear',desc:'Fast single-target lightning spell.',mpCost:25,cooldown:12000,enabled:false,skillPts:0},
         chainlightning:{name:'Greater Chain Lightning',desc:'Bounces up to 14 times; can bounce to player to restore MP without damage.',mpCost:40,cooldown:20000,enabled:false,skillPts:0},
         frostnova:{name:'Thunderclap',desc:'AoE lightning interrupt and attack delay.',mpCost:35,cooldown:25000,enabled:false,skillPts:0},
-        manasurge:{name:'Mana Conduit',desc:'Stronger MP restore. For 5s, skill cooldowns reduce by 2s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        manasurge:{name:'Mana Conduit',desc:'Stronger MP restore (includes extra flat MP from skill points). For 5s, skill cooldowns reduce by 2s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
         chronosphere:{name:'Static Field',desc:'8s field: enemy damage restores MP equal to 30% of damage dealt.',mpCost:50,cooldown:45000,enabled:false,skillPts:0}
       }
     },
@@ -3165,7 +3182,7 @@ const CLASS_ADVANCEMENTS = {
         fireball:{name:'Arcane Blades',desc:'Basic-attack-scaling Arcane spell that can crit.',mpCost:25,cooldown:12000,enabled:false,skillPts:0},
         chainlightning:{name:'Spatial Rend',desc:'AoE current-HP damage: base + INT + 5% enemy current HP. Current-HP part cannot crit.',mpCost:45,cooldown:25000,enabled:false,skillPts:0},
         frostnova:{name:'Gravity Ball',desc:'High-damage AoE. Enemies attack interval +2s for 5s. Can crit.',mpCost:40,cooldown:30000,enabled:false,skillPts:0},
-        manasurge:{name:'Arcane Infusion',desc:'Restore MP. For 8s, basic attack interval becomes 0.6s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
+        manasurge:{name:'Arcane Infusion',desc:'Restore MP (includes flat MP from skill points). For 8s, basic attack interval becomes 0.6s.',mpCost:0,cooldown:15000,enabled:false,skillPts:0},
         chronosphere:{name:'Chrono Singularity',desc:'6s time distortion that delays incoming damage.',mpCost:60,cooldown:50000,enabled:false,skillPts:0}
       }
     }
@@ -3471,10 +3488,10 @@ function addFrostbite(monster, stacks=1, ts=performance.now(), source='Frostbite
     const isBoss = !!monster.isBoss;
     if (isBoss && (monster.frostBossFreezeLockUntil || 0) > ts) return;
     monster.frostbiteStacks = 0;
-    const freezeMs = isBoss ? 700 : 1000;
+    const freezeMs = isBoss ? 1000 : 1000;
     monster.frozenStartedAt = ts;
     monster.frozenUntil = Math.max(monster.frozenUntil || 0, ts + freezeMs);
-    if (isBoss) monster.frostBossFreezeLockUntil = ts + 4000;
+    if (isBoss) monster.frostBossFreezeLockUntil = ts + 3000;
     monster.lastAttack = ts;
     log(`<span style="color:#aaddff">${safeMonsterName(monster)} is Frozen for ${(freezeMs/1000).toFixed(1)}s!</span>`, 'spelldmg');
   }
@@ -3761,21 +3778,21 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     }
     else if (slot==='chainlightning') { const tickMs=hasMythicMod('pyroclastic_lens')?350:500; const until=hasMythicMod('incinerating_staff')?Number.MAX_SAFE_INTEGER:ts+5000; G.combat.advChannel={type:'incineration',label:'Incineration Ray',startedAt:ts,until,nextTick:ts,tickMs,mpDrainPerSec:hasMythicMod('incinerating_staff')?100:0}; log(`[Incineration Ray] channeling${hasMythicMod('incinerating_staff')?' until MP runs out':' for 5s'}.`, 'spellcast'); }
     else if (slot==='frostnova') { G.combat.firewallUntil=ts+6000; G.combat.firewallDR=Math.min(0.30,(20+int_*0.01)/100); log(`[Firewall] ${Math.round(G.combat.firewallDR*100)}% damage reduction for 6s. Attackers receive Burn.`, 'spellcast'); }
-    else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Sparkstarter'); G.combat.sparkstarterUntil=ts+5000; log('[Sparkstarter] MP regen increased for 5s.', 'spellcast'); }
+    else if (slot==='manasurge') { restoreMpAdv(advancedWizardManaRestoreAmount('flamemage'),'Sparkstarter'); G.combat.sparkstarterUntil=ts+5000; log('[Sparkstarter] MP regen increased for 5s.', 'spellcast'); }
     else if (slot==='chronosphere') { G.combat.overheatUntil=ts+8000; log('[Overheat] fire skills apply +1 Burn stack and deal more damage for 8s.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'frostmage') {
     if (slot==='fireball') { let dmg=base*1.8+int_*3; const frozen=(target?.frozenUntil||0)>ts; if (frozen) dmg*=hasMythicMod('shatterspike')?2.5:1.25; if (hasMythicMod('icepiercer_circlet') && (target?.frostbiteStacks||0)>=4) dmg*=1.5; const dealt=hitTarget(dmg,'Glacial Spike',false,t=>addFrostbite(t,hasMythicMod('hoarfang_staff')?2:1,ts,'Glacial Spike')); if (frozen && dealt>0 && hasMythicMod('frozen_needle')) adjustSkillCooldownForBase('fireball', -effectiveCooldown(v.cooldown,k)*0.40); }
     else if (slot==='chainlightning') { const tickMs=hasMythicMod('aislongs_frostbeam')?500:1000; const dur=5000+(hasMythicMod('cryo_conduit')?2000:0); G.combat.advChannel={type:'frostbeam',label:'Frostbeam',startedAt:ts,until:ts+dur,nextTick:ts,tickMs}; log(`[Frostbeam] channeling for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
     else if (slot==='frostnova') { const stacks=2; for (const t of [...G.monsters]) addFrostbite(t, stacks, ts, 'Frost Nova'); log('[Frost Nova] chills all enemies.', 'spellcast'); }
-    else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Mana Coolant'); for(const m of G.monsters){m.frostNovaSlowAdd=Math.max(m.frostNovaSlowAdd||0,2000);m.frostNovaSlowUntil=Math.max(m.frostNovaSlowUntil||0,ts+5000);} log('[Mana Coolant] all enemy attack intervals +2.0s for 5s.', 'spellcast'); }
+    else if (slot==='manasurge') { restoreMpAdv(advancedWizardManaRestoreAmount('frostmage'),'Mana Coolant'); for(const m of G.monsters){m.frostNovaSlowAdd=Math.max(m.frostNovaSlowAdd||0,2000);m.frostNovaSlowUntil=Math.max(m.frostNovaSlowUntil||0,ts+5000);} log('[Mana Coolant] all enemy attack intervals +2.0s for 5s.', 'spellcast'); }
     else if (slot==='chronosphere') { const dur=6000+(hasMythicMod('icebound_halo')?3000:0); let shield=G.maxMp*0.35; if (hasMythicMod('absolute_zero_robe')) shield*=2; if (hasMythicMod('frozen_anchor')) shield*=0.75; G.combat.iceBarrierUntil=ts+dur; G.combat.iceBarrierShield=Math.max(G.combat.iceBarrierShield||0,shield); log(`[Ice Barrier] 35% DR and ${fmtNum(G.combat.iceBarrierShield)} shield for ${(dur/1000).toFixed(1)}s`, 'spellcast'); }
     else handled=false;
   } else if (adv === 'lightningmage') {
     if (slot==='fireball') { const hits=hasMythicMod('stormpiercer')?2:1; let total=0; for(let i=0;i<hits;i++) total+=hitTarget((base*1.6+int_*2.8)*(i?0.5:1),'Lightning Spear'); if (hasMythicMod('stormhead_circlet')) G.combat.overloadCasts = Math.min(2,(G.combat.overloadCasts||0)+1); if (hasMythicMod('rainougas_raiment') && (G.combat.staticFieldUntil||0)>ts) { G.combat.staticFieldUntil=ts+8000; log("Rainouga's Raiment refreshes Static Field.", 'spellcast'); } }
     else if (slot==='chainlightning') { let maxHits=14*(hasMythicMod('lightning_staff')?2:1); const dmgBase=base*0.75+int_*1.4; let total=0; let previous=null; let bouncedPlayer=false; for(let i=1;i<=maxHits;i++){ const playerChance=hasMythicMod('thunder_crown')?0.37:0.22; const bounceToPlayer = i>1 && Math.random()<playerChance; if (bounceToPlayer){ bouncedPlayer=true; restoreMpAdv(G.maxMp*0.02+int_*0.15,'Greater Chain Lightning'); previous=null; continue; } const live=G.monsters.filter(m=>m&&m.hp>0); if(!live.length) break; const t=(live.length>1&&previous)?(live.find(m=>m!==previous)||live[0]):live[0]; const dmg=dmgBase*(hasMythicMod('stormweaver_rod')?(1+(i-1)*0.10):1); total+=dealRawAdvancementDamage(t,dmg,ts,'Greater Chain Lightning'); previous=t; } if (bouncedPlayer && hasMythicMod('conductive_robe')) { G.combat.conductiveRobeUntil=ts+4000; log('[Conductive Robe] 20% damage reduction for 4s.', 'spellcast'); } log(`[Greater Chain Lightning] finishes after up to ${maxHits} bounces (${fmtNum(total)} total damage)`, 'spelldmg'); }
     else if (slot==='frostnova') { let total=0; for(const t of [...G.monsters]){ total+=dealRawAdvancementDamage(t,base*0.9+int_*1.8,ts,'Thunderclap'); t.lastAttack=ts; t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,500); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+3000);} log(`[Thunderclap] interrupts ${G.monsters.length} enemies`, 'spellcast'); }
-    else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.22+int_*2.0+100,'Mana Conduit'); const dur=5000+(hasMythicMod('conduit_crown')?3000:0); G.combat.manaConduitUntil=ts+dur; log(`[Mana Conduit] skill cooldowns reduced by ${hasMythicMod('currentwalkers')?3:2}s for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
+    else if (slot==='manasurge') { restoreMpAdv(advancedWizardManaRestoreAmount('lightningmage'),'Mana Conduit'); const dur=5000+(hasMythicMod('conduit_crown')?3000:0); G.combat.manaConduitUntil=ts+dur; log(`[Mana Conduit] skill cooldowns reduced by ${hasMythicMod('currentwalkers')?3:2}s for ${(dur/1000).toFixed(1)}s.`, 'spellcast'); }
     else if (slot==='chronosphere') { G.combat.staticFieldUntil=ts+8000; G.combat.staticFieldRestored=0; G.combat.groundingBootsTriggered=false; log('[Static Field] enemy damage restores MP for 8s.', 'spellcast'); }
     else handled=false;
   } else if (adv === 'arcanist') {
@@ -3805,7 +3822,7 @@ function handleAdvancementSkill(k, target, ts, overloadActive, v, sp) {
     }
     else if (slot==='chainlightning') { for(const t of [...G.monsters]){ let basePart=base*0.50+int_*2.0; const c=maybeCritArcanistSpell(basePart,'Spatial Rend'); let dmg=c.dmg + t.hp*0.05; const res=dealSkillDamageToMonster(t,dmg,ts); if(res.dealt>0){log(`[Spatial Rend] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } }
     else if (slot==='frostnova') { let dmg=base*1.4+int_*3.0; if (hasMythicMod('graviton_core')) { G.combat.advDelayed={type:'gravityball',label:'Gravity Ball',releaseAt:ts+3000,targetId:target?.id,damage:dmg*2.5}; log('[Gravity Ball] 3s cast begins.', 'spellcast'); } else { const hits=hasMythicMod('grav_breaker')?3:1; for (let h=0; h<hits; h++) for(const t of [...G.monsters]){ let c=maybeCritArcanistSpell(dmg,'Gravity Ball'); const res=dealSkillDamageToMonster(t,c.dmg,ts); if(!hasMythicMod('grav_breaker')) { const delayMs=hasMythicMod('lunar_boots')?8000:5000; t.frostNovaSlowAdd=Math.max(t.frostNovaSlowAdd||0,2000); t.frostNovaSlowUntil=Math.max(t.frostNovaSlowUntil||0,ts+delayMs); } if (hasMythicMod('weightless_mantle')) { t.weightlessUntil=ts+5000; t.weightlessPct=0.20; } if(res.dealt>0){log(`[Gravity Ball] hits ${safeMonsterName(t)} for ${fmtNum(res.dealt)} dmg${c.crit?' [CRIT]':''}`,'spelldmg'); if(t.hp<=0)killMonster(t,ts);} } } }
-    else if (slot==='manasurge') { restoreMpAdv(G.maxMp*0.25+int_*1.5,'Arcane Infusion'); G.combat.arcaneInfusionUntil=ts+8000; log('[Arcane Infusion] basic attack interval becomes 0.6s for 8s.', 'spellcast'); }
+    else if (slot==='manasurge') { restoreMpAdv(advancedWizardManaRestoreAmount('arcanist'),'Arcane Infusion'); G.combat.arcaneInfusionUntil=ts+8000; log('[Arcane Infusion] basic attack interval becomes 0.6s for 8s.', 'spellcast'); }
     else if (slot==='chronosphere') { G.combat.chronoSingularityUntil=ts+6000; for(const m of G.monsters){m.chronosphereDelayNext=true;m.chronosphereDamageDelay=3000;} log('[Chrono Singularity] incoming damage is delayed for 6s.', 'spellcast'); }
     else handled=false;
   } else handled=false;
@@ -4809,8 +4826,62 @@ function playerStatusIcon(label, color, pct, title, kind='buff') {
   const safeLabel = String(label || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const safeTitle = String(title || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const fill = Math.max(0, Math.min(100, Number(pct) || 0));
-  return `<div class="status-icon ${kind}" title="${safeTitle}" style="--status-color:${color || '#cccccc'}"><div class="status-icon-fill" style="height:${fill.toFixed(1)}%"></div><span class="status-icon-label">${safeLabel}</span></div>`;
+  return `<div class="status-icon ${kind}" title="${safeTitle}" data-status-tip="${safeTitle}" role="button" tabindex="0" style="--status-color:${color || '#cccccc'}"><div class="status-icon-fill" style="height:${fill.toFixed(1)}%"></div><span class="status-icon-label">${safeLabel}</span></div>`;
 }
+
+function showStatusTooltipForIcon(icon) {
+  const tip = document.getElementById('status-tooltip-popup');
+  if (!tip || !icon) return;
+  const text = icon.getAttribute('data-status-tip') || icon.getAttribute('title') || '';
+  if (!text) return;
+  document.querySelectorAll('.status-icon.status-tip-pinned').forEach(el => {
+    if (el !== icon) el.classList.remove('status-tip-pinned');
+  });
+  icon.classList.add('status-tip-pinned');
+  tip.textContent = text;
+  tip.classList.add('visible');
+  const rect = icon.getBoundingClientRect();
+  const margin = 8;
+  tip.style.left = '0px';
+  tip.style.top = '0px';
+  const tipRect = tip.getBoundingClientRect();
+  let left = rect.left + rect.width / 2 - tipRect.width / 2;
+  left = Math.max(margin, Math.min(window.innerWidth - tipRect.width - margin, left));
+  let top = rect.bottom + margin;
+  if (top + tipRect.height > window.innerHeight - margin) top = Math.max(margin, rect.top - tipRect.height - margin);
+  tip.style.left = `${left}px`;
+  tip.style.top = `${top}px`;
+}
+function hideStatusTooltip() {
+  const tip = document.getElementById('status-tooltip-popup');
+  if (tip) tip.classList.remove('visible');
+  document.querySelectorAll('.status-icon.status-tip-pinned').forEach(el => el.classList.remove('status-tip-pinned'));
+}
+function ensureStatusTooltipHandlers() {
+  if (window.__statusTooltipHandlersBound) return;
+  window.__statusTooltipHandlersBound = true;
+  document.addEventListener('click', (ev) => {
+    const icon = ev.target && ev.target.closest ? ev.target.closest('.status-icon') : null;
+    if (icon) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      showStatusTooltipForIcon(icon);
+      return;
+    }
+    const tip = document.getElementById('status-tooltip-popup');
+    if (tip && !tip.contains(ev.target)) hideStatusTooltip();
+  }, true);
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') hideStatusTooltip();
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target && ev.target.classList && ev.target.classList.contains('status-icon')) {
+      ev.preventDefault();
+      showStatusTooltipForIcon(ev.target);
+    }
+  });
+  window.addEventListener('scroll', hideStatusTooltip, true);
+  window.addEventListener('resize', hideStatusTooltip);
+}
+ensureStatusTooltipHandlers();
 
 function setPlayerStatusIconHtml(html) {
   const spriteEl = document.getElementById('player-status-icons');
@@ -4872,7 +4943,7 @@ function updateEnemyStatusIcons(monster, now=fxNow()) {
     icons.push(enemyStackStatusIcon(String(stacks), '#88bbff', playerStatusPctFromUntil(monster.frostbiteUntil, monster.frostbiteStartedAt, 8000, now), `Frostbite: ${stacks}/4 stacks. Each stack adds +0.3s enemy attack interval. At 4 stacks, freezes/interupts. Remaining ${((monster.frostbiteUntil-now)/1000).toFixed(1)}s.`));
   }
   if ((monster.frozenUntil || 0) > now) {
-    icons.push(enemyStackStatusIcon('FZ', '#bfe8ff', playerStatusPctFromUntil(monster.frozenUntil, monster.frozenStartedAt, monster.isBoss ? 700 : 1000, now), `Frozen: enemy attacks are paused. Remaining ${((monster.frozenUntil-now)/1000).toFixed(1)}s.`));
+    icons.push(enemyStackStatusIcon('FZ', '#bfe8ff', playerStatusPctFromUntil(monster.frozenUntil, monster.frozenStartedAt, 1000, now), `Frozen: enemy attacks are paused. Remaining ${((monster.frozenUntil-now)/1000).toFixed(1)}s.`));
   }
   if ((monster.crackedArmorUntil || 0) > now) icons.push(enemyStackStatusIcon('CA', '#ccaa55', playerStatusPctFromUntil(monster.crackedArmorUntil, monster.crackedArmorStartedAt, 6000, now), `Cracked Armor: target takes +${monster.crackedArmorPct||0}% damage. Remaining ${((monster.crackedArmorUntil-now)/1000).toFixed(1)}s.`));
   if ((monster.poisonVulnUntil || 0) > now) icons.push(enemyStackStatusIcon('PV', '#99ff99', playerStatusPctFromUntil(monster.poisonVulnUntil, monster.poisonVulnStartedAt, 6000, now), `Poison Vulnerability: poison damage +${Math.round((monster.poisonVulnPct||0)*100)}%. Remaining ${((monster.poisonVulnUntil-now)/1000).toFixed(1)}s.`));
@@ -12309,28 +12380,28 @@ function advancementSkillDamagePreview(k) {
     if (slot==='fireball') return line(`~${scaled(base*2+int_*3)} fire dmg to target; applies Burn (${fmtNum(burnDamagePerStack())}/stack/s)`);
     if (slot==='chainlightning') return line(`~${scaled(base*0.25+int_*0.8)} dmg per 0.5s tick to all enemies for 5s; each hit applies Burn`);
     if (slot==='frostnova') return line(`6s Firewall: 20% damage reduction; attackers gain 1 Burn stack`);
-    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP and boosts MP regen for 5s`);
+    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(advancedWizardManaRestoreAmount('flamemage'))) } MP and boosts MP regen for 5s`);
     if (slot==='chronosphere') return line(`8s Overheat: more fire damage, +1 Burn stack, stronger explosions`);
   }
   if (adv==='frostmage') {
     if (slot==='fireball') return line(`~${scaled(base*1.8+int_*3)} frost dmg; applies 1 Frostbite stack`);
     if (slot==='chainlightning') return line(`~${scaled(base*0.35+int_)} dmg per second for 5s; applies Frostbite every second`);
     if (slot==='frostnova') return line(`existing Frost Nova scaling; applies AoE frost control`);
-    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP; all enemies attack interval +2.0s for 5s`);
+    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(advancedWizardManaRestoreAmount('frostmage')))} MP; all enemies attack interval +2.0s for 5s`);
     if (slot==='chronosphere') return line(`6s: 35% damage reduction and ${fmtNum(Math.round(G.maxMp*0.35))} shield`);
   }
   if (adv==='lightningmage') {
     if (slot==='fireball') return line(`~${scaled(base*1.6+int_*2.8)} lightning dmg`);
     if (slot==='chainlightning') return line(`~${scaled(base*0.75+int_*1.4)} dmg per enemy bounce; up to 14 bounces; player bounces restore MP`);
     if (slot==='frostnova') return line(`~${scaled(base*0.9+int_*1.8)} AoE dmg; interrupts and delays enemies`);
-    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.22+int_*2.0+100))} MP; cooldown recovery bonus for 5s`);
+    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(advancedWizardManaRestoreAmount('lightningmage')))} MP; cooldown recovery bonus for 5s`);
     if (slot==='chronosphere') return line(`8s Static Field: enemy damage restores MP equal to 30% of damage dealt`);
   }
   if (adv==='arcanist') {
     if (slot==='fireball') return line(`~${scaled(base*1.4+int_*2.5)} Arcane dmg; can crit`);
     if (slot==='chainlightning') { const hp=G.monsters?.[0]?.hp||0; return line(`~${scaled(base*0.5+int_*2.0)} base AoE dmg + ${fmtNum(Math.round(hp*0.05))} current-HP bonus on current target; can crit except HP bonus`); }
     if (slot==='frostnova') return line(`~${scaled(base*1.4+int_*3.0)} AoE dmg; enemy attack interval +2.0s for 5s; can crit`);
-    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(G.maxMp*0.25+int_*1.5))} MP; basic attack interval becomes 0.6s for 8s`);
+    if (slot==='manasurge') return line(`restores ~${fmtNum(Math.round(advancedWizardManaRestoreAmount('arcanist')))} MP; basic attack interval becomes 0.6s for 8s`);
     if (slot==='chronosphere') return line(`6s Chrono Singularity: delays incoming damage`);
   }
   return `${name} Lv${lvl}: skill level improves power, MP cost, and cooldown`;
@@ -12449,7 +12520,7 @@ function getLivePassiveDesc(k, v) {
   if (k==='toxicveil') { const stacks=G.monsters?.[0]?.poisonStacks||0; d = `Dodge chance +10%. Current target poison DR: ${Math.round(Math.min(0.25, stacks*0.01)*100)}% from ${stacks} stack${stacks!==1?'s':''}. Cap: 25%.`; }
   if (k==='ignition') d = `Burn deals ${fmtNum(burnDamagePerStack())}/stack/s. At 10 stacks, explosion deals ~${fmtNum(burnDamagePerStack()*20)} fire damage to all enemies.`;
   if (k==='explosivemana') { const pct=Math.min(0.45,(35+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 75% efficiency. Absorbed damage triggers an explosion for 75% of absorbed damage.`; }
-  if (k==='frostbite') d = `Frost skills apply Frostbite. At 4 stacks: Freeze/interruption. Boss freeze window: 0.7s with a 4s boss cooldown.`;
+  if (k==='frostbite') d = `Frost skills apply Frostbite. At 4 stacks: Freeze/interruption. Boss freeze window: 1.0s with a 3s boss cooldown.`;
   if (k==='icearmor') { const pct=Math.min(0.45,(35+intStat/30)/100); const stacks=G.monsters?.[0]?.frostbiteStacks||0; d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 85% efficiency. Current target Frostbite slow: +${(stacks*0.3).toFixed(1)}s attack interval.`; }
   if (k==='energyoverload') { const restore=G.maxMp*0.06+intStat*0.45; const casts=G.combat.overloadCasts||0; d = `Every 3rd skill cast is free and restores ~${fmtNum(Math.round(restore))} MP. Casts until next: ${Math.max(0,3-casts)}.`; }
   if (k==='arcbattery') { const pct=Math.min(0.55,(45+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Cap: 55%.`; }
