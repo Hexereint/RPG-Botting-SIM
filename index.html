@@ -2744,12 +2744,21 @@ function chaoticSkillDamageMultiplier(monster=null, now=performance.now()) {
   if (G.subZone === 'madwind_pass' && (G.combat?.vaalixEffluviumUntil || 0) > now) mult *= 0.90;
   return mult;
 }
+function advancedWizardSkillDamageMultiplier() {
+  const adv = currentAdvancementId();
+  if (G.playerClass !== 'wizard' || !['flamemage','frostmage','lightningmage','arcanist'].includes(adv)) return 1;
+  return 1 + Math.floor(Math.max(0, effStat('int')) / 10) * 0.01;
+}
+function advancedWizardSkillDamageBonusPct() {
+  return Math.round((advancedWizardSkillDamageMultiplier() - 1) * 100);
+}
 function bossHealMultiplier(monster=null) {
   return hasMythicMod('vaalix_tiara') && monster && monster.isBoss ? 0.5 : 1;
 }
 function dealSkillDamageToMonster(monster, baseDmg, now=performance.now()) {
   const scaledBaseDmg = applySkillPointPower(baseDmg * (G.combat?.currentSkillDamageMult || 1), G.combat?.currentSkillKey || null);
-  const ascendedSkillDmg = Math.max(0, Math.round(applyAscendSkillDamage(scaledBaseDmg) * chaoticSkillDamageMultiplier(monster, now)));
+  const advancedWizardDmg = Math.max(0, Math.round(scaledBaseDmg * advancedWizardSkillDamageMultiplier()));
+  const ascendedSkillDmg = Math.max(0, Math.round(applyAscendSkillDamage(advancedWizardDmg) * chaoticSkillDamageMultiplier(monster, now)));
   if (monster && monster.isGuzmak && (monster.guzmakGluttonyUntil || 0) > now) {
     const attemptedGluttony = Math.max(0, Math.round(ascendedSkillDmg || 0));
     if (attemptedGluttony > 0) {
@@ -3134,7 +3143,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Flamemage', identity:'Burn stacking, high fire damage, AoE explosions, and explosive mana retaliation.',
       passives:{
         ignition:{name:'Ignition',desc:'Fire skills always apply Burn. At 10 stacks, Burn explodes and hits all enemies.',enabled:true},
-        explosivemana:{name:'Explosive Mana',desc:'Redirect damage to MP, scaling with INT. MP absorption triggers a fire explosion.',enabled:true}
+        explosivemana:{name:'Explosive Mana',desc:'While above 40% MP, take 25% reduced damage. Redirect damage to MP, scaling with INT. MP absorption triggers a fire explosion.',enabled:true}
       },
       skills:{
         fireball:{name:'Inferno Blast',desc:'200% damage + INT fire nuke. Triggers Ignition.',mpCost:60,cooldown:25000,enabled:false,skillPts:0},
@@ -3148,7 +3157,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Frostmage', identity:'Frostbite stacks, Freeze interrupts, attack interval control, and MP-efficient survival.',
       passives:{
         frostbite:{name:'Frostbite',desc:'Frost skills apply Frostbite. At 4 stacks, Freeze and interrupt enemies. Bosses freeze 1.0s every 3s.',enabled:true},
-        icearmor:{name:'Ice Armor',desc:'Redirect damage to MP. Enemies with Frostbite have attack interval increased by +0.3s per stack.',enabled:true}
+        icearmor:{name:'Ice Armor',desc:'While above 40% MP, take 25% reduced damage. Redirect damage to MP. Enemies with Frostbite have attack interval increased by +0.3s per stack.',enabled:true}
       },
       skills:{
         fireball:{name:'Glacial Spike',desc:'Frost burst that applies 1 Frostbite stack. Bonus damage to Frozen target.',mpCost:25,cooldown:15000,enabled:false,skillPts:0},
@@ -3162,7 +3171,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Lightningmage', identity:'Mana cycling, free casts, reduced cooldown flow, and extreme chain lightning.',
       passives:{
         energyoverload:{name:'Energy Overload',desc:'Every 3rd skill cast is free and restores MP: 6% Max MP + INT x 0.45.',enabled:true},
-        arcbattery:{name:'Arc Battery',desc:'Redirect damage to MP, scaling with INT. Starts higher and caps at 55%.',enabled:true}
+        arcbattery:{name:'Arc Battery',desc:'While above 40% MP, take 25% reduced damage. Redirect damage to MP, scaling with INT. Starts higher and caps at 55%.',enabled:true}
       },
       skills:{
         fireball:{name:'Lightning Spear',desc:'Fast single-target lightning spell.',mpCost:25,cooldown:12000,enabled:false,skillPts:0},
@@ -3176,7 +3185,7 @@ const CLASS_ADVANCEMENTS = {
       name:'Arcanist', identity:'Arcane basic attacks, spell crits, spatial damage, and time defense.',
       passives:{
         arcaneimbuement:{name:'Arcane Imbuement',desc:'Basic attacks gain Arcane damage based on basic damage and INT. Damaging spells can critically strike.',enabled:true},
-        manaweave:{name:'Mana Weave',desc:'Redirect damage to MP. Basic attacks and spell critical strikes restore MP.',enabled:true}
+        manaweave:{name:'Mana Weave',desc:'While above 40% MP, take 25% reduced damage. Redirect damage to MP. Basic attacks and spell critical strikes restore MP.',enabled:true}
       },
       skills:{
         fireball:{name:'Arcane Blades',desc:'Basic-attack-scaling Arcane spell that can crit.',mpCost:25,cooldown:12000,enabled:false,skillPts:0},
@@ -3661,6 +3670,11 @@ function applyAdvancementIncomingMitigation(monster, mdmg, ts=performance.now())
     arcanist:['manaweave', 0.80, Math.min(0.50, (40 + effStat('int')/30)/100)]
   };
   const cfg = passiveMap[adv];
+  if (cfg && G.passives?.[cfg[0]]?.enabled && G.maxMp > 0 && (G.mp / G.maxMp) > 0.40 && dmg > 0) {
+    const old = dmg;
+    dmg = Math.ceil(dmg * 0.75);
+    if (old > dmg) log(`${G.passives[cfg[0]].name} reduces damage by 25% while above 40% MP`, 'dmgtaken');
+  }
   if (cfg && G.passives?.[cfg[0]]?.enabled && G.mp > 0 && dmg > 0) {
     const [key, efficiency, pct] = cfg;
     const damageToRedirect = dmg * pct;
@@ -12330,7 +12344,9 @@ function executeDamageThreshold() {
 }
 
 function scaledSkillPreviewDamage(raw, k) {
-  return fmtNum(Math.max(0, Math.round((Number(raw) || 0) * skillPowerFactor(k))));
+  let mult = skillPowerFactor(k);
+  if (G.playerClass === 'wizard' && ['flamemage','frostmage','lightningmage','arcanist'].includes(currentAdvancementId())) mult *= advancedWizardSkillDamageMultiplier();
+  return fmtNum(Math.max(0, Math.round((Number(raw) || 0) * mult)));
 }
 function advancementSkillDamagePreview(k) {
   const adv = currentAdvancementId();
@@ -12519,13 +12535,13 @@ function getLivePassiveDesc(k, v) {
   if (k==='venomconversion') d = `Poison damage is currently ${fmtNum(poisonDamagePerStack())}/stack/s. Crit Damage bonus and Crit Chance overflow (${Math.max(0, calcRawCritChance()-100).toFixed(1)}%) increase poison damage. Attack interval floor: 0.8s.`;
   if (k==='toxicveil') { const stacks=G.monsters?.[0]?.poisonStacks||0; d = `Dodge chance +10%. Current target poison DR: ${Math.round(Math.min(0.25, stacks*0.01)*100)}% from ${stacks} stack${stacks!==1?'s':''}. Cap: 25%.`; }
   if (k==='ignition') d = `Burn deals ${fmtNum(burnDamagePerStack())}/stack/s. At 10 stacks, explosion deals ~${fmtNum(burnDamagePerStack()*20)} fire damage to all enemies.`;
-  if (k==='explosivemana') { const pct=Math.min(0.45,(35+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 75% efficiency. Absorbed damage triggers an explosion for 75% of absorbed damage.`; }
+  if (k==='explosivemana') { const pct=Math.min(0.45,(35+intStat/30)/100); d = `Above 40% MP: 25% incoming damage reduction. Redirects ${Math.round(pct*100)}% incoming damage to MP at 75% efficiency. Absorbed damage triggers an explosion for 75% of absorbed damage. Advanced Wizard INT skill damage bonus: +${advancedWizardSkillDamageBonusPct()}%.`; }
   if (k==='frostbite') d = `Frost skills apply Frostbite. At 4 stacks: Freeze/interruption. Boss freeze window: 1.0s with a 3s boss cooldown.`;
-  if (k==='icearmor') { const pct=Math.min(0.45,(35+intStat/30)/100); const stacks=G.monsters?.[0]?.frostbiteStacks||0; d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 85% efficiency. Current target Frostbite slow: +${(stacks*0.3).toFixed(1)}s attack interval.`; }
+  if (k==='icearmor') { const pct=Math.min(0.45,(35+intStat/30)/100); const stacks=G.monsters?.[0]?.frostbiteStacks||0; d = `Above 40% MP: 25% incoming damage reduction. Redirects ${Math.round(pct*100)}% incoming damage to MP at 85% efficiency. Current target Frostbite slow: +${(stacks*0.3).toFixed(1)}s attack interval. Advanced Wizard INT skill damage bonus: +${advancedWizardSkillDamageBonusPct()}%.`; }
   if (k==='energyoverload') { const restore=G.maxMp*0.06+intStat*0.45; const casts=G.combat.overloadCasts||0; d = `Every 3rd skill cast is free and restores ~${fmtNum(Math.round(restore))} MP. Casts until next: ${Math.max(0,3-casts)}.`; }
-  if (k==='arcbattery') { const pct=Math.min(0.55,(45+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Cap: 55%.`; }
+  if (k==='arcbattery') { const pct=Math.min(0.55,(45+intStat/30)/100); d = `Above 40% MP: 25% incoming damage reduction. Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Cap: 55%. Advanced Wizard INT skill damage bonus: +${advancedWizardSkillDamageBonusPct()}%.`; }
   if (k==='arcaneimbuement') d = `Basic attacks gain +${fmtNum(Math.round(calcDamage()*0.35+intStat*1.5))} Arcane damage. Damaging spells can crit at ${calcCritChance()}% Crit Chance.`;
-  if (k==='manaweave') { const pct=Math.min(0.50,(40+intStat/30)/100); d = `Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Basic attacks restore ~${fmtNum(Math.round(G.maxMp*0.01+intStat*0.15))} MP; spell crits restore ~${fmtNum(Math.round(G.maxMp*0.03+intStat*0.35))} MP.`; }
+  if (k==='manaweave') { const pct=Math.min(0.50,(40+intStat/30)/100); d = `Above 40% MP: 25% incoming damage reduction. Redirects ${Math.round(pct*100)}% incoming damage to MP at 80% efficiency. Basic attacks restore ~${fmtNum(Math.round(G.maxMp*0.01+intStat*0.15))} MP; spell crits restore ~${fmtNum(Math.round(G.maxMp*0.03+intStat*0.35))} MP. Advanced Wizard INT skill damage bonus: +${advancedWizardSkillDamageBonusPct()}%.`; }
   return d;
 }
 
