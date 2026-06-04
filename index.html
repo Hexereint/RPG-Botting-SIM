@@ -1218,10 +1218,11 @@ canvas {
 .fr-live-cell.fr-live-event::before { content:'E'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:6px; color:#ffe6a0; pointer-events:none; }
 
 /* Route Shop */
-.fr-shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:6px; }
-.fr-shop-card { background:#050505; border:1px solid var(--border); padding:8px; position:relative; }
-.fr-shop-card .fr-shop-name { font-size:10px; font-weight:bold; color:var(--white); margin-bottom:3px; }
-.fr-shop-card .fr-shop-zone { font-size:8px; color:var(--muted); margin-bottom:4px; }
+.fr-shop-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)); gap:6px; align-items:stretch; }
+.fr-shop-card { background:#050505; border:1px solid var(--border); padding:8px; position:relative; min-width:0; max-width:none; width:100%; overflow-wrap:break-word; word-break:normal; }
+.fr-shop-card .fr-shop-name { font-size:10px; font-weight:bold; color:var(--white); margin-bottom:3px; line-height:1.35; }
+.fr-shop-card .fr-shop-zone { font-size:8px; color:var(--muted); margin-bottom:4px; line-height:1.35; }
+.fr-shop-card .fr-shop-desc { font-size:8px; color:#aaa; line-height:1.45; margin-bottom:4px; }
 .fr-shop-card .fr-shop-price { font-size:9px; color:var(--yellow); margin-bottom:5px; }
 .fr-shop-buy-btn { width:100%; background:#000; border:1px solid var(--border2); color:var(--muted); font-size:9px; padding:4px; cursor:pointer; font-family:inherit; text-transform:uppercase; letter-spacing:1px; }
 .fr-shop-buy-btn:hover { border-color:var(--yellow); color:var(--yellow); }
@@ -1620,7 +1621,7 @@ body.chaos-active #map-panel .subzone-row,
               <div style="font-size:9px;color:#888;margin-bottom:6px;line-height:1.5;">Pre-made routes and blank slots. Rating hidden until equipped. 2% chance of an S-rank route.</div>
               <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
                 <span style="font-size:9px;color:#888;">Gold: <span id="fr-shop-gold" style="color:var(--yellow);font-weight:bold;">0</span></span>
-                <button onclick="refreshFarmRouteShop()" style="background:#000;border:1px solid var(--border2);color:#888;font-family:inherit;font-size:8px;padding:3px 10px;cursor:pointer;letter-spacing:1px;">↺ REFRESH (20k)</button>
+                <button class="refresh-btn" onclick="refreshFarmRouteShop()">↺ Refresh Stock (20k)</button>
               </div>
               <div class="fr-shop-grid" id="fr-shop-grid"></div>
             </div>
@@ -1645,9 +1646,25 @@ body.chaos-active #map-panel .subzone-row,
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
                 <div>
                   <div style="font-size:10px;color:#44bbaa;font-weight:bold;">Gear Roll</div>
-                  <div style="font-size:8px;color:#555;">Class stat guaranteed · 3 GE per roll</div>
+                  <div style="font-size:8px;color:#555;">Class stat guaranteed · random slot · 3 GE per roll</div>
                 </div>
                 <button id="gamble-btn" onclick="doGamble('rough')" style="background:#000;border:1px solid #44bbaa;color:#44bbaa;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL (3 GE)</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;padding:7px;background:#050505;border:1px solid rgba(68,187,170,0.35);flex-wrap:wrap;">
+                <div>
+                  <div style="font-size:10px;color:#66ddcc;font-weight:bold;">Slot-Targeted Gear Roll</div>
+                  <div style="font-size:8px;color:#555;">Choose a slot · class stat guaranteed · 9 GE per roll</div>
+                </div>
+                <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                  <select id="gamble-slot-select" class="config-input" style="font-size:9px;min-width:92px;padding:4px 6px;">
+                    <option value="helmet">Helmet</option>
+                    <option value="armor">Armor</option>
+                    <option value="legging">Legging</option>
+                    <option value="weapon">Weapon</option>
+                    <option value="offhand">Offhand</option>
+                  </select>
+                  <button id="gamble-slot-btn" onclick="doSlotGamble()" style="background:#000;border:1px solid #66ddcc;color:#66ddcc;font-family:inherit;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">ROLL SLOT (9 GE)</button>
+                </div>
               </div>
               <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;">
                 <div style="text-align:center;"><div style="font-size:8px;color:#aaaaaa;font-weight:bold;letter-spacing:1px;">COM</div><div style="font-size:10px;color:#aaaaaa;font-weight:bold;">46.3%</div></div>
@@ -7553,7 +7570,7 @@ function rollRarity(maxRarity) {
   return RARITIES[0];
 }
 
-function generateItem(rarityOverride, forceRare=false, minRarity=null) {
+function generateItem(rarityOverride, forceRare=false, minRarity=null, slotOverride=null) {
   // Always roll with full weights so mythic can always appear
   let rarity = rarityOverride || rollRarity(null);
   // Apply minRarity floor — if rolled below minimum, re-roll from minimum upward
@@ -7569,7 +7586,7 @@ function generateItem(rarityOverride, forceRare=false, minRarity=null) {
       for (let i=0;i<weights.length;i++){cum+=weights[i];if(r<cum){rarity=RARITIES[minIdx+i];break;}}
     }
   }
-  const slot = SLOTS[randi(0,SLOTS.length-1)];
+  const slot = (slotOverride && SLOTS.includes(slotOverride)) ? slotOverride : SLOTS[randi(0,SLOTS.length-1)];
 
   // Mythic: pull from named pool
   if (rarity === 'mythic') {
@@ -10901,6 +10918,7 @@ const POTION_SHOP = [
 const GAMBLE_TIERS = [
   { id:'rough', label:'Gear Roll', cost:3, minRarity:null, color:'#44bbaa', desc:'Buffed gamble rates · 7% Legendary · 3% Mythic · class stat guaranteed' },
 ];
+const GAMBLE_SLOT_COST = 9;
 
 // Gear Gamble uses its own boosted rarity table without changing normal monster/boss drops.
 // Gear Gamble target rates: 7% Legendary and 3% Mythic.
@@ -10920,10 +10938,11 @@ function rollGambleRarity(minRarity=null) {
   return RARITIES[start] || 'common';
 }
 
-function generateGamblingItem(minRarity) {
+function generateGamblingItem(minRarity, forcedSlot=null) {
   const classStat = G.playerClass==='warrior'?'str':G.playerClass==='rogue'?'agi':'int';
   const rarity = rollGambleRarity(minRarity);
-  const item = generateItem(rarity);
+  const cleanSlot = (forcedSlot && SLOTS.includes(forcedSlot)) ? forcedSlot : null;
+  const item = generateItem(rarity, false, null, cleanSlot);
   // Force class main stat
   if (item.rarity !== 'mythic' && item.mainStats) {
     const keys = Object.keys(item.mainStats);
@@ -10943,15 +10962,17 @@ function generateGamblingItem(minRarity) {
   return item;
 }
 
-function doGamble(tierId) {
+function doGamble(tierId, forcedSlot=null) {
   const tier = GAMBLE_TIERS.find(t=>t.id===tierId);
   if (!tier) return;
-  if (G.gearEssence < tier.cost) { log(`Not enough Gear Essence. Need ${tier.cost}.`); return; }
+  const cleanSlot = (forcedSlot && SLOTS.includes(forcedSlot)) ? forcedSlot : null;
+  const cost = cleanSlot ? GAMBLE_SLOT_COST : tier.cost;
+  if (G.gearEssence < cost) { log(`Not enough Gear Essence. Need ${cost}.`); return; }
   if (G.inventory.length >= G.invMax) { log('Inventory full!'); return; }
-  G.gearEssence -= tier.cost;
-  const item = generateGamblingItem(tier.minRarity);
+  G.gearEssence -= cost;
+  const item = generateGamblingItem(tier.minRarity, cleanSlot);
   G.inventory.push(item);
-  const msg = `Rolled <span style="color:${RC[item.rarity]}">[${item.rarity.toUpperCase()}]</span> ${item.name} (${item.slot.toUpperCase()})`;
+  const msg = `Rolled <span style="color:${RC[item.rarity]}">[${item.rarity.toUpperCase()}]</span> ${item.name} (${item.slot.toUpperCase()})${cleanSlot ? ' via slot-targeted roll' : ''}`;
   log(`Gear Gamble: ${msg}`);
   const lastEl = document.getElementById('gamble-last');
   if (lastEl) lastEl.innerHTML = `Last: ${msg}`;
@@ -10959,11 +10980,20 @@ function doGamble(tierId) {
   renderMerchant(); renderInventory(); renderStats();
 }
 
+function doSlotGamble() {
+  const sel = document.getElementById('gamble-slot-select');
+  const slot = sel ? sel.value : null;
+  if (!slot || !SLOTS.includes(slot)) { log('Choose a valid equipment slot first.'); return; }
+  doGamble('rough', slot);
+}
+
 function updateGambleUI() {
   const geEl = document.getElementById('gamble-ge-display');
   if (geEl) geEl.textContent = G.gearEssence;
   const btn = document.getElementById('gamble-btn');
   if (btn) btn.disabled = G.gearEssence < 3 || G.inventory.length >= G.invMax;
+  const slotBtn = document.getElementById('gamble-slot-btn');
+  if (slotBtn) slotBtn.disabled = G.gearEssence < GAMBLE_SLOT_COST || G.inventory.length >= G.invMax;
   const geEd = document.getElementById('gear-essence-display');
   if (geEd) geEd.textContent = G.gearEssence;
   const ogGe = document.getElementById('og-gamble-ge-display');
@@ -14275,6 +14305,7 @@ function setUiFontSize(val) {
     .item-name, .item-stats, .item-rarity, .item-slot-type, .item-gold-val,
     .stat-name, .stat-val, .alloc-name, .alloc-val, .alloc-desc,
     .shop-item, .shop-item-name, .shop-item-stats, .shop-item-tag, .shop-item-desc, .shop-item-slot,
+    .fr-shop-card, .fr-shop-name, .fr-shop-zone, .fr-shop-desc, .fr-shop-price, .fr-shop-buy-btn,
     .bs-stat-btn, .bs-select, .bs-stat-select, .inv-title, .nav-btn, #combat-status, .bar-label, .header-gold,
     .header-class, .rarity-tag,
     .inv-equip-btn, .inv-sell-btn, .inv-lock-btn, .town-section-title, .refresh-btn,
@@ -14291,7 +14322,7 @@ function setUiFontSize(val) {
 
     .section-title, .config-title, .config-collapse-title, .inv-title, .map-title, .town-section-title
     { font-size: ${px(0.82, 10)}px !important; line-height:1.35 !important; }
-    .item-name, .skill-name, .map-zone-name, .config-label, .shop-item-name, .gear-menu-title
+    .item-name, .skill-name, .map-zone-name, .config-label, .shop-item-name, .fr-shop-name, .gear-menu-title
     { font-size: ${px(0.98, 11)}px !important; line-height:1.35 !important; }
 
     .tooltip-box, .stat-row[data-tip]::after
@@ -14299,11 +14330,11 @@ function setUiFontSize(val) {
     .stat-row[data-tip]::after { white-space:pre-line !important; }
 
     .shop-item { padding:${Math.max(8, Math.round(val * 0.46))}px !important; min-width:0 !important; max-width:none !important; }
-    .merchant-grid { gap:${Math.max(6, Math.round(val * 0.36))}px !important; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)) !important; }
+    .merchant-grid, .fr-shop-grid { gap:${Math.max(6, Math.round(val * 0.36))}px !important; grid-template-columns:repeat(auto-fit, minmax(min(100%, var(--shop-card-min)), 1fr)) !important; }
     .shop-item-icon { font-size:${px(1.35, 20)}px !important; line-height:1 !important; margin-bottom:${Math.max(4, Math.round(val * 0.22))}px !important; }
     .shop-item-tag { font-size:${px(0.68, 9)}px !important; letter-spacing:1px !important; margin-bottom:${Math.max(2, Math.round(val * 0.12))}px !important; text-transform:uppercase !important; font-weight:bold !important; }
-    .shop-item-slot, .shop-item-desc, .shop-item-stats { font-size:${px(0.78, 10)}px !important; line-height:1.45 !important; margin-bottom:${Math.max(4, Math.round(val * 0.18))}px !important; color:#aaa !important; }
-    .shop-buy-btn, .refresh-btn { font-size:${px(0.86, 10)}px !important; padding:${Math.max(5, Math.round(val * 0.26))}px ${Math.max(8, Math.round(val * 0.42))}px !important; min-height:${Math.max(30, Math.round(val * 1.75))}px !important; white-space:normal !important; }
+    .shop-item-slot, .shop-item-desc, .shop-item-stats, .fr-shop-zone, .fr-shop-desc, .fr-shop-price { font-size:${px(0.78, 10)}px !important; line-height:1.45 !important; margin-bottom:${Math.max(4, Math.round(val * 0.18))}px !important; color:#aaa !important; }
+    .shop-buy-btn, .fr-shop-buy-btn, .refresh-btn { font-size:${px(0.86, 10)}px !important; padding:${Math.max(5, Math.round(val * 0.26))}px ${Math.max(8, Math.round(val * 0.42))}px !important; min-height:${Math.max(30, Math.round(val * 1.75))}px !important; white-space:normal !important; }
 
     .bs-select { font-size:${px(0.88, 11)}px !important; padding:${Math.max(6, Math.round(val * 0.33))}px ${Math.max(8, Math.round(val * 0.44))}px !important; min-height:${Math.max(34, Math.round(val * 1.9))}px !important; }
     .bs-stat-select { gap:${Math.max(6, Math.round(val * 0.32))}px !important; }
@@ -17276,7 +17307,7 @@ function renderFarmRouteShop() {
   for (const item of fr.shopStock) {
     if (!item) continue;
     const card = document.createElement('div');
-    card.className = 'fr-shop-card';
+    card.className = 'shop-item fr-shop-card';
     if (item.spawnBoost) card.style.cssText += ';border-color:#aa8800;box-shadow:inset 0 0 14px rgba(216,180,90,0.08);';
     const loc = item.subZone ? subZoneLabels[item.subZone]||item.subZone : zoneNames[item.zone]||item.zone;
     const pathLen = (item.path||[]).length;
@@ -17295,7 +17326,7 @@ function renderFarmRouteShop() {
 
   // Blank map — always shown at 100k
   const blankCard = document.createElement('div');
-  blankCard.className = 'fr-shop-card';
+  blankCard.className = 'shop-item fr-shop-card';
   blankCard.style.borderColor = '#2a2a2a';
   blankCard.innerHTML = `
     <div class="fr-shop-name" style="color:#888;">Blank Map</div>
