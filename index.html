@@ -1892,7 +1892,7 @@ body.chaos-active #map-panel .subzone-row,
             </div>
           </div>
           <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-            <div class="config-label">Auto-Sell Stat Protection<span class="config-sub">Matching equipment is not sold if its rarity is at or above the minimum rarity below.</span></div>
+            <div class="config-label">Auto-Sell Stat Protection<span class="config-sub">Equipment is protected only when its rarity is at or above the minimum below and it contains every selected main stat/substat.</span></div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;width:100%;">
               <label style="font-size:9px;color:#888;display:flex;flex-direction:column;gap:3px;">Primary Main Stat
                 <select class="config-input" id="cfg-autosell-protect-primary" onchange="saveConfig();renderAutoSellProtectUI();" style="width:100%;">
@@ -13119,12 +13119,21 @@ function isAutoSellProtectedItem(item) {
   if (!item || !item.rarity || !item.slot) return false;
   const cfg = getAutoSellProtectConfig();
   if (getRarityRank(item.rarity) < getRarityRank(cfg.minRarity)) return false;
-  if (cfg.primaryStat !== 'none' && (item.mainStats?.[cfg.primaryStat] || 0) > 0) return true;
-  if (cfg.secondaryStat !== 'none' && (item.mainStats?.[cfg.secondaryStat] || 0) > 0) return true;
-  for (const s of SUB_STATS) {
-    if (cfg.subStats?.[s] && (item.subStats?.[s] || 0) > 0) return true;
+
+  const requiredMainStats = [];
+  if (cfg.primaryStat !== 'none') requiredMainStats.push(cfg.primaryStat);
+  if (cfg.secondaryStat !== 'none' && cfg.secondaryStat !== cfg.primaryStat) requiredMainStats.push(cfg.secondaryStat);
+  const requiredSubStats = SUB_STATS.filter(s => cfg.subStats?.[s]);
+
+  if (!requiredMainStats.length && !requiredSubStats.length) return false;
+
+  for (const stat of requiredMainStats) {
+    if ((item.mainStats?.[stat] || 0) <= 0) return false;
   }
-  return false;
+  for (const stat of requiredSubStats) {
+    if ((item.subStats?.[stat] || 0) <= 0) return false;
+  }
+  return true;
 }
 function toggleAutoSellProtectSubstat(stat) {
   if (!SUB_STATS.includes(stat)) return;
@@ -13152,7 +13161,7 @@ function renderAutoSellProtectUI() {
     if (cfg.secondaryStat !== 'none') parts.push(`Secondary ${statLabelForAutoSell(cfg.secondaryStat)}`);
     const subs = SUB_STATS.filter(s => cfg.subStats?.[s]).map(statLabelForAutoSell);
     if (subs.length) parts.push(`Substats: ${subs.join(', ')}`);
-    summary.textContent = parts.length ? `Protects ${cfg.minRarity.toUpperCase()}+ gear with ${parts.join(' · ')}.` : `No stat protection selected. Auto-Sell Rarities will sell normally.`;
+    summary.textContent = parts.length ? `Protects ${cfg.minRarity.toUpperCase()}+ gear only if it has ALL selected stats: ${parts.join(' · ')}.` : `No stat protection selected. Auto-Sell Rarities will sell normally.`;
   }
 }
 function setTownRunFilter(r) {
