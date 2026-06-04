@@ -11542,14 +11542,19 @@ function rerollCostPaidText(item, goldCost) {
 function getStatRange(stat, rarity, slot) {
   const r = rarity === 'ascended' ? 'mythic' : rarity;  // ascended uses mythic ranges
   const isWeapon = slot==='weapon'||slot==='offhand';
-  if (stat==='critchance') return isWeapon ? [5,15] : [3,9];
+  if (stat==='critchance') {
+    if (r==='mythic') return isWeapon ? [8,18] : [6,12];
+    return isWeapon ? [5,15] : [3,9];
+  }
   if (stat==='critdamage') return isWeapon ? [r==='mythic'?25:15, r==='mythic'?60:50] : [r==='mythic'?20:10, r==='mythic'?40:30];
   if (stat==='maxhp') return maxHpSubRangeForRarity(r);
   if (stat==='maxmp') return r==='mythic' ? [15,40] : (r==='rare' ? [5,15] : [10,30]);
-  if (stat==='hpregen'||stat==='mpregen') return r==='rare' ? [0.2,1.0] : [0.5,2.0];
+  if (stat==='hpregen'||stat==='mpregen') return r==='mythic' ? [1.0,3.0] : (r==='rare' ? [0.2,1.0] : [0.5,2.0]);
   if (stat==='cdr') {
     if (r==='rare') return [0.3,0.5];
     if (r==='epic') return [0.5,1.0];
+    if (r==='legendary') return [1.0,3.0];
+    if (r==='mythic') return [1.5,4.0];
     return [1.0,4.0];
   }
   // main stats
@@ -11568,6 +11573,23 @@ function minMaxTag(val, range) {
   if (val <= mn + eps) return ' <span style="color:#cc4444">[MIN]</span>';
   if (val >= mx - eps) return ' <span style="color:#ffaa00">[MAX]</span>';
   return '';
+}
+
+function minMaxRollValue(item, sectionName, stat, currentValue) {
+  if (!item || getOvergearLevel(item) <= 0) return currentValue;
+  const baseStats = item.overgearBaseStats || null;
+  if (sectionName === 'ascendStat') {
+    const baseAsc = baseStats?.ascendStat;
+    if (baseAsc && baseAsc.key === stat && baseAsc.val != null) return Number(baseAsc.val);
+    return overgearBaseValueFromCurrent(stat, currentValue, getOvergearLevel(item), sectionName);
+  }
+  const baseVal = baseStats?.[sectionName]?.[stat];
+  if (baseVal != null && Number.isFinite(Number(baseVal))) return Number(baseVal);
+  return overgearBaseValueFromCurrent(stat, currentValue, getOvergearLevel(item), sectionName);
+}
+
+function minMaxRollTag(item, sectionName, stat, currentValue, range) {
+  return minMaxTag(minMaxRollValue(item, sectionName, stat, currentValue), range);
 }
 
 function fmt1(v) {
@@ -11624,10 +11646,8 @@ function doReroll(mode) {
   if(mode==='value'){
     let newVal;
     if(statType==='main'){
-      if(item.rarity==='common')newVal=randi(1,3);
-      else if(item.rarity==='rare')newVal=randi(3,5);
-      else if(item.rarity==='epic')newVal=randi(5,10);
-      else newVal=randi(15,25);
+      const [mainMin, mainMax] = getStatRange(stat, item.rarity, item.slot);
+      newVal = randi(Math.round(mainMin), Math.round(mainMax));
       const old=item.mainStats[stat];
       item.mainStats[stat]=newVal;
       const range=getStatRange(stat,item.rarity,item.slot);
@@ -12148,14 +12168,14 @@ function formatItemStats(item) {
   for(const [k,v] of Object.entries(item.mainStats||{})){
     if (v == null) continue;
     const range=getStatRange(k,item.rarity,item.slot);
-    const tag=minMaxTag(v,range);
+    const tag=minMaxRollTag(item, 'mainStats', k, v, range);
     const rerollIcon = rerollIconFor(item, k, 'main');
     parts.push(`<span style="color:#ccaa44">+${fmt1(v)} ${k.toUpperCase()}${overgearBonusHtml(item, 'mainStats', k)}${rerollIcon}${tag}</span>`);
   }
   for(const [k,v] of Object.entries(item.subStats||{})){
     if (v == null) continue;
     const range=getStatRange(k,item.rarity,item.slot);
-    const tag=minMaxTag(v,range);
+    const tag=minMaxRollTag(item, 'subStats', k, v, range);
     const rerollIcon = rerollIconFor(item, k, 'sub');
     if(k==='critchance') parts.push(`<span style="color:#cc7744">+${fmt1(v)}% Crit${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
     else if(k==='critdamage') parts.push(`<span style="color:#cc5544">+${fmt1(v)}% CritDmg${overgearBonusHtml(item, 'subStats', k)}${rerollIcon}${tag}</span>`);
