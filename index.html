@@ -5011,7 +5011,10 @@ function updateCombatViewport() {
   // Draw player sprite and player bars
   drawPlayerSprite(document.getElementById('player-canvas'), G.playerClass || 'warrior');
   const pname = document.getElementById('player-nameplate');
-  if (pname) pname.textContent = `${(G.playerClass||'BOT').toUpperCase()} LV ${G.level}`;
+  if (pname) {
+    const pixelClassName = currentAdvancementDef()?.name || G.playerClass || 'BOT';
+    pname.textContent = `${String(pixelClassName).toUpperCase()} LV ${G.level}`;
+  }
   const zname = document.getElementById('cvp-zone-name');
   if (zname) {
     const zoneName = ZONE_DATA[G.zone]?.name || G.zone;
