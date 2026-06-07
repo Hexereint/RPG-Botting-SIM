@@ -1687,7 +1687,7 @@ body.chaos-active #map-panel .subzone-row,
               <div id="overgear-gamble-actions" style="display:none;margin-top:8px;padding:8px;background:#050505;border:1px solid rgba(180,140,255,0.35);">
                 <div id="overgear-gamble-selected" style="font-size:9px;color:#aaa;margin-bottom:7px;"></div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                  <button onclick="doOvergearGamble(30)" style="flex:1;min-width:140px;background:#000;border:1px solid #aa77ff;color:#d8c7ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">30% GAMBLE<br><span style="font-size:8px;color:#888;">300,000g + 500 GE</span></button>
+                  <button onclick="doOvergearGamble(30)" style="flex:1;min-width:140px;background:#000;border:1px solid #aa77ff;color:#d8c7ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">30% GAMBLE +3<br><span style="font-size:8px;color:#888;">300,000g + 500 GE</span></button>
                   <button onclick="doOvergearGamble(70)" style="flex:1;min-width:140px;background:#000;border:1px solid #77ddff;color:#d8f8ff;font-family:inherit;font-size:9px;padding:6px;cursor:pointer;letter-spacing:1px;">70% GAMBLE<br><span style="font-size:8px;color:#888;">700,000g + 500 GE</span></button>
                 </div>
               </div>
@@ -10685,9 +10685,10 @@ function doOvergearGamble(chance) {
   const oldLevel = getOvergearLevel(item);
   const last = document.getElementById('overgear-gamble-last');
   if (roll < chance) {
-    applyOvergearStatBoost(item, 1);
+    const gain = chance === 30 ? 3 : 1;
+    applyOvergearStatBoost(item, gain);
     syncEquippedOvergearItem(item);
-    const msg = `Success (${chance}%): ${item.name} reached Overgear ${getOvergearLevel(item)}.`;
+    const msg = `Success (${chance}%): ${item.name} gained +${gain} Overgear level${gain!==1?'s':''} and reached Overgear ${getOvergearLevel(item)}.`;
     log(`✦ Overgear Gamble ${msg}`, 'system');
     if (last) last.textContent = msg;
   } else {
