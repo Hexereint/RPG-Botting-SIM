@@ -883,11 +883,13 @@ select.config-input { width:auto; cursor:pointer; }
 /* FIRST PLAY TUTORIAL --------------------------------------------------- */
 .tutorial-highlight { position:relative; z-index:120 !important; outline:2px solid var(--yellow); box-shadow:0 0 0 4px rgba(187,170,119,0.18),0 0 24px rgba(187,170,119,0.35); }
 #tutorial-overlay { display:none; position:fixed; right:12px; bottom:12px; z-index:650; width:min(420px, calc(100vw - 24px)); max-height:min(54vh, 430px); background:transparent; padding:0; pointer-events:none; align-items:flex-end; justify-content:flex-end; }
-#tutorial-box { width:100%; max-height:inherit; overflow:auto; background:#070707; border:1px solid var(--border2); box-shadow:0 12px 38px rgba(0,0,0,0.88), inset 0 0 0 1px rgba(255,255,255,0.025); padding:12px; color:var(--white); pointer-events:none; }
+#tutorial-box { width:100%; max-height:inherit; overflow:auto; background:linear-gradient(145deg,#0b0b0b,#040404 72%); border:1px solid rgba(187,170,119,0.72); box-shadow:0 12px 38px rgba(0,0,0,0.88),0 0 22px rgba(187,170,119,0.12),inset 0 0 0 1px rgba(255,255,255,0.025); padding:13px; color:var(--white); pointer-events:none; }
 #tutorial-box .tutorial-actions, #tutorial-box .tutorial-btn { pointer-events:auto; }
-#tutorial-step-label { font-size:9px; color:var(--yellow); letter-spacing:2px; text-transform:uppercase; margin-bottom:7px; }
-#tutorial-title { font-size:13px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; }
-#tutorial-body { font-size:11px; color:#cfcfcf; line-height:1.55; margin-bottom:12px; }
+#tutorial-step-label { font-size:9px; color:var(--yellow); letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; }
+.tutorial-progress { height:3px; background:#171717; border:1px solid #282828; margin-bottom:10px; overflow:hidden; }
+#tutorial-progress-fill { height:100%; width:0%; background:var(--yellow); transition:width 0.18s ease; }
+#tutorial-title { font-size:14px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase; margin-bottom:7px; }
+#tutorial-body { font-size:11px; color:#d4d4d4; line-height:1.58; margin-bottom:12px; }
 .tutorial-actions { display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
 .tutorial-btn { background:#000; border:1px solid var(--border2); color:#aaa; font-family:inherit; font-size:9px; padding:6px 10px; cursor:pointer; letter-spacing:1px; text-transform:uppercase; }
 .tutorial-btn:hover { border-color:#fff; color:#fff; }
@@ -1336,6 +1338,128 @@ body.chaos-active #map-panel .subzone-row,
 .random-event-btn span { display:block; color:#777; font-size:8px; line-height:1.35; text-transform:none; letter-spacing:0; }
 @media (max-width:700px) { #random-event-popup { top:6px; } .random-event-actions { grid-template-columns:1fr; } }
 
+
+
+/* PIXEL GRAPHICS UPGRADE V2 --------------------------------------------- */
+#combat-viewport.combat-stage {
+  height:134px;
+  background:#030407;
+  border-top:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid rgba(255,255,255,0.12);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,0.025), inset 0 -30px 46px rgba(0,0,0,0.72), 0 8px 20px rgba(0,0,0,0.32);
+}
+#combat-viewport.combat-stage::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  opacity:.24;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 4px);
+  mix-blend-mode:screen;
+}
+#combat-viewport.combat-stage::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:3;
+  pointer-events:none;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.72), inset 0 -18px 24px rgba(0,0,0,.46);
+}
+#combat-fx-canvas { z-index:4; }
+.combat-hud-layer { z-index:5; padding:9px 14px; }
+.sprite-plinth {
+  width:82px;
+  height:82px;
+  border:2px solid rgba(255,255,255,0.13);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.035) 25%, transparent 25%) 0 0/8px 8px,
+    radial-gradient(circle at 50% 69%, rgba(255,255,255,0.10), rgba(0,0,0,0.36) 47%, rgba(0,0,0,0.78));
+  box-shadow:0 10px 24px rgba(0,0,0,0.56), inset 0 0 0 2px rgba(0,0,0,.45), inset 0 0 28px rgba(255,255,255,0.035);
+}
+.sprite-plinth::before {
+  content:'';
+  position:absolute;
+  inset:4px;
+  z-index:0;
+  pointer-events:none;
+  border:1px solid rgba(255,255,255,.055);
+  box-shadow:inset 4px 4px 0 rgba(255,255,255,.018), inset -4px -4px 0 rgba(0,0,0,.34);
+}
+.sprite-plinth::after {
+  left:12px;
+  right:12px;
+  bottom:4px;
+  height:8px;
+  filter:none;
+  border-radius:0;
+  background:linear-gradient(90deg, transparent, rgba(0,0,0,.78) 20% 80%, transparent);
+}
+.sprite-plinth canvas { width:76px; height:76px; filter:drop-shadow(0 3px 0 rgba(0,0,0,.62)); }
+.hero-plinth { border-color:rgba(140,190,255,.22); }
+.enemy-plinth { border-color:rgba(255,105,90,.22); }
+.enemy-plinth.elite-plinth { border-color:rgba(255,210,80,.62); box-shadow:0 0 16px rgba(255,205,65,.16), inset 0 0 26px rgba(255,205,65,.08); }
+.enemy-plinth.boss-plinth { border-color:rgba(255,75,65,.78); box-shadow:0 0 20px rgba(255,65,55,.24), inset 0 0 28px rgba(255,55,45,.11); }
+.combat-card {
+  border:1px solid rgba(255,255,255,.11);
+  background:linear-gradient(90deg, rgba(2,3,5,.86), rgba(7,9,13,.50));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.58), 0 4px 14px rgba(0,0,0,.28);
+}
+.combat-nameplate, #cvp-name { text-shadow:1px 1px 0 #000; }
+.combat-mini-bar, #cvp-hp-bar, #cvp-shield-bar, #cvp-cast-bar { border-color:rgba(255,255,255,.15); box-shadow:inset 0 0 4px rgba(0,0,0,.75); }
+
+.item-pixel-icon {
+  width:42px;
+  height:42px;
+  flex-basis:42px;
+  border:2px solid rgba(255,255,255,.11);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.035) 25%, transparent 25%) 0 0/8px 8px,
+    radial-gradient(circle at 50% 36%, rgba(255,255,255,.10), rgba(0,0,0,.52) 58%, rgba(0,0,0,.88));
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.38), inset 0 0 16px rgba(255,255,255,.03), 0 3px 8px rgba(0,0,0,.28);
+}
+.item-pixel-icon svg { width:34px; height:34px; }
+.inv-item {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.018) 25%, transparent 25%) 0 0/10px 10px,
+    linear-gradient(180deg, #101114, #08090b);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.42), 0 5px 12px rgba(0,0,0,.20);
+  transition:transform .10s ease, border-color .10s ease, filter .10s ease;
+}
+.inv-item:hover { transform:translateY(-1px); filter:brightness(1.10); border-color:#555; }
+.inv-item.rarity-rare .item-pixel-icon { border-color:rgba(85,119,187,.48); box-shadow:inset 0 0 16px rgba(85,119,187,.22),0 0 8px rgba(85,119,187,.12); }
+.inv-item.rarity-epic .item-pixel-icon { border-color:rgba(150,95,215,.54); box-shadow:inset 0 0 18px rgba(119,85,170,.28),0 0 10px rgba(119,85,170,.15); }
+.inv-item.rarity-legendary .item-pixel-icon { border-color:rgba(220,177,70,.62); box-shadow:inset 0 0 19px rgba(170,136,51,.34),0 0 11px rgba(170,136,51,.18); }
+.inv-item.rarity-mythic .item-pixel-icon,
+.inv-item.rarity-unique .item-pixel-icon { border-color:rgba(230,90,145,.68); box-shadow:inset 0 0 21px rgba(170,68,102,.38),0 0 13px rgba(170,68,102,.22); }
+
+.map-zone {
+  border-width:1px;
+  background:linear-gradient(90deg,#0d0e11,#07080a);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.52), 0 3px 10px rgba(0,0,0,.20);
+  transition:transform .10s ease, background .12s ease, border-color .12s ease;
+}
+.map-zone:hover { transform:translateX(2px); }
+.map-zone::after { opacity:.68; image-rendering:pixelated; }
+.map-zone-name { text-shadow:1px 1px 0 #000; }
+.map-zone.active-zone { box-shadow:inset 0 0 18px rgba(255,255,255,.035),0 0 12px rgba(255,255,255,.04); }
+
+@media (max-width:700px) {
+  #combat-viewport.combat-stage { height:116px; }
+  .combat-hud-layer { padding:6px 7px; }
+  .sprite-plinth { width:58px; height:58px; flex-basis:58px; }
+  .sprite-plinth canvas { width:54px; height:54px; }
+  .item-pixel-icon { width:38px; height:38px; flex-basis:38px; }
+  .item-pixel-icon svg { width:30px; height:30px; }
+}
+@media (max-width:430px) and (orientation:portrait) {
+  #combat-viewport.combat-stage { height:102px; }
+  .sprite-plinth { width:48px; height:48px; flex-basis:48px; }
+  .sprite-plinth canvas { width:44px; height:44px; }
+}
+
 </style>
 </head>
 <body>
@@ -1349,7 +1473,7 @@ body.chaos-active #map-panel .subzone-row,
 
 <!-- HEADER -->
 <div id="header">
-  <h1>RPG BOTTING SIM <span style="font-size:11px;color:#444;font-weight:normal;letter-spacing:1px;">v1.1</span></h1>
+  <h1>RPG BOTTING SIM <span style="font-size:11px;color:#666;font-weight:normal;letter-spacing:1px;">v1.1</span></h1>
   <div class="header-bars">
     <div class="header-level header-level-inline" title="Level">
       <span>LV <span id="overlevel-display-top" class="overlevel-top" style="display:none;"></span></span>
@@ -2298,11 +2422,12 @@ body.chaos-active #map-panel .subzone-row,
 <div id="tutorial-overlay" aria-live="polite">
   <div id="tutorial-box">
     <div id="tutorial-step-label">STEP 1/1</div>
-    <div id="tutorial-title">Tutorial</div>
+    <div class="tutorial-progress"><div id="tutorial-progress-fill"></div></div>
+    <div id="tutorial-title">First Play Guide</div>
     <div id="tutorial-body"></div>
     <div class="tutorial-actions">
-      <button class="tutorial-btn" onclick="tutorialBack()">BACK</button>
-      <button class="tutorial-btn danger" onclick="tutorialSkip()">SKIP</button>
+      <button class="tutorial-btn" id="tutorial-back-btn" onclick="tutorialBack()">BACK</button>
+      <button class="tutorial-btn danger" onclick="tutorialSkip()">SKIP GUIDE</button>
       <button class="tutorial-btn primary" id="tutorial-next-btn" onclick="tutorialNext()">NEXT</button>
     </div>
   </div>
@@ -2334,7 +2459,7 @@ const G = {
   gold: 0,
   legendaryEssence: 0,
   gearEssence: 0,
-  zone: 'fields',
+  zone: 'town',
   subZone: null,
   prevCombatZone: 'fields',
   prevCombatSubZone: null,
@@ -13292,8 +13417,10 @@ function selectClass(cls) {
 
   normalizeSkillPointEntitlement();
   updateDerived();G.hp=G.maxHp;G.mp=G.maxMp;
-  log(`RPG Botting Simulator started. Class: ${cls.toUpperCase()}`);
-  setZone('fields',true);
+  const freshLog = document.getElementById('log-output');
+  if (freshLog) freshLog.replaceChildren();
+  prepareFirstPlayTown(true);
+  updateZoneUI();
   refreshMerchant();
   renderSkills();
   renderPriorityQueue();
@@ -14448,23 +14575,44 @@ function toggleReverseLogScroll() {
 
 // FIRST PLAY TUTORIAL
 const TUTORIAL_STEPS = [
-  { tab:null, selector:'#header', title:'Top Bar', body:'This shows HP, MP, EXP, level or overlevel, class, gold, and save status.' },
-  { tab:null, selector:'#combat-status', title:'Status Bar', body:'This line shows what the bot is doing. EXP/min and Gold/min appear after actual kills.' },
-  { tab:'stats', selector:'#stats-panel', title:'Stats Tab', body:'Review equipment, character stats, achievements, stat allocation, and potions here.' },
-  { tab:'stats', selector:'.stat-allocation-card', title:'Stat Allocation', body:'Spend stat points here. Hover or tap stat names to see class-specific scaling. Hold the + button to rapidly spend multiple stat points.' },
-  { tab:'stats', selector:'#potion-grid', title:'Potions', body:'Click a potion to set it as your main auto-heal potion. Double-click the selected potion to use it manually.' },
-  { tab:'inv', selector:'#inv-panel', title:'Inventory', body:'Gear drops appear here. Equipped items stay pinned at the top, and sorting/filtering helps compare upgrades.' },
-  { tab:'inv', selector:'#inv-sub-stash', title:'Stash & Key Items', body:'Inventory includes shared stash and key items. Key items only appear after discovery.' },
-  { tab:'skills', selector:'#skills-panel', title:'Skills', body:'Toggle passives and active skills here. Enabled active skills can auto-cast; CAST buttons allow manual use. Hold a +1 pt button to rapidly invest skill points.' },
-  { tab:'map', selector:'#map-panel', title:'Map', body:'Choose farming zones and subzones here. Some zones have hidden boss flavour text or key-item conditions.' },
-  { tab:null, selector:'#log-container', title:'Event Log', body:'Combat messages, drops, deaths, boss warnings, and system notes appear here. Drag the EVENT LOG bar to resize it; on mobile you can pull it much higher when you want to read more.' },
-  { tab:'config', selector:'#config-panel', title:'Config', body:'Adjust bot behavior, auto-equip rules, log filters, display options, and save/import/export tools here.' }
+  { tab:'map', selector:'#zone-town', title:'Welcome to Ironhaven', body:'Your new bot begins safely in Ironhaven Town with combat paused. Nothing will spawn until you choose a farming zone, so the event log stays quiet while you learn the interface.' },
+  { tab:null, selector:'#header', title:'Character Overview', body:'The top bar tracks level, HP, MP, EXP, class, gold, and save status. Your game saves automatically as you play.' },
+  { tab:'stats', selector:'#stats-panel', title:'Stats and Equipment', body:'Review equipped gear, combat stats, achievements, available stat points, and potions here. Hover or tap stat labels for scaling details.' },
+  { tab:'skills', selector:'#skills-panel', title:'Skills and Automation', body:'Spend skill points, enable active skills, and choose which abilities the bot may cast automatically. Passive skills are listed above active skills.' },
+  { tab:'inv', selector:'#inv-panel', title:'Inventory and Stash', body:'Dropped gear appears here. Equip upgrades, lock valuable items, sell unwanted gear, or move items into the shared stash for other class slots.' },
+  { tab:'config', selector:'#config-panel', title:'Bot Controls', body:'Use Config to pause or resume the bot, set healing and flee thresholds, configure auto-equip and loot rules, manage map queues, and adjust display or log settings.' },
+  { tab:'map', selector:'#zone-town', title:'Town Is Your Safe Hub', body:'Ironhaven contains the merchant, gear gamble, reroll, salvage, upgrade, and Overgear transfer services. Returning to town pauses combat automatically.' },
+  { tab:null, selector:'#log-container', title:'Event Log', body:'The log reports important combat, loot, boss, and system events. Drag the EVENT LOG header to resize it. Less useful message categories can be disabled in Config.' },
+  { tab:'map', selector:'#zone-fields', title:'Start When You Are Ready', body:'After finishing this guide, click the Fields or another unlocked combat zone to begin botting. The bot will resume automatically when you leave town.', nextLabel:'FINISH GUIDE' }
 ];
 let tutorialStepIndex = 0;
 function clearTutorialHighlights() { document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight')); }
+function prepareFirstPlayTown(showWelcome=false) {
+  G.zone = 'town';
+  G.subZone = null;
+  G.prevCombatZone = 'fields';
+  G.prevCombatSubZone = null;
+  G.uiTownCollapsed = false;
+  G.monsters = [];
+  G.nextSpawnAt = 0;
+  G.lastSpawnCountdown = -1;
+  if (!G.config) G.config = {};
+  G.config.paused = true;
+  G.config.manualPause = false;
+  resetObservedFarmRates();
+  if (showWelcome) {
+    log('Welcome to Ironhaven Town. Your bot is safely paused for the first-play guide.', 'system');
+    log('Open MAP and choose a combat zone when you are ready to begin.', 'system');
+  }
+}
 function startTutorial(force=false) {
   if (!G.started) return;
   if (!force && G.tutorialDone) return;
+  if (!force && !G.tutorialDone && G.zone !== 'town') {
+    prepareFirstPlayTown(false);
+    updateZoneUI();
+    log('First-play guide opened — returned safely to Ironhaven Town.', 'system');
+  }
   tutorialStepIndex = 0;
   const overlay = document.getElementById('tutorial-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -14493,10 +14641,14 @@ function showTutorialStep() {
   const title = document.getElementById('tutorial-title');
   const body = document.getElementById('tutorial-body');
   const next = document.getElementById('tutorial-next-btn');
-  if (label) label.textContent = `STEP ${tutorialStepIndex + 1}/${TUTORIAL_STEPS.length}`;
-  if (title) title.textContent = step.title || 'Tutorial';
+  const back = document.getElementById('tutorial-back-btn');
+  const progress = document.getElementById('tutorial-progress-fill');
+  if (label) label.textContent = `STEP ${tutorialStepIndex + 1} OF ${TUTORIAL_STEPS.length}`;
+  if (title) title.textContent = step.title || 'First Play Guide';
   if (body) body.textContent = step.body || '';
-  if (next) next.textContent = tutorialStepIndex >= TUTORIAL_STEPS.length - 1 ? 'FINISH' : 'NEXT';
+  if (next) next.textContent = step.nextLabel || (tutorialStepIndex >= TUTORIAL_STEPS.length - 1 ? 'FINISH GUIDE' : 'NEXT');
+  if (back) back.style.visibility = tutorialStepIndex === 0 ? 'hidden' : 'visible';
+  if (progress) progress.style.width = `${((tutorialStepIndex + 1) / TUTORIAL_STEPS.length) * 100}%`;
 }
 
 // SAVE / LOAD
@@ -14985,6 +15137,9 @@ function createClassSlot(slotIdx, cls) {
   resetGameState();
   G.playerClass = cls;
   initClassSetup(cls);
+  const freshLog = document.getElementById('log-output');
+  if (freshLog) freshLog.replaceChildren();
+  prepareFirstPlayTown(true);
   G.stash = loadStash();
   G.started = true;
   // Give 3 blank starter routes
@@ -17582,6 +17737,326 @@ document.getElementById('adv-confirm-overlay')?.addEventListener('click', (e) =>
 document.getElementById('swap-confirm-no')?.addEventListener('click', () => {
   document.getElementById('swap-confirm-overlay').style.display = 'none';
 });
+
+
+
+// PIXEL GRAPHICS UPGRADE V2 ----------------------------------------------
+(function installPixelGraphicsV2(){
+  const legacyBuildSprite = buildSprite;
+  const legacyDrawMonsterSprite = drawMonsterSprite;
+  const legacyDrawZoneBackground = drawZoneBackground;
+  const legacyDrawCombatFx = drawCombatFx;
+
+  function pxRect(ctx, x, y, w, h, color, alpha=1) {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    ctx.globalAlpha = 1;
+  }
+
+  function gridOccupied(grid, x, y) {
+    return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && !!grid[y][x];
+  }
+
+  drawGridSprite = function(ctx, grid, colors, canvasW, canvasH, opts={}) {
+    const GRID_W = grid[0].length, GRID_H = grid.length;
+    const scale = opts.scale || Math.floor(Math.min(canvasW/(GRID_W+4), canvasH/(GRID_H+4)));
+    const px = Math.max(1, scale);
+    const bob = opts.bob || 0;
+    const ox = Math.floor((canvasW - GRID_W*px)/2 + (opts.offsetX||0));
+    const oy = Math.floor((canvasH - GRID_H*px)/2 + bob + (opts.offsetY||0));
+    ctx.imageSmoothingEnabled = false;
+
+    // Chunky contact shadow with a brighter centre pixel row.
+    const shadowW = Math.max(px*4, (GRID_W-4)*px);
+    const shadowX = Math.floor((canvasW-shadowW)/2 + (opts.offsetX||0));
+    const shadowY = Math.min(canvasH-px, oy + GRID_H*px - Math.max(1,px));
+    pxRect(ctx, shadowX, shadowY, shadowW, Math.max(2,px), opts.shadow || 'rgba(0,0,0,.55)');
+    if (px >= 3) pxRect(ctx, shadowX+px, shadowY, Math.max(px*2,shadowW-px*2), 1, 'rgba(255,255,255,.045)');
+
+    // One-pixel silhouette outline, which makes small sprites readable over every zone.
+    const outline = opts.outline || '#09090c';
+    const outlineDirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+    for (let r=0;r<GRID_H;r++) for (let c=0;c<GRID_W;c++) {
+      if (!grid[r][c]) continue;
+      for (const [dx,dy] of outlineDirs) {
+        if (!gridOccupied(grid,c+dx,r+dy)) {
+          ctx.fillStyle = outline;
+          ctx.fillRect(ox+(c+dx)*px, oy+(r+dy)*px, px, px);
+        }
+      }
+    }
+
+    // Main colour blocks with stable, non-flickering dithering and crisp directional light.
+    for (let r=0;r<GRID_H;r++) for (let c=0;c<GRID_W;c++) {
+      const v = grid[r][c]; if(!v) continue;
+      const color = colors[v] || '#fff';
+      const hash = ((r*37 + c*53 + v*19) % 11) - 5;
+      const amount = opts.noise ? Math.round(hash * opts.noise / 11) : 0;
+      const base = shadeHex(color, amount);
+      ctx.fillStyle = base;
+      ctx.fillRect(ox+c*px, oy+r*px, px, px);
+
+      if (px >= 3) {
+        const topExposed = !gridOccupied(grid,c,r-1);
+        const leftExposed = !gridOccupied(grid,c-1,r);
+        const bottomExposed = !gridOccupied(grid,c,r+1);
+        const rightExposed = !gridOccupied(grid,c+1,r);
+        if (topExposed) pxRect(ctx, ox+c*px, oy+r*px, px, 1, shadeHex(color, 24), .62);
+        if (leftExposed) pxRect(ctx, ox+c*px, oy+r*px, 1, px, shadeHex(color, 16), .42);
+        if (bottomExposed) pxRect(ctx, ox+c*px, oy+(r+1)*px-1, px, 1, shadeHex(color,-30), .74);
+        if (rightExposed) pxRect(ctx, ox+(c+1)*px-1, oy+r*px, 1, px, shadeHex(color,-22), .56);
+      }
+    }
+  };
+
+  // Keep the original procedural monster silhouettes, but give them a larger detail grid.
+  buildSprite = function(arch, rand, isElite, isBoss, name='') {
+    const old = legacyBuildSprite(arch, rand, isElite, isBoss, name);
+    const size = 16;
+    const grid = Array.from({length:size},()=>new Array(size).fill(0));
+    const offX = 2, offY = 2;
+    for (let y=0;y<old.length;y++) for (let x=0;x<old[0].length;x++) {
+      if (old[y][x]) grid[y+offY][x+offX] = old[y][x];
+    }
+    const profile = getNameSpriteProfile(name, arch);
+    const h = hashString(String(name||arch));
+    // Add tiny silhouette-defining details without changing collision/gameplay.
+    if (profile.spikes || isBoss) {
+      for (let x=4;x<=11;x+=2) if (grid[5][x]) grid[4][x] = isBoss ? 4 : 2;
+    }
+    if (profile.floating || arch === 'elemental' || arch === 'void') {
+      grid[14][6] = 2; grid[15][5] = 2; grid[14][9] = 2; grid[15][10] = 2;
+    }
+    if (profile.armor || arch === 'golem') {
+      grid[8][3] = 3; grid[9][3] = 2; grid[8][12] = 3; grid[9][12] = 2;
+    }
+    if (profile.wingBoost || profile.bird || arch === 'bat') {
+      grid[6][2] = 2; grid[5][1] = 2; grid[6][13] = 2; grid[5][14] = 2;
+    }
+    if ((h & 3) === 0) { grid[3][7] = grid[3][7] || 5; grid[3][8] = grid[3][8] || 5; }
+    if (isElite) { grid[1][7] = 5; grid[2][6] = 5; grid[2][8] = 5; }
+    if (isBoss) { grid[1][5] = 4; grid[0][4] = 4; grid[1][10] = 4; grid[0][11] = 4; }
+    return grid;
+  };
+
+  function advancementPalette(cls, adv) {
+    const base = PLAYER_PALETTES[cls] || PLAYER_PALETTES.warrior;
+    const map = {
+      swordmaster:{main:'#b9c5d8',sub:'#e7edf7',dark:'#242b3a',glow:'#aee8ff',eye:'#ffffff'},
+      berserker:{main:'#a22e2e',sub:'#5c2020',dark:'#230b0b',glow:'#ff6b43',eye:'#ffd0b0'},
+      juggernaut:{main:'#6e7780',sub:'#a9b0b7',dark:'#252b30',glow:'#ffd56a',eye:'#f7e7bd'},
+      assassin:{main:'#3e365f',sub:'#171522',dark:'#09080e',glow:'#e27cff',eye:'#ffd9ff'},
+      nightshade:{main:'#28794b',sub:'#193322',dark:'#09130d',glow:'#75ff8d',eye:'#c6ffd0'},
+      flamemage:{main:'#a94124',sub:'#5c211a',dark:'#210b08',glow:'#ffb04f',eye:'#fff1bf'},
+      frostmage:{main:'#3974a7',sub:'#b6d9e9',dark:'#142837',glow:'#bff4ff',eye:'#ffffff'},
+      lightningmage:{main:'#4a4da9',sub:'#d2d4ef',dark:'#171833',glow:'#fff06d',eye:'#ffffff'},
+      arcanist:{main:'#67469d',sub:'#b09ad4',dark:'#211630',glow:'#e8b6ff',eye:'#ffffff'}
+    };
+    return map[adv] || base;
+  }
+
+  drawPlayerSprite = function(canvas, cls) {
+    if (!canvas) return;
+    if (canvas.id === 'player-canvas' && (canvas.width !== 80 || canvas.height !== 80)) { canvas.width=80; canvas.height=80; }
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.imageSmoothingEnabled = false;
+    const t = fxNow();
+    const adv = G.classAdvancement || '';
+    const p = advancementPalette(cls, adv);
+    const grid = Array.from({length:20},()=>new Array(20).fill(0));
+    const C = { main:1, sub:2, dark:3, glow:4, eye:5 };
+    const set=(x,y,v)=>{if(x>=0&&x<20&&y>=0&&y<20)grid[y][x]=v;};
+    const rect=(x,y,w,h,v)=>{for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)set(xx,yy,v);};
+
+    // Shared humanoid anatomy with clear silhouette and layered armour/robes.
+    rect(8,2,4,1,C.dark); rect(7,3,6,4,C.sub);
+    rect(7,3,6,1,C.dark); set(7,4,C.dark); set(12,4,C.dark); set(7,6,C.dark); set(12,6,C.dark);
+    set(8,5,C.eye); set(11,5,C.eye); set(9,6,C.dark); set(10,6,C.dark);
+    rect(7,7,6,7,C.main); rect(6,8,1,5,C.dark); rect(13,8,1,5,C.dark);
+    rect(8,9,4,2,C.sub); rect(8,13,4,1,C.dark);
+    rect(7,14,2,4,C.dark); rect(11,14,2,4,C.dark); rect(6,18,3,1,C.sub); rect(11,18,3,1,C.sub);
+
+    if (cls === 'warrior') {
+      // Shield arm.
+      rect(3,8,3,6,C.dark); rect(2,9,3,4,C.sub); set(3,10,C.glow); set(3,11,C.main);
+      // Sword and guard.
+      rect(15,4,2,10,C.sub); rect(16,2,1,3,C.glow); rect(14,12,4,1,C.glow); rect(15,13,2,3,C.dark);
+      rect(7,7,6,2,C.dark); set(9,7,C.glow); set(10,7,C.glow);
+      if (adv==='swordmaster') { set(17,1,C.glow); set(18,0,C.glow); set(14,3,C.glow); }
+      if (adv==='berserker') { set(6,2,C.glow); set(13,2,C.glow); rect(14,5,4,2,C.main); }
+      if (adv==='juggernaut') { rect(6,7,8,2,C.sub); rect(6,10,8,1,C.dark); }
+    } else if (cls === 'rogue') {
+      // Hood, scarf and twin daggers.
+      set(6,3,C.dark); set(13,3,C.dark); rect(6,4,1,4,C.dark); rect(13,4,1,4,C.dark);
+      rect(5,8,2,5,C.dark); rect(13,8,2,5,C.dark);
+      set(4,10,C.glow); set(3,11,C.sub); set(15,10,C.glow); set(16,11,C.sub);
+      set(6,13,C.sub); set(13,13,C.sub); set(6,17,C.glow); set(13,17,C.glow);
+      if (adv==='assassin') { rect(8,2,4,1,C.glow); set(5,6,C.glow); set(14,6,C.glow); }
+      if (adv==='nightshade') { set(5,14,C.glow); set(14,14,C.glow); set(4,15,C.glow); set(15,15,C.glow); }
+    } else {
+      // Robe hem, staff and floating focus crystal.
+      rect(6,12,8,4,C.main); set(6,15,C.dark); set(13,15,C.dark); rect(7,16,6,2,C.dark);
+      rect(16,4,1,12,C.sub); set(15,3,C.glow); set(16,2,C.glow); set(17,3,C.glow); set(16,1,C.eye);
+      set(5,9,C.glow); set(4,8,C.glow); set(3,9,C.sub); set(4,10,C.sub);
+      if (adv==='flamemage') { set(3,7,C.glow); set(2,6,C.glow); set(4,6,C.main); }
+      if (adv==='frostmage') { set(15,1,C.glow); set(17,1,C.glow); set(16,0,C.eye); }
+      if (adv==='lightningmage') { set(14,3,C.glow); set(18,3,C.glow); set(15,0,C.glow); }
+      if (adv==='arcanist') { set(3,8,C.eye); set(2,9,C.glow); set(3,10,C.eye); }
+    }
+
+    const colors={0:null,1:p.main,2:p.sub,3:p.dark,4:p.glow,5:p.eye};
+    const strike=Math.max(0,1-(t-VIS.lastPlayerStrike)/180);
+    const hurt=Math.max(0,1-(t-VIS.lastEnemyStrike)/180);
+    const aura=ctx.createRadialGradient(W*.5,H*.55,3,W*.5,H*.55,31);
+    aura.addColorStop(0, mixHex(p.glow,'#000000',.58));
+    aura.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalAlpha=.26 + Math.sin(t/260)*.035; ctx.fillStyle=aura; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+    drawGridSprite(ctx,grid,colors,W,H,{scale:3,bob:Math.sin(t/480)*1.4,offsetX:strike*5-hurt*4,noise:6,outline:'#07080b'});
+
+    if (isDodgeInvulnerable?.(t)) {
+      ctx.globalAlpha=.55;
+      ctx.strokeStyle='#bfefff'; ctx.lineWidth=2;
+      ctx.strokeRect(8+(Math.floor(t/80)%2)*2,8,64,64);
+      ctx.globalAlpha=1;
+    }
+  };
+
+  drawMonsterSprite = function(canvas, monster, isElite, isBoss) {
+    if (!canvas || !monster) return;
+    if (canvas.id === 'monster-canvas' && (canvas.width !== 80 || canvas.height !== 80)) { canvas.width=80; canvas.height=80; }
+    legacyDrawMonsterSprite(canvas, monster, isElite, isBoss);
+    const ctx=canvas.getContext('2d');
+    const W=canvas.width,H=canvas.height,t=fxNow();
+    const plinth=canvas.parentElement;
+    if (plinth) {
+      plinth.classList.toggle('elite-plinth',!!isElite && !isBoss);
+      plinth.classList.toggle('boss-plinth',!!isBoss);
+    }
+    // Pixel crown/runes for higher-rank enemies.
+    if (isElite || isBoss) {
+      const color=isBoss?'#ff6655':'#ffd45d';
+      const pulse=.52+Math.sin(t/170)*.16;
+      ctx.globalAlpha=pulse; ctx.fillStyle=color;
+      const y=isBoss?5:8;
+      for (const x of [W/2-12,W/2-4,W/2+4]) ctx.fillRect(Math.round(x),y,5,3);
+      ctx.globalAlpha=1;
+    }
+    // Small floating motes make elementals/void monsters feel alive.
+    const name=(monster.baseName||monster.name||'').toLowerCase();
+    if (/void|spirit|wraith|element|flame|frost|storm|chaos|abyss/.test(name)) {
+      const tint=/frost|ice|storm/.test(name)?'#91e8ff':/flame|fire|ember/.test(name)?'#ff8b4d':'#d07cff';
+      for(let i=0;i<4;i++){
+        const x=10+((i*17+Math.floor(t/80))%(W-20));
+        const y=10+((i*23-Math.floor(t/110)+H*4)%(H-24));
+        pxRect(ctx,x,y,2,2,tint,.36);
+      }
+    }
+  };
+
+  drawZoneBackground = function(canvas, zone) {
+    legacyDrawZoneBackground(canvas, zone);
+    if (!canvas) return;
+    const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,t=fxNow();
+    ctx.imageSmoothingEnabled=false;
+    const horizon=Math.floor(H*.66);
+    // Dark foreground tiles add depth and anchor the sprites.
+    const fg={fields:'#0b1608',caves:'#07070b',swamp:'#081108',hoarspire:'#09121b',chaotic_chasm:'#0d0412',abyss:'#100006',town:'#0b0b0f'}[zone]||'#09090c';
+    ctx.fillStyle=fg;
+    for(let x=0;x<W;x+=8){
+      const h=3+((x*13)%7);
+      ctx.fillRect(x,H-h,8,h);
+    }
+    ctx.fillStyle='rgba(255,255,255,.035)';
+    for(let x=0;x<W;x+=16) ctx.fillRect(x,horizon+(x%24===0?4:8),8,1);
+
+    // Zone-specific ambient pixels.
+    const motes={fields:'#a7d56c',caves:'#7ac8ff',swamp:'#7bbf55',hoarspire:'#d9f6ff',chaotic_chasm:'#c576ff',abyss:'#ff5d78',town:'#e7c978'};
+    const mote=motes[zone]||'#aaaaaa';
+    for(let i=0;i<18;i++){
+      const x=(i*73+Math.floor(t*(zone==='hoarspire'?.018:.010)))%Math.max(1,W);
+      const y=6+((i*41+Math.floor(t*.006))%Math.max(8,horizon-10));
+      const size=(i%6===0)?2:1;
+      pxRect(ctx,x,y,size,size,mote,i%5===0?.42:.16);
+    }
+    // Pixel vignette frame.
+    ctx.fillStyle='rgba(0,0,0,.30)';
+    ctx.fillRect(0,0,W,3); ctx.fillRect(0,H-3,W,3); ctx.fillRect(0,0,3,H); ctx.fillRect(W-3,0,3,H);
+  };
+
+  drawCombatFx = function(canvas) {
+    legacyDrawCombatFx(canvas);
+    if (!canvas) return;
+    const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,now=fxNow();
+    ctx.imageSmoothingEnabled=false;
+    const pAge=now-VIS.lastPlayerStrike;
+    if (pAge>=0 && pAge<190) {
+      const k=pAge/190, a=1-k;
+      ctx.globalAlpha=a;
+      const cx=W*.74, cy=H*.49;
+      const col=k<.5?'#fff4c7':'#ffb35c';
+      for(let i=0;i<7;i++){
+        const x=cx-24+i*7+k*12;
+        const y=cy+18-Math.abs(3-i)*5-k*8;
+        pxRect(ctx,x,y,8,3,col,a);
+      }
+      ctx.globalAlpha=1;
+    }
+    const eAge=now-VIS.lastEnemyStrike;
+    if (eAge>=0 && eAge<170) {
+      const k=eAge/170,a=1-k;
+      for(let i=0;i<3;i++){
+        const x=W*.20+i*8+k*6;
+        const y=H*.33+i*8;
+        pxRect(ctx,x,y,3,22,'#ff5c58',a*.72);
+      }
+    }
+    if (G.combat?.dodgeIframeUntil > now) {
+      const x=W*.245, y=H*.49;
+      ctx.globalAlpha=.28;
+      ctx.strokeStyle='#8eeaff'; ctx.lineWidth=2;
+      ctx.strokeRect(Math.round(x-28),Math.round(y-31),56,62);
+      ctx.strokeRect(Math.round(x-34),Math.round(y-27),56,58);
+      ctx.globalAlpha=1;
+    }
+  };
+
+  itemIconSVG = function(item) {
+    const slot=item?.slot||'weapon';
+    const name=String(item?.name||'').toLowerCase();
+    const h=hashString(name+slot);
+    const base='fill="currentColor" shape-rendering="crispEdges"';
+    const dark='fill="rgba(0,0,0,.58)" shape-rendering="crispEdges"';
+    const hi='fill="rgba(255,255,255,.52)" shape-rendering="crispEdges"';
+    let art='';
+    if(slot==='helmet'){
+      art=`<rect x="7" y="8" width="18" height="5" ${base}/><rect x="5" y="13" width="22" height="10" ${base}/><rect x="7" y="23" width="5" height="4" ${base}/><rect x="20" y="23" width="5" height="4" ${base}/><rect x="8" y="16" width="6" height="3" ${dark}/><rect x="18" y="16" width="6" height="3" ${dark}/><rect x="11" y="5" width="10" height="3" ${hi}/><rect x="15" y="3" width="3" height="3" ${base}/>`;
+    }else if(slot==='armor'){
+      art=`<rect x="10" y="5" width="12" height="4" ${base}/><rect x="6" y="9" width="20" height="17" ${base}/><rect x="4" y="11" width="4" height="10" ${base}/><rect x="24" y="11" width="4" height="10" ${base}/><rect x="10" y="13" width="12" height="10" ${dark}/><rect x="8" y="9" width="5" height="5" ${hi}/><rect x="14" y="12" width="4" height="8" ${base}/>`;
+    }else if(slot==='legging'){
+      art=`<rect x="7" y="5" width="18" height="7" ${base}/><rect x="7" y="12" width="7" height="15" ${base}/><rect x="18" y="12" width="7" height="15" ${base}/><rect x="9" y="13" width="3" height="10" ${hi}/><rect x="20" y="13" width="3" height="10" ${hi}/><rect x="6" y="25" width="9" height="3" ${dark}/><rect x="17" y="25" width="9" height="3" ${dark}/>`;
+    }else if(slot==='offhand'){
+      const book=/book|tome|grimoire|focus|orb/.test(name);
+      art=book
+        ?`<rect x="6" y="7" width="20" height="19" ${base}/><rect x="15" y="7" width="2" height="19" ${dark}/><rect x="9" y="11" width="5" height="2" ${hi}/><rect x="18" y="11" width="5" height="2" ${hi}/><rect x="9" y="16" width="4" height="2" ${dark}/><rect x="19" y="16" width="4" height="2" ${dark}/>`
+        :`<rect x="7" y="5" width="18" height="5" ${base}/><rect x="5" y="10" width="22" height="11" ${base}/><rect x="8" y="21" width="16" height="5" ${base}/><rect x="11" y="11" width="5" height="8" ${hi}/><rect x="18" y="12" width="5" height="7" ${dark}/><rect x="14" y="25" width="4" height="3" ${base}/>`;
+    }else{
+      const staff=/staff|wand|rod|scepter/.test(name), axe=/axe|cleaver|hatchet/.test(name), dagger=/dagger|knife|blade/.test(name);
+      art=staff
+        ?`<rect x="14" y="8" width="4" height="20" ${base}/><rect x="11" y="4" width="10" height="8" ${base}/><rect x="14" y="1" width="4" height="4" ${hi}/><rect x="9" y="6" width="4" height="4" ${hi}/><rect x="19" y="6" width="4" height="4" ${hi}/><rect x="15" y="13" width="2" height="12" ${dark}/>`
+        :axe
+        ?`<rect x="14" y="9" width="4" height="19" ${base}/><rect x="8" y="4" width="10" height="9" ${base}/><rect x="18" y="6" width="7" height="7" ${base}/><rect x="10" y="5" width="6" height="3" ${hi}/><rect x="15" y="14" width="2" height="11" ${dark}/>`
+        :dagger
+        ?`<rect x="16" y="4" width="4" height="16" ${base}/><rect x="14" y="5" width="8" height="4" ${hi}/><rect x="12" y="18" width="12" height="4" ${dark}/><rect x="15" y="22" width="5" height="7" ${base}/>`
+        :`<rect x="17" y="3" width="5" height="18" ${base}/><rect x="15" y="5" width="9" height="5" ${base}/><rect x="11" y="19" width="14" height="4" ${dark}/><rect x="14" y="23" width="5" height="7" ${base}/><rect x="19" y="4" width="2" height="14" ${hi}/>`;
+    }
+    const gemX=6+(h%20),gemY=4+((h>>>4)%7);
+    return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" fill="rgba(0,0,0,.26)"/><rect x="4" y="4" width="24" height="1" fill="rgba(255,255,255,.08)"/>${art}<rect x="${gemX}" y="${gemY}" width="2" height="2" fill="rgba(255,255,255,.72)"/></svg>`;
+  };
+})();
+
 
 // Attempt to restore save on page load
 (function tryLoad() {
