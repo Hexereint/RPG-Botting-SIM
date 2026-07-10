@@ -1460,6 +1460,135 @@ body.chaos-active #map-panel .subzone-row,
   .sprite-plinth canvas { width:44px; height:44px; }
 }
 
+
+
+/* EXTENDED GUIDE MODAL -------------------------------------------------- */
+#extended-guide-overlay {
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:760;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  background:rgba(0,0,0,0.88);
+  backdrop-filter:blur(2px);
+}
+#extended-guide-overlay.visible { display:flex; }
+.extended-guide-modal {
+  width:min(980px, calc(100vw - 28px));
+  height:min(700px, calc(100dvh - 28px));
+  min-height:360px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:linear-gradient(145deg,#0d0d0d,#040404 72%);
+  border:1px solid rgba(187,170,119,0.72);
+  box-shadow:0 18px 60px rgba(0,0,0,0.94),0 0 28px rgba(187,170,119,0.14),inset 0 0 0 1px rgba(255,255,255,0.025);
+}
+.extended-guide-header {
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px 10px 15px;
+  border-bottom:1px solid var(--border2);
+  background:linear-gradient(90deg,rgba(187,170,119,0.12),rgba(0,0,0,0.18));
+  flex-shrink:0;
+}
+.extended-guide-title { font-size:13px; color:#fff; font-weight:bold; letter-spacing:2px; text-transform:uppercase; }
+.extended-guide-subtitle { margin-top:3px; font-size:8px; color:#777; letter-spacing:1px; text-transform:uppercase; }
+.extended-guide-close {
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  background:#000;
+  border:1px solid var(--border2);
+  color:#aaa;
+  font-family:inherit;
+  font-size:15px;
+  cursor:pointer;
+}
+.extended-guide-close:hover { color:#fff; border-color:#fff; }
+.extended-guide-layout { flex:1; min-height:0; display:grid; grid-template-columns:220px minmax(0,1fr); }
+.extended-guide-nav {
+  min-width:0;
+  overflow-y:auto;
+  padding:8px;
+  border-right:1px solid var(--border);
+  background:rgba(0,0,0,0.36);
+}
+.extended-guide-tab {
+  width:100%;
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:4px;
+  padding:7px 8px;
+  background:#050505;
+  border:1px solid #242424;
+  color:#777;
+  font-family:inherit;
+  font-size:9px;
+  line-height:1.25;
+  text-align:left;
+  cursor:pointer;
+  letter-spacing:0.7px;
+  text-transform:uppercase;
+}
+.extended-guide-tab:hover { color:#ddd; border-color:#555; background:#0b0b0b; }
+.extended-guide-tab.active { color:var(--yellow); border-color:var(--yellow); background:#100e07; box-shadow:inset 3px 0 0 var(--yellow); }
+.extended-guide-tab-index { min-width:18px; color:#555; font-size:8px; }
+.extended-guide-tab.active .extended-guide-tab-index { color:var(--yellow); }
+.extended-guide-content {
+  min-width:0;
+  overflow-y:auto;
+  padding:20px 22px 28px;
+  scroll-behavior:smooth;
+}
+.extended-guide-content h2 { margin:0 0 5px; color:#fff; font-size:17px; letter-spacing:1.4px; text-transform:uppercase; }
+.extended-guide-content .guide-lead { color:#aaa; font-size:11px; line-height:1.6; margin-bottom:16px; }
+.extended-guide-content h3 { margin:18px 0 7px; padding-bottom:4px; border-bottom:1px solid #262626; color:var(--yellow); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; }
+.extended-guide-content p { color:#c8c8c8; font-size:11px; line-height:1.65; margin:0 0 9px; }
+.extended-guide-content ul { margin:5px 0 12px 18px; color:#bbb; font-size:11px; line-height:1.6; }
+.extended-guide-content li { margin-bottom:4px; }
+.extended-guide-content strong { color:#fff; }
+.guide-callout { margin:12px 0; padding:9px 10px; border:1px solid #343434; background:#080808; color:#bbb; font-size:10px; line-height:1.55; }
+.guide-callout.tip { border-color:#446644; background:#061006; }
+.guide-callout.warning { border-color:#773333; background:#120505; color:#d7aaaa; }
+.guide-callout.info { border-color:#5e5535; background:#100e06; }
+.guide-cost-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:7px; margin:9px 0 13px; }
+.guide-cost-card { padding:9px; border:1px solid #2c2c2c; background:#070707; }
+.guide-cost-card b { display:block; margin-bottom:4px; color:#fff; font-size:10px; letter-spacing:0.7px; text-transform:uppercase; }
+.guide-cost-card span { color:#999; font-size:9px; line-height:1.45; }
+.guide-inline-key { display:inline-block; padding:1px 5px; border:1px solid #555; background:#000; color:#ddd; font-size:9px; }
+@media (max-width:700px) {
+  #extended-guide-overlay { padding:7px; }
+  .extended-guide-modal { width:calc(100vw - 14px); height:calc(100dvh - 14px); }
+  .extended-guide-header { min-height:44px; padding:8px 9px 8px 11px; }
+  .extended-guide-title { font-size:11px; }
+  .extended-guide-layout { display:flex; flex-direction:column; }
+  .extended-guide-nav {
+    display:flex;
+    flex:0 0 auto;
+    gap:5px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:7px;
+    border-right:none;
+    border-bottom:1px solid var(--border);
+    scroll-snap-type:x proximity;
+  }
+  .extended-guide-tab { width:auto; min-width:max-content; min-height:32px; margin:0; padding:6px 9px; scroll-snap-align:start; }
+  .extended-guide-tab.active { box-shadow:inset 0 -2px 0 var(--yellow); }
+  .extended-guide-tab-index { display:none; }
+  .extended-guide-content { padding:15px 13px 24px; }
+  .extended-guide-content h2 { font-size:15px; }
+  .extended-guide-content p,.extended-guide-content ul { font-size:11px; }
+}
+
 </style>
 </head>
 <body>
@@ -2224,6 +2353,10 @@ body.chaos-active #map-panel .subzone-row,
             <button onclick="replayTutorial()" style="background:#000;border:1px solid var(--yellow);color:var(--yellow);font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">REPLAY TUTORIAL</button>
           </div>
           <div class="config-row">
+            <div class="config-label">Extended Guide<span class="config-sub">Open the complete mechanics reference.</span></div>
+            <button onclick="openExtendedGuide('getting-started')" style="background:#000;border:1px solid #8f82bd;color:#d8c7ff;font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">OPEN EXTENDED GUIDE</button>
+          </div>
+          <div class="config-row">
             <div class="config-label">Swap Class</div>
             <button id="swap-class-btn" style="background:#000;border:1px solid var(--red);color:var(--red);font-family:inherit;font-size:8px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">SWAP CLASS</button>
           </div>
@@ -2418,6 +2551,25 @@ body.chaos-active #map-panel .subzone-row,
 <div id="item-compare-popup"></div>
 
 
+
+
+
+<!-- EXTENDED GUIDE -->
+<div id="extended-guide-overlay" role="dialog" aria-modal="true" aria-labelledby="extended-guide-heading" onclick="extendedGuideOverlayClick(event)">
+  <div class="extended-guide-modal">
+    <div class="extended-guide-header">
+      <div>
+        <div class="extended-guide-title" id="extended-guide-heading">Extended Guide</div>
+        <div class="extended-guide-subtitle">Mechanics reference · Select a chapter</div>
+      </div>
+      <button class="extended-guide-close" id="extended-guide-close" onclick="closeExtendedGuide()" aria-label="Close extended guide">✕</button>
+    </div>
+    <div class="extended-guide-layout">
+      <nav class="extended-guide-nav" id="extended-guide-nav" aria-label="Extended guide chapters"></nav>
+      <article class="extended-guide-content" id="extended-guide-content"></article>
+    </div>
+  </div>
+</div>
 
 <div id="tutorial-overlay" aria-live="polite">
   <div id="tutorial-box">
@@ -14571,6 +14723,236 @@ function toggleReverseLogScroll() {
   if (G.started) saveGame(false);
 }
 
+
+
+
+
+// EXTENDED GUIDE
+const EXTENDED_GUIDE_CHAPTERS = [
+  {
+    id:'getting-started', title:'Getting Started',
+    html:`<h2>Getting Started</h2>
+      <p class="guide-lead">The Extended Guide is a permanent reference for systems that go beyond the first-play tutorial.</p>
+      <h3>Your First Character</h3>
+      <p>A new character begins in <strong>Ironhaven Town</strong> with the bot paused. Use this time to review Stats, Skills, Inventory and Config without combat filling the Event Log.</p>
+      <p>When ready, open <strong>Map</strong> and select the Fields or another unlocked combat zone. Leaving town resumes automatic combat.</p>
+      <div class="guide-callout tip"><strong>Safe setup:</strong> Allocate initial stats, check your starting skill, and review auto-heal settings before entering a combat zone.</div>
+      <h3>How to Use This Guide</h3>
+      <p>Select a chapter from the left. On smaller screens, chapters appear as a horizontally scrollable tab row above the guide.</p>`
+  },
+  {
+    id:'combat', title:'Combat & Dodge',
+    html:`<h2>Combat & Dodge</h2>
+      <p class="guide-lead">Combat is automated, but positioning, build choices and well-timed manual reactions still matter.</p>
+      <h3>Automatic Combat</h3>
+      <ul><li>Basic attacks occur according to your attack interval.</li><li>Enabled active skills are cast automatically when their requirements, cooldown and mana cost are met.</li><li>EXP/min and Gold/min estimate recent farming performance.</li><li>Town is a non-combat hub and automatically stops encounters.</li></ul>
+      <h3>Dodge</h3>
+      <p>The <strong>Dodge</strong> button grants roughly <strong>1 second of invulnerability</strong> and then enters a <strong>30-second cooldown</strong>. Save it for enemy casts, boss attacks and other dangerous telegraphs.</p>
+      <div class="guide-callout warning"><strong>Do not spam Dodge:</strong> using it against a harmless hit can leave it unavailable for a lethal ability.</div>
+      <h3>Event Log</h3>
+      <p>The Event Log reports attacks, loot, deaths, skills, bosses and system messages. Drag its header to resize it, and use Config to hide categories that are not useful to you.</p>`
+  },
+  {
+    id:'character', title:'Stats & Equipment',
+    html:`<h2>Stats & Equipment</h2>
+      <p class="guide-lead">A good build combines allocated attributes, equipment stats, skills and enough survivability for stable farming.</p>
+      <h3>Core Attributes</h3>
+      <ul><li><strong>STR:</strong> improves basic damage and has extra Warrior scaling.</li><li><strong>AGI:</strong> improves attack speed and has extra Rogue scaling.</li><li><strong>INT:</strong> improves Max MP and MP regeneration, with extra Wizard scaling.</li><li><strong>VIT:</strong> improves HP regeneration and grants Max HP at thresholds.</li></ul>
+      <p>Hover or tap the stat labels in Stat Allocation to see the exact class-specific formulas.</p>
+      <h3>Equipment</h3>
+      <p>Equipment can add main stats, secondary combat stats and special late-game bonuses. Compare the full stat package instead of relying only on rarity.</p>
+      <p>Typical rarity progression is <strong>Common → Rare → Epic → Legendary → Mythic or Ascended</strong>.</p>
+      <div class="guide-callout info"><strong>Build stability first:</strong> a slightly weaker item with Max HP, regeneration or a useful class stat can outperform a higher-rarity item that causes frequent deaths.</div>`
+  },
+  {
+    id:'skills-potions', title:'Skills & Potions',
+    html:`<h2>Skills & Potions</h2>
+      <p class="guide-lead">Skills define how your class fights; potions provide automatic emergency recovery.</p>
+      <h3>Skills</h3>
+      <p>Passives are always active once learned. Active skills can be enabled or disabled individually. The bot only casts an enabled skill when it has enough mana and the skill is available.</p>
+      <p>Disable low-priority skills when they drain mana needed by a more important ability. Cooldown reduction increases how frequently eligible skills can be used.</p>
+      <h3>Potions</h3>
+      <p>Select the potion stacks the bot is allowed to consume. Potion use follows the auto-heal settings and cooldown shown in the interface.</p>
+      <div class="guide-callout tip"><strong>Preparation:</strong> verify that a potion is selected before attempting a difficult boss or moving into a higher Chaos tier.</div>`
+  },
+  {
+    id:'inventory', title:'Inventory & Stash',
+    html:`<h2>Inventory & Stash</h2>
+      <p class="guide-lead">Inventory belongs to the current character; the 20-slot Stash is shared between class slots.</p>
+      <h3>Inventory Tools</h3>
+      <ul><li>Sort by rarity or a chosen main attribute.</li><li>Filter by equipment slot.</li><li>Expand inventory capacity with gold.</li><li>Lock valuable items to protect them from destructive town actions.</li></ul>
+      <h3>Shared Stash</h3>
+      <p>Move useful equipment into the Stash when another class slot may need it. Stashed items persist independently of the currently selected class.</p>
+      <div class="guide-callout warning"><strong>Before salvaging or transferring:</strong> lock anything you intend to keep and move cross-class upgrades into the Stash.</div>`
+  },
+  {
+    id:'town', title:'Town Services',
+    html:`<h2>Town Services</h2>
+      <p class="guide-lead">Ironhaven is the management hub for shopping, crafting, gambling and late-game equipment progression.</p>
+      <div class="guide-cost-grid">
+        <div class="guide-cost-card"><b>Merchant</b><span>Buy equipment and pre-made farm routes; refresh stock when needed.</span></div>
+        <div class="guide-cost-card"><b>Gear Gamble</b><span>Spend Gear Essence for randomized class-compatible gear.</span></div>
+        <div class="guide-cost-card"><b>Reroll</b><span>Improve or replace one chosen stat line on eligible equipment.</span></div>
+        <div class="guide-cost-card"><b>Salvage</b><span>Destroy unwanted gear to recover Gear Essence and, at higher rarities, Legendary Essence.</span></div>
+        <div class="guide-cost-card"><b>Upgrade</b><span>Ascend Legendary gear or add guaranteed Overgear levels.</span></div>
+        <div class="guide-cost-card"><b>Transfer</b><span>Move 80% of an old item's Overgear levels to a fresh eligible item.</span></div>
+      </div>
+      <h3>Town Runs</h3>
+      <p>Config can automate selling and salvaging through Town Run filters. Locked and equipped items are excluded. Review these filters carefully before enabling automation.</p>`
+  },
+  {
+    id:'gear-gamble', title:'Gear Gamble',
+    html:`<h2>Gear Gamble</h2>
+      <p class="guide-lead">Gear Gamble converts Gear Essence into randomized equipment while guaranteeing your class's main stat.</p>
+      <div class="guide-cost-grid">
+        <div class="guide-cost-card"><b>Standard Roll · 3 GE</b><span>Random equipment slot. Best when several slots still need upgrades.</span></div>
+        <div class="guide-cost-card"><b>Slot-Targeted Roll · 9 GE</b><span>Choose Helmet, Armor, Legging, Weapon or Offhand. Best when one slot is holding the build back.</span></div>
+      </div>
+      <p>Rarity, secondary stats and exact values remain random. A roll is not guaranteed to be better than your equipped item.</p>
+      <div class="guide-callout tip"><strong>Efficient use:</strong> start with 3-GE rolls while gearing broadly, then switch to 9-GE targeted rolls when only one or two slots need replacement.</div>`
+  },
+  {
+    id:'reroll-salvage', title:'Reroll & Salvage',
+    html:`<h2>Reroll & Salvage</h2>
+      <p class="guide-lead">Salvage funds future crafting. Reroll repairs an otherwise strong item with one undesirable stat line.</p>
+      <h3>Salvage Returns</h3>
+      <div class="guide-cost-grid">
+        <div class="guide-cost-card"><b>Common</b><span>2 Gear Essence</span></div>
+        <div class="guide-cost-card"><b>Rare</b><span>3 Gear Essence</span></div>
+        <div class="guide-cost-card"><b>Epic</b><span>5 Gear Essence</span></div>
+        <div class="guide-cost-card"><b>Legendary</b><span>8 Gear Essence + 2 Legendary Essence</span></div>
+        <div class="guide-cost-card"><b>Mythic</b><span>20 Gear Essence + 3 Legendary Essence</span></div>
+      </div>
+      <p>Salvage permanently destroys the selected item. Equipped and locked items are protected from automated salvage.</p>
+      <h3>Reroll</h3>
+      <p>Choose a main or sub-stat line, then reroll either its <strong>value</strong> or its <strong>type</strong>. The interface shows the current gold and essence cost before confirmation.</p>
+      <p>An item locks its reroll choice to a selected line in each stat section, preventing unlimited correction of every line. Repeated rerolls become more expensive.</p>
+      <div class="guide-callout warning"><strong>Best target:</strong> reroll an item that is already strong except for one bad line. Do not spend heavily repairing gear that has several weak stats.</div>`
+  },
+  {
+    id:'ascension', title:'Ascended Gear',
+    html:`<h2>Ascended Gear</h2>
+      <p class="guide-lead">Ascension converts a Legendary item into an orange Ascended item and rebuilds it at a late-game stat tier.</p>
+      <h3>Requirements and Cost</h3>
+      <ul><li>The item must be <strong>Legendary</strong> and unlocked.</li><li>Cost: <strong>200,000 gold</strong> and <strong>5 Legendary Essence</strong>.</li><li>The item's name and slot remain unchanged.</li></ul>
+      <h3>What Ascension Does</h3>
+      <ul><li>Main stats are rerolled into the Mythic-style range of roughly 20–35.</li><li>Sub-stats are rerolled at Mythic tier.</li><li>The item gains one Ascension bonus: Damage, Skill Damage, Max HP or Max MP.</li><li>Damage and Skill Damage bonuses roll around 3–5%; Max HP and Max MP roll around 5–10%.</li></ul>
+      <h3>Ascension Bonus Reroll</h3>
+      <p>Reroll either the bonus value or bonus type for <strong>50,000 gold</strong> and <strong>1 Legendary Essence</strong>.</p>
+      <div class="guide-callout warning"><strong>Ascension rebuilds the item's normal stats.</strong> Use it on a Legendary item whose slot and long-term role are worth keeping, not merely because its current rolls are good.</div>`
+  },
+  {
+    id:'overgear', title:'Overgear',
+    html:`<h2>Overgear</h2>
+      <p class="guide-lead">Overgear adds permanent star levels to Mythic or Ascended equipment and scales its visible stats beyond their normal values.</p>
+      <h3>Guaranteed Overgear Upgrade</h3>
+      <p>Only unlocked <strong>Mythic</strong> and <strong>Ascended</strong> items are eligible. A normal upgrade always adds <strong>+1 Overgear level</strong>.</p>
+      <p>Cost starts at <strong>1,000,000 gold</strong> and increases by <strong>100,000 gold for every current Overgear level</strong>.</p>
+      <p>Each star improves main attributes and other stats using stat-specific scaling, including added Crit Chance, Crit Damage, Max MP and regeneration.</p>
+      <h3>Overgear Gamble</h3>
+      <div class="guide-cost-grid">
+        <div class="guide-cost-card"><b>30% Attempt</b><span>300,000 gold + 500 GE. Success adds +3 levels.</span></div>
+        <div class="guide-cost-card"><b>70% Attempt</b><span>700,000 gold + 500 GE. Success adds +1 level.</span></div>
+      </div>
+      <p>Failure removes <strong>2 Overgear levels</strong>. A Scroll of Chance is consumed instead when available, protecting the item's current level.</p>
+      <h3>Overgear Transfer</h3>
+      <p>Transfer converts <strong>80%</strong> of the source item's Overgear levels, rounded down, onto an eligible destination with zero Overgear. Both items must be unlocked and unequipped.</p>
+      <div class="guide-callout warning"><strong>The source item is destroyed.</strong> The destination keeps its own base item and receives only the converted Overgear levels.</div>`
+  },
+  {
+    id:'maps-routes', title:'Maps & Farm Routes',
+    html:`<h2>Maps & Farm Routes</h2>
+      <p class="guide-lead">Farm Routes control how the bot moves across a zone while searching for enemies and random events.</p>
+      <h3>Building a Route</h3>
+      <ul><li>Begin at the tile marked <strong>S</strong>.</li><li>Add connected, highlighted adjacent tiles in order.</li><li>Use Event mode to mark walkable tiles that guarantee a zone random event.</li><li>Name and save the route, then equip it from the route list.</li></ul>
+      <p>Numbered tiles show route order. The compact combat route display tracks the bot's live position.</p>
+      <h3>Purchased Routes</h3>
+      <p>The Merchant sells prepared routes and blank route slots. Route rating is hidden until equipped, and exceptionally rare S-rank routes may appear.</p>
+      <div class="guide-callout tip"><strong>Route design:</strong> short routes provide focused loops; longer routes cover more terrain and event opportunities. Avoid unnecessary backtracking.</div>`
+  },
+  {
+    id:'chaos', title:'Chaos Difficulty',
+    html:`<h2>Chaos Difficulty</h2>
+      <p class="guide-lead">Chaos tiers are endgame difficulty modifiers for players whose normal-zone farming has become stable.</p>
+      <p>Select the desired tier from the Difficulty control on the Map screen. Higher tiers make zone encounters more dangerous and are intended to reward stronger, optimized characters.</p>
+      <h3>When to Increase Chaos</h3>
+      <ul><li>Your bot survives normal farming without frequent potion emergencies.</li><li>Boss attacks are manageable without relying on perfect Dodge timing.</li><li>Kill speed remains high enough that rewards per minute do not collapse.</li><li>Your equipment and skill setup are already coherent.</li></ul>
+      <div class="guide-callout warning"><strong>Move up one tier at a time.</strong> A tier that causes repeated deaths can produce worse real farming results than a lower tier cleared consistently.</div>`
+  },
+  {
+    id:'bosses-keyitems', title:'Bosses & Key Items',
+    html:`<h2>Bosses & Key Items</h2>
+      <p class="guide-lead">Boss progress is tracked separately from ordinary kills, and certain encounters can award special Key Items.</p>
+      <h3>Achievements</h3>
+      <p>The Stats panel records Elite Kills, Boss Kills and unique boss defeats. Achievement icons reveal which major enemies have been defeated and which remain locked.</p>
+      <h3>Key Items</h3>
+      <p>Key Items are stored in their own Inventory sub-tab and are not normal equipment. They may unlock encounters, protect an upgrade attempt or support a special progression system.</p>
+      <p>For example, a <strong>Scroll of Chance</strong> can protect an Overgear item from losing levels after a failed Overgear Gamble attempt.</p>`
+  },
+  {
+    id:'class-slots', title:'Class Slots & Saves',
+    html:`<h2>Class Slots & Saves</h2>
+      <p class="guide-lead">Each class slot maintains its own character progression while selected systems remain shared.</p>
+      <h3>Per-Character Progress</h3>
+      <p>Level, attributes, skills, equipped gear, inventory, kills and current combat progress are stored with the selected class slot.</p>
+      <h3>Shared Storage</h3>
+      <p>The 20-slot Stash persists across class slots, making it the safest way to pass useful equipment between characters.</p>
+      <h3>Save Management</h3>
+      <p>The game auto-saves regularly. Config also provides Manual Save, Export, Download and Import tools. Keep an exported backup before major progression experiments or browser-storage changes.</p>
+      <div class="guide-callout info"><strong>Class switching:</strong> save and move any cross-class item you want to keep into the shared Stash before replacing or resetting a character slot.</div>`
+  }
+];
+let extendedGuideCurrentChapter = 'getting-started';
+let extendedGuideLastFocus = null;
+function getExtendedGuideChapter(id) {
+  return EXTENDED_GUIDE_CHAPTERS.find(ch => ch.id === id) || EXTENDED_GUIDE_CHAPTERS[0];
+}
+function renderExtendedGuideNav() {
+  const nav = document.getElementById('extended-guide-nav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  EXTENDED_GUIDE_CHAPTERS.forEach((chapter, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'extended-guide-tab' + (chapter.id === extendedGuideCurrentChapter ? ' active' : '');
+    btn.setAttribute('aria-current', chapter.id === extendedGuideCurrentChapter ? 'page' : 'false');
+    btn.innerHTML = `<span class="extended-guide-tab-index">${String(index + 1).padStart(2,'0')}</span><span>${chapter.title}</span>`;
+    btn.onclick = () => showExtendedGuideChapter(chapter.id);
+    nav.appendChild(btn);
+  });
+}
+function showExtendedGuideChapter(id) {
+  const chapter = getExtendedGuideChapter(id);
+  extendedGuideCurrentChapter = chapter.id;
+  const content = document.getElementById('extended-guide-content');
+  if (content) {
+    content.innerHTML = chapter.html;
+    content.scrollTop = 0;
+  }
+  renderExtendedGuideNav();
+  const active = document.querySelector('.extended-guide-tab.active');
+  if (active) active.scrollIntoView({block:'nearest', inline:'nearest'});
+}
+function openExtendedGuide(chapterId='getting-started') {
+  const overlay = document.getElementById('extended-guide-overlay');
+  if (!overlay) return;
+  extendedGuideLastFocus = document.activeElement;
+  overlay.classList.add('visible');
+  showExtendedGuideChapter(chapterId || extendedGuideCurrentChapter);
+  setTimeout(() => document.getElementById('extended-guide-close')?.focus(), 0);
+}
+function closeExtendedGuide() {
+  const overlay = document.getElementById('extended-guide-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('visible');
+  if (extendedGuideLastFocus && typeof extendedGuideLastFocus.focus === 'function') extendedGuideLastFocus.focus();
+}
+function extendedGuideOverlayClick(event) {
+  if (event.target && event.target.id === 'extended-guide-overlay') closeExtendedGuide();
+}
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.getElementById('extended-guide-overlay')?.classList.contains('visible')) closeExtendedGuide();
+});
 
 
 // FIRST PLAY TUTORIAL
