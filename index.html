@@ -4438,6 +4438,16 @@ function getNameSpriteProfile(name, arch) {
     accentPattern: h % 4,
     headShift: (((h >> 15) % 3) - 1),
     extraHeads: test(/hydra/) ? 1 : 0,
+    horns: test(/fiend|demon|imp|behemoth|hell|infernal|minotaur|devil|abyssal|reaver/),
+    tentacles: test(/siren|leviathan|horror|abyss|kraken|squid|deep|void lich|eldritch/),
+    multiTail: test(/kitsune|fox/),
+    blob: test(/slime|spore|ooze|blob|tadpole|spawn\b/),
+    cap: test(/fungal|mushroom|spore|bloom|myco/),
+    hood: test(/thief|bandit|outlaw|poacher|highwayman|assassin|cultist|shade/),
+    weapon: test(/bandit|outlaw|thief|poacher|highwayman|raider|brigand|grunt|scout|king|knight|warden/),
+    staff: test(/witch|seer|crone|shaman|sorcer|hexer|mage|lich/),
+    lowBody: test(/worm|leech|burrower|crawler|serpent|snake|centipede|maggot/),
+    mane: test(/wolf|lion|boar|alpha|king|elder/) && test(/wolf|lion|boar/),
     eyeColor: test(/void|shadow|abyss|chaos|dark|night/) ? '#d96dff' :
               test(/storm|lightning|thunder|tempest|frost|ice|gale/) ? '#77ddff' :
               test(/rot|plague|spore|blight|venom|poison|bog|swamp/) ? '#7be66c' :
@@ -4469,12 +4479,15 @@ function buildSprite(arch, rand, isElite, isBoss, name='') {
   // Color slots: 1=primary, 2=secondary, 3=dark, 4=eye, 5=highlight
   const C = { body:1, acc:2, dark:3, eye:4, hi:5 };
 
-  const bodyW = clamp(p.bodyW + profile.bodyBias + (profile.slim ? -1 : 0) + (profile.bird ? -1 : 0) + (profile.canine ? 1 : 0), 2, 6);
-  const bodyH = clamp(p.bodyH + (profile.tall ? 1 : 0) + (profile.floating ? -1 : 0) + (profile.bird ? -1 : 0), 2, 5);
-  const headW = clamp(p.headW + profile.headBias + (profile.canine ? 1 : 0), 2, 5);
-  const headH = clamp(p.headH + (profile.tallHead ? 1 : 0), 2, 4);
+  let bodyW = clamp(p.bodyW + profile.bodyBias + (profile.slim ? -1 : 0) + (profile.bird ? -1 : 0) + (profile.canine ? 1 : 0), 2, 6);
+  let bodyH = clamp(p.bodyH + (profile.tall ? 1 : 0) + (profile.floating ? -1 : 0) + (profile.bird ? -1 : 0), 2, 5);
+  let headW = clamp(p.headW + profile.headBias + (profile.canine ? 1 : 0), 2, 5);
+  let headH = clamp(p.headH + (profile.tallHead ? 1 : 0), 2, 4);
+  // Name-driven silhouette overrides
+  if (profile.lowBody) { bodyW = clamp(bodyW + 3, 5, 8); bodyH = 2; headW = 2; headH = 2; }
+  if (profile.blob)    { bodyW = clamp(bodyW + 1, 4, 6); bodyH = clamp(bodyH + 1, 3, 5); headW = clamp(bodyW - 2, 2, 4); headH = 2; }
   const bx = clamp(Math.floor((W - bodyW) / 2) + profile.lean, 1, W - bodyW - 1);
-  const by = clamp(Math.floor(H * 0.35) + (profile.floating ? -1 : 0), 3, 6);
+  const by = clamp(Math.floor(H * 0.35) + (profile.floating ? -1 : 0) + (profile.lowBody ? 3 : 0), 3, Math.min(6 + (profile.lowBody ? 3 : 0), H - bodyH - 2));
 
   // === BODY ===
   for (let y=0;y<bodyH;y++) for (let x=0;x<bodyW;x++) {
@@ -4554,7 +4567,17 @@ function buildSprite(arch, rand, isElite, isBoss, name='') {
   }
 
   // === LEGS / FLOAT ===
-  if (profile.floating) {
+  if (profile.blob) {
+    // Blob: no legs — round the mass instead
+    setPixel(grid, bx, by, 0); setPixel(grid, bx+bodyW-1, by, 0);
+    setPixel(grid, bx, by+bodyH-1, C.dark); setPixel(grid, bx+bodyW-1, by+bodyH-1, C.dark);
+    for (let x=0;x<bodyW;x+=2) setPixel(grid, bx+x, by+bodyH, C.dark); // dripping base
+  } else if (profile.lowBody) {
+    // Worm/serpent: segmented ridge + tiny stubs
+    for (let x=1;x<bodyW-1;x+=2) setPixel(grid, bx+x, by-1, C.acc);
+    setPixel(grid, bx+1, by+bodyH, C.dark);
+    setPixel(grid, bx+bodyW-2, by+bodyH, C.dark);
+  } else if (profile.floating) {
     const floatY = by + bodyH;
     for (let x=1;x<bodyW-1;x++) {
       const yy = floatY + ((x % 2 === 0) ? 0 : 1);
@@ -4617,6 +4640,52 @@ function buildSprite(arch, rand, isElite, isBoss, name='') {
   }
 
   // === NAME-BASED FEATURES ===
+  if (profile.horns) {
+    setPixel(grid, hx, hy-1, C.acc);   setPixel(grid, hx-1, hy-2, C.hi);
+    setPixel(grid, hx+headW-1, hy-1, C.acc); setPixel(grid, hx+headW, hy-2, C.hi);
+  }
+  if (profile.tentacles) {
+    const tenY = by + bodyH;
+    for (let i=0;i<Math.min(bodyW,4);i++) {
+      const tx2 = bx + i + (bodyW>4?1:0);
+      setPixel(grid, tx2, tenY, C.body);
+      setPixel(grid, tx2 + ((i%2===0)?0:1)-((i===3)?1:0), tenY+1, C.acc);
+      if (i%2===0) setPixel(grid, tx2, tenY+2, C.dark);
+    }
+  }
+  if (profile.multiTail) {
+    const ty2 = by + Math.floor(bodyH/2);
+    setPixel(grid, bx-1, ty2-1, C.acc); setPixel(grid, bx-2, ty2-2, C.hi);
+    setPixel(grid, bx-1, ty2,   C.acc); setPixel(grid, bx-2, ty2,   C.hi);
+    setPixel(grid, bx-1, ty2+1, C.acc); setPixel(grid, bx-2, ty2+2, C.hi);
+  }
+  if (profile.cap) {
+    for (let x=-1;x<=headW;x++) setPixel(grid, hx+x, hy-1, C.acc);
+    for (let x=0;x<headW;x++) setPixel(grid, hx+x, hy-2, C.acc);
+    setPixel(grid, hx+Math.floor(headW/2), hy-2, C.hi);
+  }
+  if (profile.hood) {
+    for (let x=0;x<headW;x++) setPixel(grid, hx+x, hy, C.dark);
+    setPixel(grid, hx, hy+1, C.dark);
+    setPixel(grid, hx+headW-1, hy+1, C.dark);
+  }
+  if (profile.mane) {
+    for (let y=0;y<headH;y++) setPixel(grid, hx-1, hy+y, C.acc);
+    for (let x=0;x<headW;x++) if (!grid[hy-1]?.[hx+x]) setPixel(grid, hx+x, hy-1, C.acc);
+  }
+  if (profile.weapon && !profile.staff) {
+    const wx2 = clamp(bx+bodyW+1, 0, W-1);
+    setPixel(grid, wx2, by-2, C.hi);
+    setPixel(grid, wx2, by-1, C.acc);
+    setPixel(grid, wx2, by,   C.acc);
+    setPixel(grid, wx2, by+1, C.dark);
+    setPixel(grid, wx2-1, by+1, C.dark);
+  }
+  if (profile.staff) {
+    const sx2 = clamp(bx-2, 0, W-1);
+    for (let y=-1;y<bodyH+1;y++) setPixel(grid, sx2, by+y, C.dark);
+    setPixel(grid, sx2, by-2, C.hi);
+  }
   if (profile.spikes) {
     for (let x=0;x<bodyW;x+=2) setPixel(grid, bx+x, by-1, C.acc);
   }
@@ -4671,6 +4740,16 @@ function buildSprite(arch, rand, isElite, isBoss, name='') {
     setPixel(grid, hx+headW, hy-2, C.eye);
   }
 
+  // === SHADING PASS: light from above ===
+  // Body pixels open to the sky get a highlight sheen; pixels resting on empty space darken.
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    if (grid[y][x] !== C.body) continue;
+    const above = y>0 ? grid[y-1][x] : 0;
+    const below = y<H-1 ? grid[y+1][x] : 0;
+    if (!above) grid[y][x] = C.hi;
+    else if (!below && above === C.body) grid[y][x] = C.dark;
+  }
+
   return grid;
 }
 
@@ -4686,6 +4765,17 @@ function drawGridSprite(ctx, grid, colors, canvasW, canvasH, opts={}) {
   // Pixel shadow
   ctx.fillStyle = opts.shadow || 'rgba(0,0,0,0.48)';
   ctx.fillRect(ox + px*2, oy + GRID_H*px - px, (GRID_W-4)*px, Math.max(2,px));
+
+  // Silhouette outline: one dark pixel ring around the sprite for readability
+  if (opts.outline) {
+    ctx.fillStyle = opts.outline === true ? 'rgba(0,0,0,0.78)' : opts.outline;
+    for (let r=-1;r<=GRID_H;r++) for (let c=-1;c<=GRID_W;c++) {
+      const filled = r>=0 && r<GRID_H && c>=0 && c<GRID_W && grid[r][c];
+      if (filled) continue;
+      const nb = (rr,cc)=> rr>=0&&rr<GRID_H&&cc>=0&&cc<GRID_W&&grid[rr][cc];
+      if (nb(r-1,c)||nb(r+1,c)||nb(r,c-1)||nb(r,c+1)) ctx.fillRect(ox+c*px, oy+r*px, px, px);
+    }
+  }
 
   for (let r=0;r<GRID_H;r++) for (let c=0;c<GRID_W;c++) {
     const v = grid[r][c]; if(!v) continue;
@@ -4739,10 +4829,11 @@ function drawMonsterSprite(canvas, monster, isElite, isBoss) {
   const hitShift = Math.max(0, 1 - (t - VIS.lastMonsterHit) / 160);
   const grid = buildSprite(arch, rand, isElite, isBoss, name);
   drawGridSprite(ctx, grid, colors, W, H, {
-    scale: Math.max(3, Math.floor(Math.min(W,H)/18)),
+    scale: Math.max(3, Math.floor(Math.min(W,H)/18)) + (isBoss ? 1 : 0),
     bob: Math.sin(t/420)*2,
     offsetX: hitShift * 3 * (Math.sin(t/32)>0?1:-1),
     noise: 24,
+    outline: true,
     rand
   });
 
@@ -4775,7 +4866,7 @@ function drawMiniSprite(canvas, monster) {
   const finalPal=pal.map(c=>mixHex(c,tint,0.22));
   const grid=buildSprite(arch, rand, monster.isElite, monster.isBoss, name);
   const colors={0:null,1:finalPal[0],2:finalPal[1],3:finalPal[2],4:profile.eyeColor || (monster.isElite?'#ffcc00':'#ff2222'),5:finalPal[3]};
-  drawGridSprite(ctx, grid, colors, canvas.width, canvas.height, { scale:1, noise:14, rand });
+  drawGridSprite(ctx, grid, colors, canvas.width, canvas.height, { scale:1, noise:14, outline:'rgba(0,0,0,0.62)', rand });
 }
 
 const PLAYER_PALETTES = {
@@ -4834,6 +4925,85 @@ function drawPlayerSprite(canvas, cls) {
   }
 }
 
+// Side-view walking sprite: shown while the bot travels between spawns.
+// Draws directly onto the full-width scene canvas, feet on the terrain line.
+function drawPlayerWalking(ctx, W, H, cls) {
+  const t = fxNow();
+  const p = PLAYER_PALETTES[cls] || PLAYER_PALETTES.warrior;
+  const grid = Array.from({length:16},()=>new Array(16).fill(0));
+  const C = { main:1, sub:2, dark:3, glow:4, eye:5 };
+  const set = (x,y,v)=>{ if(y>=0&&y<16&&x>=0&&x<16) grid[y][x]=v; };
+
+  // 4-frame walk cycle: contact → pass → contact(swap) → pass
+  const frame = Math.floor(t/150)%4;
+  const stride = (frame===0) ? 1 : (frame===2) ? -1 : 0; // front leg forward/back
+  const bounce = (frame===1 || frame===3) ? -1 : 0;      // body lifts on pass frames
+
+  // Head (facing right), y shifted by bounce
+  for(let y=2;y<=5;y++) for(let x=6;x<=9;x++) set(x,y+bounce,(x===6||y===2)?C.dark:C.sub);
+  set(9,3+bounce,C.eye);                       // eye toward travel direction
+  set(9,5+bounce,C.dark);                      // jaw shading
+
+  // Torso
+  for(let y=6;y<=10;y++) for(let x=6;x<=9;x++) set(x,y+bounce,(x===6||y===10)?C.dark:C.main);
+  set(8,7+bounce,C.sub); set(8,8+bounce,C.sub); // chest accent
+
+  // Arms swing opposite to legs
+  const armSwing = -stride;
+  set(7+armSwing,8+bounce,C.dark); set(7+armSwing,9+bounce,C.dark);   // near arm
+  set(8-armSwing,9+bounce,C.dark);                                    // far arm hint
+
+  // Legs — front leg and back leg scissor
+  const hipY = 11+bounce;
+  set(8+stride, hipY, C.dark); set(8+stride, hipY+1, C.dark);
+  set(8+stride*2, hipY+2, C.dark);
+  set(7-stride, hipY, C.dark); set(7-stride, hipY+1, C.dark);
+  set(7-stride*2, hipY+2, C.dark);
+  if (stride!==0) { set(8+stride*2+1, hipY+2, C.dark); set(7-stride*2-1, hipY+2, C.dark); }
+  else { set(8, hipY+2, C.dark); set(7, hipY+2, C.dark); }
+
+  // Class gear (side view)
+  if (cls==='warrior') {
+    for(let y=3;y<=9;y++) set(4,y+bounce,y<5?C.glow:C.sub);   // sword on back
+    set(4,10+bounce,C.dark);
+    set(7,1+bounce,C.glow); set(8,1+bounce,C.glow);           // helm crest
+  } else if (cls==='rogue') {
+    set(6,2+bounce,C.dark); set(7,1+bounce,C.dark); set(8,1+bounce,C.dark); set(9,2+bounce,C.dark); // hood
+    set(5,7+bounce,C.glow); set(5,8+bounce,C.sub);            // dagger at hip
+  } else {
+    const sx = 11 + armSwing;                                  // staff held forward
+    for(let y=4;y<=12;y++) set(sx,y+bounce,C.sub);
+    set(sx,3+bounce,C.glow); set(sx,2+bounce,C.glow);
+  }
+
+  const colors = {0:null,1:p.main,2:p.sub,3:p.dark,4:p.glow,5:p.eye};
+
+  // Placement: standing ON the terrain line, roughly a third of the way in
+  const scale = Math.max(3, Math.min(5, Math.floor(H*0.42/16)));
+  const spriteH = 16*scale, spriteW = 16*scale;
+  const groundY = Math.floor(H*0.66);
+  const px = Math.floor(W*0.30);                    // player x (center of sprite)
+  const offsetX = px - W/2;
+  const offsetY = (groundY + 4) - spriteH - (H - spriteH)/2; // feet sit just past ground line
+
+  drawGridSprite(ctx, grid, colors, W, H, {
+    scale,
+    bob:0,
+    offsetX,
+    offsetY,
+    noise:8,
+    outline:'rgba(0,0,0,0.55)',
+    shadow:'rgba(0,0,0,0.50)'
+  });
+
+  // Kicked-up dust behind the feet
+  if (Math.random() < 0.28) {
+    pushFxParticle((px - spriteW*0.30)/W + randf(-0.008,0.008), (groundY+2)/H + randf(-0.015,0.015), 'rgba(160,150,120,0.6)', {
+      vx:randf(-0.010,-0.003), vy:randf(-0.006,-0.001), life:randi(240,480), size:randf(1,2.2), gravity:0.0001
+    });
+  }
+}
+
 // Zone background palettes and props
 const ZONE_BG = {
   fields:         { sky:'#13240e', sky2:'#071006', ground:'#1a2a10', accent:'#35551d', fog:'rgba(16,40,8,0.35)' },
@@ -4852,7 +5022,7 @@ function drawPixelMoon(ctx, x, y, r, color) {
   ctx.fillRect(x, y-r, r, r*2);
 }
 
-function drawZoneBackground(canvas, zone) {
+function drawZoneBackground(canvas, zone, scroll=0) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -4903,12 +5073,31 @@ function drawZoneBackground(canvas, zone) {
   }
 
   // Ground strip
+  const groundY = Math.floor(H*0.66);
   ctx.fillStyle = bg.ground;
-  ctx.fillRect(0, Math.floor(H*0.66), W, Math.ceil(H*0.34));
+  ctx.fillRect(0, groundY, W, Math.ceil(H*0.34));
+  // Tiled, deterministic ground props — stable while idle, scrolls while walking
+  const tileHash = (i)=>{ let h=Math.imul(i|0,2654435761); h^=h>>>13; h=Math.imul(h,0x5bd1e995); return (h^(h>>>15))>>>0; };
+  const STEP = 26;
+  const startTile = Math.floor(scroll/STEP) - 1;
+  const endTile = Math.floor((scroll+W)/STEP) + 1;
   ctx.fillStyle = bg.accent;
-  for (let x = 10; x < W; x += 25 + (x*7)%18) {
-    const h = 3 + (x*3)%8;
-    ctx.fillRect(x, Math.floor(H*0.66)-h, 4+(x*2)%8, h);
+  for (let ti=startTile; ti<=endTile; ti++) {
+    const s = tileHash(ti);
+    const sx = ti*STEP - scroll + (s%12);
+    const h = 3 + s%8;
+    ctx.fillRect(sx, groundY-h, 3 + (s>>4)%7, h);
+  }
+  // Foreground pebbles/tufts on the ground surface (parallax: slightly faster)
+  const fgScroll = scroll*1.35;
+  const fgStart = Math.floor(fgScroll/STEP) - 1;
+  const fgEnd = Math.floor((fgScroll+W)/STEP) + 1;
+  for (let ti=fgStart; ti<=fgEnd; ti++) {
+    const s = tileHash(ti*7+3);
+    const sx = ti*STEP - fgScroll + (s%18);
+    const yy = groundY + 6 + s%Math.max(4, Math.floor(H*0.22));
+    ctx.fillStyle = (s%3===0) ? shadeHex(bg.accent, -18) : shadeHex(bg.ground, 22);
+    ctx.fillRect(sx, yy, 2 + s%3, 1 + (s>>3)%2);
   }
 
   // Scanline/dither overlay
@@ -5267,10 +5456,73 @@ function updateCombatViewport() {
     updateDodgeButtons();
     return;
   }
-  if (G.zone==='town' || !G.started || G.monsters.length===0) {
+  if (G.zone==='town' || !G.started) {
     vp.style.display = 'none'; return;
   }
+
+  const setWalkMode = (on) => {
+    const es = vp.querySelector('.enemy-side');
+    const vs = vp.querySelector('.combat-versus');
+    const hs = vp.querySelector('.hero-side');
+    if (es) es.style.visibility = on ? 'hidden' : '';
+    if (vs) vs.style.visibility = on ? 'hidden' : '';
+    if (hs) hs.style.visibility = on ? 'hidden' : '';
+  };
+
+  // ── TRAVEL MODE: no monster yet — bot walks the terrain toward the next spawn ──
+  if (G.monsters.length===0) {
+    vp.style.display = 'block';
+    resizeCombatCanvasesToViewport();
+    setWalkMode(true);
+    vp.style.transform = '';
+    const walkT = fxNow();
+    const scroll = walkT * 0.048; // ~48 px/s ground scroll
+    const bgCanvas = document.getElementById('combat-bg-canvas');
+    if (bgCanvas) {
+      drawZoneBackground(bgCanvas, G.zone, scroll);
+      // Player walks the full-width terrain, not boxed in the plinth
+      const bctx = bgCanvas.getContext('2d');
+      drawPlayerWalking(bctx, bgCanvas.width, bgCanvas.height, G.playerClass || 'warrior');
+    }
+    const pc = document.getElementById('player-canvas');
+    if (pc) pc.getContext('2d').clearRect(0,0,pc.width,pc.height);
+    // Hero card is hidden in walk mode — draw zone + countdown directly on the scene
+    if (bgCanvas) {
+      const bctx = bgCanvas.getContext('2d');
+      const zoneName = ZONE_DATA[G.zone]?.name || G.zone;
+      const subName = G.subZone ? (ZONE_DATA[G.zone]?.subZones?.[G.subZone]?.name || G.subZone) : '';
+      const secsLeft = Math.max(0, Math.ceil(((G.nextSpawnAt||0) - performance.now())/1000));
+      const label = `WALKING — ${(subName || zoneName).toUpperCase()}${secsLeft>0 ? ` · ${secsLeft}s` : ''}`;
+      bctx.font = '9px monospace';
+      bctx.textAlign = 'left';
+      bctx.textBaseline = 'top';
+      bctx.fillStyle = 'rgba(0,0,0,0.55)';
+      bctx.fillRect(6, 6, bctx.measureText(label).width + 10, 14);
+      bctx.fillStyle = 'rgba(232,232,232,0.85)';
+      bctx.fillText(label, 11, 9);
+    }
+    const pname = document.getElementById('player-nameplate');
+    if (pname) {
+      const pixelClassName = currentAdvancementDef()?.name || G.playerClass || 'BOT';
+      pname.textContent = `${String(pixelClassName).toUpperCase()} LV ${G.level}`;
+    }
+    const zname = document.getElementById('cvp-zone-name');
+    if (zname) {
+      const zoneName = ZONE_DATA[G.zone]?.name || G.zone;
+      const subName = G.subZone ? (ZONE_DATA[G.zone]?.subZones?.[G.subZone]?.name || G.subZone) : '';
+      const secsLeft = Math.max(0, Math.ceil(((G.nextSpawnAt||0) - performance.now())/1000));
+      zname.textContent = `WALKING — ${subName || zoneName}${secsLeft>0 ? ` · ${secsLeft}s` : ''}`;
+    }
+    const phpfW = document.getElementById('player-hp-fill');
+    if (phpfW) phpfW.style.width = `${Math.max(0, Math.min(100, G.hp/G.maxHp*100))}%`;
+    const pmpfW = document.getElementById('player-mp-fill');
+    if (pmpfW) pmpfW.style.width = `${Math.max(0, Math.min(100, G.mp/G.maxMp*100))}%`;
+    drawCombatFx(document.getElementById('combat-fx-canvas'));
+    return;
+  }
+
   vp.style.display = 'block';
+  setWalkMode(false);
   resizeCombatCanvasesToViewport();
 
   const now = fxNow();
